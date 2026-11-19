@@ -16,11 +16,15 @@ public sealed class UnitOfWork : IUnitOfWork
     private IDbContextTransaction? _transaction;
     private readonly List<Func<Task>> _postCommitActions = new();
     private IGenericRepository<AppNotification>? _appNotifications;
+    private IGenericRepository<Employee>? _employees;
 
     public UnitOfWork(ApplicationDbContext context) => _context = context;
 
     public IGenericRepository<AppNotification> AppNotifications =>
         _appNotifications ??= new GenericRepository<AppNotification>(_context);
+
+    public IGenericRepository<Employee> Employees =>
+        _employees ??= new GenericRepository<Employee>(_context);
 
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default) =>
         await _context.SaveChangesAsync(cancellationToken);

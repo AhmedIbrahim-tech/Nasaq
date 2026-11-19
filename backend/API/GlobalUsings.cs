@@ -1,4 +1,3 @@
-// API
 global using System;
 global using System.Collections.Generic;
 global using System.Linq;
@@ -11,7 +10,10 @@ global using API.Routing;
 global using Application.Abstractions;
 global using Domain.Authorization;
 global using Domain.Common;
+global using Domain.Enums;
 global using MediatR;
 global using Microsoft.AspNetCore.Authorization;
 global using Microsoft.AspNetCore.Mvc;
 global using Microsoft.Extensions.DependencyInjection;
+global using API.Extensions;
+global using Infrastructure.Hubs;

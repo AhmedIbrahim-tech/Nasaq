@@ -8,7 +8,5 @@ public sealed class CurrentUserResponse
     public string? PhoneNumber { get; set; }
     public string? JobTitle { get; set; }
     public string? Department { get; set; }
-    public string? ProfileImagePath { get; set; }
-    public string? AvatarUrl { get; set; }
     public IReadOnlyList<string> Roles { get; set; } = [];
 }

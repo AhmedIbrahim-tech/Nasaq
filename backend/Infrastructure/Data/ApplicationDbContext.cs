@@ -1,11 +1,3 @@
-using System;
-using Application.Abstractions;
-using Domain.Common;
-using Domain.Entities;
-using Domain.Identity;
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore;
-
 namespace Infrastructure.Data;
 
 public class ApplicationDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, string>, IApplicationDbContext
@@ -17,6 +9,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
 
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<AppNotification> AppNotifications => Set<AppNotification>();
+    public DbSet<Employee> Employees => Set<Employee>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

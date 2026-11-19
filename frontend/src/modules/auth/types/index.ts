@@ -34,8 +34,6 @@ export interface AuthUserResponse {
   phoneNumber?: string | null;
   jobTitle?: string | null;
   department?: string | null;
-  profileImagePath?: string | null;
-  avatarUrl?: string | null;
 }
 
 /**
@@ -62,8 +60,6 @@ export interface CurrentUserResponse {
   phoneNumber?: string | null;
   jobTitle?: string | null;
   department?: string | null;
-  profileImagePath?: string | null;
-  avatarUrl?: string | null;
   roles: string[];
 }
 

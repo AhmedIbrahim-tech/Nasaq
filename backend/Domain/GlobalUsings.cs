@@ -6,6 +6,8 @@ global using System.Linq;
 global using System.Text.Json.Serialization;
 global using System.Threading;
 global using System.Threading.Tasks;
+global using Domain.Authorization;
 global using Domain.Common;
 global using Domain.Entities;
 global using Domain.Enums;
+global using Domain.Identity;

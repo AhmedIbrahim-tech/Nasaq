@@ -10,7 +10,6 @@ export const Router = {
     Logout: `${PREFIX}/auth/logout`,
     Me: `${PREFIX}/auth/me`,
     Profile: `${PREFIX}/auth/me/profile`,
-    Avatar: `${PREFIX}/auth/me/avatar`,
     ChangePassword: `${PREFIX}/auth/me/change-password`,
     FirstLoginChangePassword: `${PREFIX}/auth/first-login-change-password`,
   },
@@ -22,6 +21,17 @@ export const Router = {
     ReadAll: `${PREFIX}/notifications/read-all`,
     UnreadCount: `${PREFIX}/notifications/unread-count`,
     Recent: `${PREFIX}/notifications/recent`,
+  },
+
+  Employees: {
+    Prefix: `${PREFIX}/employees`,
+    List: `${PREFIX}/employees`,
+    Create: `${PREFIX}/employees`,
+    Supervisors: `${PREFIX}/employees/supervisors`,
+    MyProfile: `${PREFIX}/employees/me`,
+    GetById: (id: string) => `${PREFIX}/employees/${encodeURIComponent(id)}`,
+    Update: (id: string) => `${PREFIX}/employees/${encodeURIComponent(id)}`,
+    ToggleStatus: (id: string) => `${PREFIX}/employees/${encodeURIComponent(id)}/status`,
   },
 
   Hubs: {

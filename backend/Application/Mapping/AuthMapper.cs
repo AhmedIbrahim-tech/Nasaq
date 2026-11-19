@@ -12,9 +12,7 @@ public static class AuthMapper
         FullName = user.FullName,
         PhoneNumber = user.PhoneNumber,
         JobTitle = user.JobTitle,
-        Department = user.Department,
-        ProfileImagePath = user.ProfileImagePath,
-        AvatarUrl = ToPublicUrl(user.ProfileImagePath)
+        Department = user.Department
     };
 
     public static CurrentUserResponse ToCurrentUserResponse(
@@ -27,11 +25,6 @@ public static class AuthMapper
         PhoneNumber = user.PhoneNumber,
         JobTitle = user.JobTitle,
         Department = user.Department,
-        ProfileImagePath = user.ProfileImagePath,
-        AvatarUrl = ToPublicUrl(user.ProfileImagePath),
         Roles = roles
     };
-
-    private static string? ToPublicUrl(string? relativePath) =>
-        string.IsNullOrWhiteSpace(relativePath) ? null : "/" + relativePath.TrimStart('/').Replace('\\', '/');
 }

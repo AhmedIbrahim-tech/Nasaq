@@ -35,11 +35,11 @@ export default function SideLoginView() {
 
   return (
     <PageContainer
-      title={t.has('LoginTitle') ? t('LoginTitle') : 'Login — CoreStarter'}
+      title={t.has('LoginTitle') ? t('LoginTitle') : 'Login — Nasaq'}
       description={
         t.has('LoginDescription')
           ? t('LoginDescription')
-          : 'CoreStarter Enterprise Authentication'
+          : 'Nasaq Employee Attendance Management (Sharm Photographer)'
       }
     >
       <Box
@@ -52,11 +52,11 @@ export default function SideLoginView() {
           bgcolor: 'background.default',
         }}
       >
-        {/* Left Panel: 55% — CoreStarter Showcase (Hidden on Mobile/Tablet xs/sm/md) */}
+        {/* Left Panel: 55% — Nasaq Showcase (Hidden on Mobile/Tablet xs/sm/md) */}
         <Box
           component="section"
           aria-label={
-            t.has('ProductShowcase') ? t('ProductShowcase') : 'CoreStarter Product Showcase'
+            t.has('ProductShowcase') ? t('ProductShowcase') : 'Nasaq System'
           }
           sx={{
             flex: { xs: 'none', lg: '0 0 55%' },

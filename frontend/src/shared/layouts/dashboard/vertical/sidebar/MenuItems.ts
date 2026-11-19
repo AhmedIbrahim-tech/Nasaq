@@ -3,6 +3,7 @@ import {
   IconReportAnalytics,
   IconUserCircle,
   IconBell,
+  IconUsers,
 } from "@tabler/icons-react";
 import { RoleNames } from "@/shared/constants/roles";
 
@@ -41,7 +42,23 @@ const Menuitems: MenuitemsType[] = [
     scope: "shared",
   },
 
-  // 2. Account & Support
+  // 2. Workforce Management
+  {
+    navlabel: true,
+    subheader: "Workforce",
+    roles: [RoleNames.SuperAdmin, RoleNames.Admin, RoleNames.Supervisor],
+    scope: "shared",
+  },
+  {
+    id: "nav-employees",
+    title: "Employees",
+    icon: IconUsers,
+    href: "/employees",
+    roles: [RoleNames.SuperAdmin, RoleNames.Admin, RoleNames.Supervisor],
+    scope: "shared",
+  },
+
+  // 3. Account & Support
   {
     navlabel: true,
     subheader: "Account & Support",

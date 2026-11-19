@@ -166,7 +166,7 @@ export default function LoginForm({ title, subtitle, subtext }: LoginFormProps) 
           >
             {t.has('CoreStarterBadge')
               ? t('CoreStarterBadge')
-              : 'CORESTARTER ENTERPRISE'}
+              : 'NASAQ'}
           </Typography>
         </Box>
       </Stack>
@@ -199,7 +199,7 @@ export default function LoginForm({ title, subtitle, subtext }: LoginFormProps) 
           >
             {t.has('SignInSubtitle')
               ? t('SignInSubtitle')
-              : 'Sign in to your CoreStarter workspace to continue.'}
+              : 'Sign in to your Nasaq workspace to continue.'}
           </Typography>
         )}
       </Box>
@@ -524,7 +524,7 @@ export default function LoginForm({ title, subtitle, subtext }: LoginFormProps) 
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2, lineHeight: 1.6 }}>
             {t.has('PasswordHelpBody')
               ? t('PasswordHelpBody')
-              : 'For security and system integrity, user passwords in CoreStarter are managed administratively. If you have forgotten your password or your temporary credentials have expired, please contact your system administrator to request a secure temporary password.'}
+              : 'For security and system integrity, user passwords in Nasaq are managed administratively. If you have forgotten your password or your temporary credentials have expired, please contact your system administrator to request a secure temporary password.'}
           </Typography>
 
           <Box

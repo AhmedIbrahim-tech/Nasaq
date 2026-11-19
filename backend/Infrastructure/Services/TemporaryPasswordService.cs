@@ -1,9 +1,4 @@
-using System;
 using System.Security.Cryptography;
-using System.Threading.Tasks;
-using Application.Abstractions;
-using Domain.Identity;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 
@@ -23,10 +18,6 @@ public sealed class TemporaryPasswordService : ITemporaryPasswordService
         _environment = environment;
     }
 
-    /// <summary>
-    /// Default constructor for fallback usage in tests without environment or configuration,
-    /// defaulting strictly to secure random password generation.
-    /// </summary>
     public TemporaryPasswordService()
     {
     }

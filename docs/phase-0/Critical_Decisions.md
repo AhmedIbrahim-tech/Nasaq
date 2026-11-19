@@ -1,6 +1,9 @@
-# Critical Decisions Requiring Project Owner Approval
+# Critical Decisions Requiring Project Owner Approval — NASAQ
+### Client & Operating Company: Sharm Photographer
 
 > **Document Status:** Aligned & Consistent Baseline (Phase 0 Audit)  
+> **Official Product Name:** **NASAQ (نسق)**  
+> **Operating Company:** **Sharm Photographer**  
 > **Classification Labels:** `APPROVED`, `OPEN`, `PROPOSAL`, `EVIDENCE`, `INFERENCE`  
 > **Governance Rule:** Never assume an unapproved rule. Present one decision at a time, provide senior engineering recommendations, and await owner authorization.
 
@@ -105,10 +108,20 @@
   * *Status:* `OPEN`
   * *Question:* If a leave request is submitted and approved after an unexcused absence penalty has already been generated, does the system automatically create a reversal transaction to restore the employee's standing?
   * *PROPOSAL:* Implement an automated reversal transaction (`reversal_of: TX-XXX`) linked to the leave approval event with full audit logging.
-- **DEC-017: Roles & Access Hierarchy**
-  * *Status:* `OPEN`
-  * *Question:* What are the exact roles and permissions across the platform?
-  * *PROPOSAL:* Adopt a 4-tier RBAC structure: Employee, Team Lead/Supervisor, Admin/Operations, Owner/SuperAdmin.
+- **DEC-017: Approved 4-Tier Business Role Hierarchy & Direct Supervisor Assignment Model**
+  * *Status:* `RESOLVED / APPROVED`
+  * *Resolution:* The project owner has approved the definitive 4-tier business role hierarchy and the Direct Supervisor Assignment model:
+    1. `SuperAdmin`: Full system control & administrative access; highest system authority.
+    2. `Admin`: Manages employee records; administrative access per approved permissions; cannot grant or escalate anyone to SuperAdmin.
+    3. `Supervisor`: Accesses and monitors employees within their directly assigned supervision scope; no unrestricted or global administrative access.
+    4. `Employee`: Accesses own account and personal employee info only; cannot view others' records.
+  * *Direct Supervisor Model Rules:*
+    - 1-to-many relationship: each employee can have at most one directly assigned supervisor at a time; a supervisor manages multiple employees.
+    - SuperAdmin and Admin have exclusive authority to assign, modify, or clear an employee's supervisor.
+    - Server-side scoped visibility: supervisors can view ONLY their directly assigned employees. Employees without an assigned supervisor (`SupervisorId == null`) do not appear in any supervisor's list, and direct query attempts return 403 Forbidden.
+    - Self-supervision is strictly prohibited (`SupervisorId != Employee.Id`).
+    - Candidates for supervisor must possess active employee records and linked user accounts with `Supervisor`, `Admin`, or `SuperAdmin` roles.
+  * *Security Mandate:* Zero Owner role, Owner alias, or Owner permission bypass.
 
 ### Category 6: Check-out Specific Unresolved Decisions
 - **DEC-018: Forgotten Check-out Handling & Finalization Policy**

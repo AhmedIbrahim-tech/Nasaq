@@ -1,7 +1,10 @@
-# Decision Log — Sharm Photographer Project
+# Decision Log — NASAQ Project
+### Client & Operating Company: Sharm Photographer
 
 > **Lifecycle States:** `OPEN` -> `IN_REVIEW` -> `APPROVED` / `REJECTED`  
 > **Classification Labels:** `APPROVED`, `OPEN`, `PROPOSAL`, `EVIDENCE`, `INFERENCE`  
+> **Official Product Name:** **NASAQ (نسق)**  
+> **Operating Company:** **Sharm Photographer**  
 > **Rule:** No code or architecture may assume an unapproved rule. Every approved decision becomes immutable baseline.
 
 ---
@@ -26,7 +29,7 @@
 | **DEC-014** | Reward Program | 30 Green Points Reward: Monthly cycle vs Cumulative bank | `OPEN` | Phase 0 Alignment | Defines point expiration and lifecycle |
 | **DEC-015** | Payout Logistics | Reward Currency & Disbursement: USD vs EGP, Manual vs API | `OPEN` | Phase 0 Alignment | Simplifies wallet payout handling (InstaPay / Vodafone Cash in video) |
 | **DEC-016** | Leave Handling | Retrospective Leave approval & automated penalty reversal | `OPEN` | Phase 0 Alignment | Determines retroactive absence reconciliation logic |
-| **DEC-017** | Roles & Access | Role hierarchy (Employee, Supervisor, Admin, Owner) | `OPEN` | Phase 0 Alignment | Shapes ASP.NET Identity & Next.js RBAC matrix (`PROPOSAL`: 4-tier hierarchy) |
+| **DEC-017** | Roles & Access | 4-Tier Business Roles & Direct Supervisor Assignment Model | `RESOLVED` | Phase 2 Execution | Standardized Clean Architecture RBAC matrix with privilege escalation prevention & approved 1-to-many direct supervisor scoping |
 | **DEC-018** | Check-out Rules | Forgotten Check-out Handling & Finalization Policy | `OPEN` | Phase 0 Alignment | Defines how unclosed shifts are finalized at day end (`PROPOSAL`: non-punitive incomplete status) |
 | **DEC-019** | Check-out Rules | Early Departure Policy & Impact on Attendance Classification | `OPEN` | Phase 0 Alignment | Determines if early check-out triggers alert or status change (`PROPOSAL`: non-punitive metadata) |
 | **DEC-020** | Check-out Rules | Working Hours Calculation & Break Tracking | `OPEN` | Phase 0 Alignment | Determines whether net shift duration is calculated/displayed (`PROPOSAL`: elapsed presence only) |
@@ -106,3 +109,28 @@
   3. Strictly zero background GPS tracking.
   4. Strictly zero GPS permission requests upon application startup (GPS requested point-in-time only during explicit Check-in or Check-out).
   5. Native bi-directional layout: Arabic RTL and English LTR.
+
+### DEC-017: Approved 4-Tier Business Role Hierarchy & Direct Supervisor Assignment Model
+- **Date Decided:** 19 November 2026
+- **Decision Status:** `RESOLVED / APPROVED`
+- **Owner Resolution:** Approved the canonical 4-tier business roles and the Direct Supervisor Assignment model for NASAQ:
+  1. `SuperAdmin`: Full system control & administrative access; highest authority.
+  2. `Admin`: Manages employee records; administrative access per approved permissions; cannot grant or escalate anyone to SuperAdmin.
+  3. `Supervisor`: Accesses and monitors employees within their assigned direct supervision scope; no unrestricted or global administrative access.
+  4. `Employee`: Accesses own account and personal employee info only; cannot view others' records.
+- **Approved Direct Supervisor Model Rules:**
+  - **1-to-Many Direct Relationship:** Each employee can have at most one directly assigned supervisor at a time; a supervisor can manage multiple employees.
+  - **Administrative Authority:** Only `SuperAdmin` and `Admin` have authority to assign, modify, or clear an employee's supervisor.
+  - **Server-Side Scoped Visibility:** Supervisors can view ONLY their directly assigned employees in lists, details, and attendance queries.
+  - **Fail-Closed Unassigned Employee Protection:** An employee without an assigned supervisor (`SupervisorId == null`) MUST NOT appear in any supervisor's employee list; direct query attempts by supervisors return 403 Forbidden.
+  - **Cross-Supervisor Isolation:** Supervisors cannot access employees assigned to another supervisor (filtered from list; 403 Forbidden on detail query).
+  - **Boundary & Anti-Escalation Rules:**
+    - Employees cannot assign or change their own supervisors.
+    - Supervisors cannot assign employees to themselves or to other supervisors.
+    - Self-supervision is strictly prohibited (`SupervisorId != Employee.Id`).
+    - Candidates for supervisor assignment must have an active employee record and a linked user account possessing `Supervisor`, `Admin`, or `SuperAdmin` role.
+  - **Persistence & Integrity:** Configured with `DeleteBehavior.Restrict` on `Employee.SupervisorId` to prevent SQL Server cascade cycles, combined with soft-deletion (`IsActive = false`).
+- **Architectural & Security Mandate:**
+  - Strictly ZERO `Owner` role, `Owner` alias, or `Owner` permission bypass.
+  - All role and scoping checks are strictly enforced server-side in CQRS query/command handlers.
+

@@ -1,4 +1,3 @@
-using Application.Files;
 using Domain.Common;
 using FluentValidation;
 using Microsoft.AspNetCore.Diagnostics;
@@ -28,12 +27,6 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
             UnauthorizedAccessException => (
                 HttpStatusCode.Forbidden,
                 "You do not have permission to perform this action.",
-                new List<string> { exception.Message }
-            ),
-
-            FileStorageException => (
-                HttpStatusCode.BadRequest,
-                "A file storage error occurred while processing the uploaded file.",
                 new List<string> { exception.Message }
             ),
 

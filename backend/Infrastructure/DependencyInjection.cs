@@ -7,7 +7,6 @@ using Infrastructure.Authentication;
 using Infrastructure.Data;
 using Infrastructure.Data.Interceptors;
 using Infrastructure.Email;
-using Infrastructure.Files;
 using Infrastructure.Repositories;
 using Infrastructure.Services;
 using Microsoft.AspNetCore.Identity;
@@ -23,7 +22,6 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        services.Configure<FileStorageOptions>(configuration.GetSection(FileStorageOptions.SectionName));
         services.Configure<EmailOptions>(configuration.GetSection(EmailOptions.SectionName));
         services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
         services.Configure<DefaultAdminOptions>(configuration.GetSection(DefaultAdminOptions.SectionName));
@@ -48,7 +46,6 @@ public static class DependencyInjection
 
         services.AddHttpContextAccessor();
 
-        services.AddScoped<IFileStorageService, FileStorageService>();
         services.AddScoped<IEmailService, SmtpEmailService>();
         services.AddTransient<Microsoft.AspNetCore.Identity.UI.Services.IEmailSender, IdentityEmailSender>();
 

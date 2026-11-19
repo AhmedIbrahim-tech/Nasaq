@@ -1,16 +1,21 @@
-# Product Glossary — Sharm Photographer
+# Product Glossary — NASAQ
+### Client & Operating Company: Sharm Photographer
 
 > **Document Status:** Aligned & Consistent Baseline (Phase 0 Audit)  
+> **Official Product Name:** **NASAQ (نسق)**  
+> **Operating Company:** **Sharm Photographer**  
 > **System Purpose:** Internal Employee Attendance & Workforce Management System
 
 Standardized terminology across domain models, API schemas, UI labels, and database schemas.
 
 ---
 
-## 1. Domain Terminology
+## 1. Product & Domain Terminology
 
 | English Term | مصطلح عربي | Definition / Scope | Status / Reference |
 |---|---|---|---|
+| **NASAQ** | نسق | The official software product name for the internal employee attendance and workforce management platform. | `OFFICIAL` / `DEC-001` |
+| **Sharm Photographer** | شرم فوتوجرافر | The operating company employing the workforce and utilizing NASAQ across its physical branches and hotel worksites in Sharm El-Sheikh. | `OFFICIAL` / `DEC-001` |
 | **Worksite** | موقع العمل | The physical hotel, resort, or branch facility where employees are assigned to work. Defined by geo-coordinates and an authorized radius. | `EVIDENCE` / `MOD-03` |
 | **Geofence** | النطاق الجغرافي | A circular virtual perimeter (radius in meters) surrounding a Worksite within which Check-in and Check-out are valid. Proposed default: 150m. | `PROPOSAL` / `DEC-009` OPEN |
 | **GPS Accuracy Threshold** | حد دقة الموقع المقبولة | The radius of uncertainty (in meters) reported by the device geolocation hardware. Proposed default threshold: <= 50m. Readings exceeding threshold route to Pending Review (non-blocking). | `PROPOSAL` / `DEC-009` OPEN |

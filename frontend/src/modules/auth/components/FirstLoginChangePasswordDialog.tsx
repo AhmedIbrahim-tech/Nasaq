@@ -142,7 +142,7 @@ export function FirstLoginChangePasswordDialog({
       notify.success(
         t.has('PasswordChangedSuccess')
           ? t('PasswordChangedSuccess')
-          : 'Password created successfully! Welcome to CoreStarter.',
+          : 'Password created successfully! Welcome to Nasaq.',
         { title: t.has('Account Setup Complete') ? t('Account Setup Complete') : 'Account Setup Complete' }
       );
       router.push('/');
@@ -212,7 +212,7 @@ export function FirstLoginChangePasswordDialog({
             >
               {t.has('FirstLoginInstruction')
                 ? t('FirstLoginInstruction')
-                : 'Because you are signing in with a temporary password, you must establish a new secure password before gaining access to CoreStarter.'}
+                : 'Because you are signing in with a temporary password, you must establish a new secure password before gaining access to Nasaq.'}
             </Alert>
 
             {errorMessage && (

@@ -8,6 +8,7 @@ namespace Domain.Repositories;
 public interface IUnitOfWork : IAsyncDisposable, IDisposable
 {
     IGenericRepository<AppNotification> AppNotifications { get; }
+    IGenericRepository<Employee> Employees { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 

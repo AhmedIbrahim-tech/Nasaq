@@ -68,7 +68,7 @@ public static class ReportExportEngine
             // Title & Metadata
             var title = isAr ? report.ReportNameAr : report.ReportNameEn;
             writer.WriteLine(SanitizeCsvField(title));
-            writer.WriteLine(SanitizeCsvField($"CoreStarter - {(isAr ? "نظام إدارة الموارد" : "Enterprise Application Template")}"));
+            writer.WriteLine(SanitizeCsvField($"Nasaq — Sharm Photographer - {(isAr ? "نظام إدارة الحضور والقوى العاملة" : "Workforce Management System")}"));
             writer.WriteLine(SanitizeCsvField($"Generated: {report.GeneratedAt:yyyy-MM-dd HH:mm:ss} UTC"));
             writer.WriteLine(SanitizeCsvField($"Scope: {(req.ExportScope == "current_page" ? $"Current Page ({rowsToExport.Count} records)" : $"All Filtered Results ({rowsToExport.Count} records)")}"));
             writer.WriteLine();
@@ -138,7 +138,7 @@ public static class ReportExportEngine
 
         // 1. Report Title Header Block
         var titleText = isAr ? report.ReportNameAr : report.ReportNameEn;
-        ws.Cell(1, 1).Value = $"CoreStarter — {titleText}";
+        ws.Cell(1, 1).Value = $"Nasaq — {titleText}";
         ws.Range(1, 1, 1, colCount).Merge();
         ws.Row(1).Height = 28;
         ws.Cell(1, 1).Style.Font.Bold = true;
@@ -287,7 +287,7 @@ public static class ReportExportEngine
                         row.RelativeItem().Column(c =>
                         {
                             c.Item().Text(titleText).Bold().FontSize(14).FontColor("#1E3A8A");
-                            c.Item().Text($"CoreStarter - {(isAr ? "نظام إدارة الأعمال" : "Enterprise Application Template")}")
+                            c.Item().Text($"Nasaq — Sharm Photographer - {(isAr ? "نظام إدارة الحضور والقوى العاملة" : "Workforce Management System")}")
                                 .FontSize(8).FontColor("#64748B");
                         });
 
@@ -412,7 +412,7 @@ public static class ReportExportEngine
                 // Page Footer
                 page.Footer().Row(row =>
                 {
-                    row.RelativeItem().Text(isAr ? "CoreStarter — تقرير نظام معتمد" : "CoreStarter — Official Report")
+                    row.RelativeItem().Text(isAr ? "نسق — تقرير نظام معتمد" : "Nasaq — Official System Report")
                         .FontSize(7).FontColor("#94A3B8");
 
                     row.RelativeItem().AlignRight().Text(text =>

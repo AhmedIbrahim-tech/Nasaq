@@ -1,16 +1,11 @@
 using System.IdentityModel.Tokens.Jwt;
-using System.Net;
-using System.Security.Claims;
 using System.Text;
 using API.ErrorHandling;
 using Application;
 using Application.Configuration;
-using Domain.Common;
 using Infrastructure;
 using Infrastructure.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -80,9 +75,9 @@ public static class ServiceCollectionExtensions
         {
             options.SwaggerDoc("v1", new OpenApiInfo
             {
-                Title = "CoreStarter API",
+                Title = "Nasaq API",
                 Version = "v1",
-                Description = "CoreStarter Clean Architecture API Documentation"
+                Description = "Nasaq Employee Attendance Management API"
             });
 
             options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -264,6 +259,24 @@ public static class ServiceCollectionExtensions
             options.FallbackPolicy = new AuthorizationPolicyBuilder()
                 .RequireAuthenticatedUser()
                 .Build();
+
+            options.AddPolicy(PolicyNames.RequireSuperAdmin, policy =>
+                policy.RequireRole(RoleNames.SuperAdmin));
+
+            options.AddPolicy(PolicyNames.RequireAdmin, policy =>
+                policy.RequireRole(RoleNames.SuperAdmin, RoleNames.Admin));
+
+            options.AddPolicy(PolicyNames.RequireSupervisor, policy =>
+                policy.RequireRole(RoleNames.SuperAdmin, RoleNames.Admin, RoleNames.Supervisor));
+
+            options.AddPolicy(PolicyNames.RequireEmployee, policy =>
+                policy.RequireRole(RoleNames.Employee));
+
+            options.AddPolicy(PolicyNames.EmployeeManagement, policy =>
+                policy.RequireRole(RoleNames.SuperAdmin, RoleNames.Admin));
+
+            options.AddPolicy(PolicyNames.EmployeeView, policy =>
+                policy.RequireRole(RoleNames.SuperAdmin, RoleNames.Admin, RoleNames.Supervisor, RoleNames.Employee));
         });
 
         return services;

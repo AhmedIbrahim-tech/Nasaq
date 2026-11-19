@@ -21,7 +21,6 @@ import {
 import { useLogout } from '@/modules/auth/hooks/useLogout';
 import { useAppSelector } from '@/store/hooks';
 import { useTranslations } from 'next-intl';
-import { getImageUrl } from '@/shared/utils/image.utils';
 
 const Profile = () => {
   const t = useTranslations();
@@ -41,7 +40,6 @@ const Profile = () => {
       ? (t.has('Tenant Admin') ? t('Tenant Admin') : 'Tenant Admin')
       : (t.has(rawRole) ? t(rawRole) : rawRole);
   const initial = displayName.charAt(0).toUpperCase();
-  const avatarSrc = getImageUrl(user?.avatarUrl || user?.profileImagePath);
 
   const handleOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -95,7 +93,6 @@ const Profile = () => {
         onClick={handleOpen}
       >
         <Avatar
-          src={avatarSrc}
           alt={displayName}
           sx={{
             width: 35,
@@ -134,7 +131,6 @@ const Profile = () => {
 
         <Stack direction="row" py={3} spacing={2} alignItems="center">
           <Avatar
-            src={avatarSrc}
             alt={displayName}
             sx={{
               width: 90,

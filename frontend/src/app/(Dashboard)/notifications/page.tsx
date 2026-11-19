@@ -1,7 +1,7 @@
 import { NotificationsCenterView } from "@/modules/core/notifications";
 
 export const metadata = {
-  title: "Notifications Center — CoreStarter",
+  title: "Notifications Center — Nasaq",
   description: "View and manage user activity notifications and alerts",
 };
 

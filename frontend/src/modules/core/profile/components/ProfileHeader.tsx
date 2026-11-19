@@ -3,6 +3,7 @@
 import React from 'react';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
+import Avatar from '@mui/material/Avatar';
 import Typography from '@mui/material/Typography';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
@@ -24,8 +25,6 @@ import { useTranslations } from 'next-intl';
 
 import { useAppDispatch } from '@/store/hooks';
 import { updateUserProfile } from '@/modules/auth/slices/auth.slice';
-import { uploadMyAvatar, removeMyAvatar } from '@/modules/auth/services/auth.service';
-import { ImageUploader } from '@/shared/components/upload/ImageUploader';
 import { notify } from '@/shared/services/notification.service';
 import { RoleNames } from '@/shared/constants/roles';
 import type { CurrentUserResponse, AuthUserResponse } from '@/modules/auth/types';
@@ -82,38 +81,6 @@ export function ProfileHeader({
     ? t('Platform Account Scope')
     : selectedCompanyName || t('Tenant Account Scope');
 
-  const handleAvatarUpload = async (file: File) => {
-    if (isPreviewActive) {
-      notify.warning(t.has('ActionDisabledInPreview') ? t('ActionDisabledInPreview') : 'Action disabled in preview mode');
-      return;
-    }
-    try {
-      const url = await uploadMyAvatar(file, accessToken);
-      if (user) {
-        dispatch(updateUserProfile({ ...user, profileImagePath: url, avatarUrl: url }));
-        notify.success(t('ProfileUpdatedSuccess'));
-      }
-    } catch (err: any) {
-      notify.error(err.message || t('Error'));
-    }
-  };
-
-  const handleAvatarRemove = async () => {
-    if (isPreviewActive) {
-      notify.warning(t.has('ActionDisabledInPreview') ? t('ActionDisabledInPreview') : 'Action disabled in preview mode');
-      return;
-    }
-    try {
-      await removeMyAvatar(accessToken);
-      if (user) {
-        dispatch(updateUserProfile({ ...user, profileImagePath: null, avatarUrl: null }));
-        notify.success(t('ProfileUpdatedSuccess'));
-      }
-    } catch (err: any) {
-      notify.error(err.message || t('Error'));
-    }
-  };
-
   return (
     <Card
       variant="outlined"
@@ -129,14 +96,19 @@ export function ProfileHeader({
         alignItems={{ xs: 'center', md: 'flex-start' }}
       >
         <Box sx={{ flexShrink: 0 }}>
-          <ImageUploader
-            currentImageUrl={user?.avatarUrl || user?.profileImagePath}
-            shape="circular"
-            size={92}
-            fallbackInitial={initial}
-            onUpload={handleAvatarUpload}
-            onRemove={handleAvatarRemove}
-          />
+          <Avatar
+            alt={displayName}
+            sx={{
+              width: 92,
+              height: 92,
+              bgcolor: 'primary.main',
+              color: 'primary.contrastText',
+              fontSize: '2.25rem',
+              fontWeight: 700,
+            }}
+          >
+            {initial}
+          </Avatar>
         </Box>
 
         <Box sx={{ flex: 1, minWidth: 0, textAlign: { xs: 'center', md: 'start' } }}>

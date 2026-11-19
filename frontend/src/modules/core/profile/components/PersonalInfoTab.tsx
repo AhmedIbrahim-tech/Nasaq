@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
+import Avatar from '@mui/material/Avatar';
 import Typography from '@mui/material/Typography';
 import Stack from '@mui/material/Stack';
 import Grid from '@mui/material/Grid';
@@ -28,8 +29,7 @@ import { useTranslations } from 'next-intl';
 
 import { useAppDispatch } from '@/store/hooks';
 import { updateUserProfile } from '@/modules/auth/slices/auth.slice';
-import { updateProfile, uploadMyAvatar, removeMyAvatar } from '@/modules/auth/services/auth.service';
-import { ImageUploader } from '@/shared/components/upload/ImageUploader';
+import { updateProfile } from '@/modules/auth/services/auth.service';
 import { notify } from '@/shared/services/notification.service';
 import type { CurrentUserResponse, AuthUserResponse } from '@/modules/auth/types';
 
@@ -108,38 +108,6 @@ export function PersonalInfoTab({
 
   const initial = (fullName || user?.email || 'U').charAt(0).toUpperCase();
 
-  const handleAvatarUpload = async (file: File) => {
-    if (isPreviewActive) {
-      notify.warning(t.has('ActionDisabledInPreview') ? t('ActionDisabledInPreview') : 'Action disabled in preview mode');
-      return;
-    }
-    try {
-      const url = await uploadMyAvatar(file, accessToken);
-      if (user) {
-        dispatch(updateUserProfile({ ...user, profileImagePath: url, avatarUrl: url }));
-        notify.success(t('ProfileUpdatedSuccess'));
-      }
-    } catch (err: any) {
-      notify.error(err.message || t('Error'));
-    }
-  };
-
-  const handleAvatarRemove = async () => {
-    if (isPreviewActive) {
-      notify.warning(t.has('ActionDisabledInPreview') ? t('ActionDisabledInPreview') : 'Action disabled in preview mode');
-      return;
-    }
-    try {
-      await removeMyAvatar(accessToken);
-      if (user) {
-        dispatch(updateUserProfile({ ...user, profileImagePath: null, avatarUrl: null }));
-        notify.success(t('ProfileUpdatedSuccess'));
-      }
-    } catch (err: any) {
-      notify.error(err.message || t('Error'));
-    }
-  };
-
   return (
     <Card
       variant="outlined"
@@ -175,7 +143,7 @@ export function PersonalInfoTab({
             </Alert>
           )}
 
-          {/* Avatar Management Card */}
+          {/* Profile Identity Card */}
           <Box
             sx={{
               p: 2.5,
@@ -187,23 +155,28 @@ export function PersonalInfoTab({
             <Stack
               direction={{ xs: 'column', sm: 'row' }}
               spacing={2.5}
-              alignItems={{ xs: 'center', sm: 'flex-start' }}
+              alignItems={{ xs: 'center', sm: 'center' }}
             >
-              <ImageUploader
-                currentImageUrl={user?.avatarUrl || user?.profileImagePath}
-                shape="circular"
-                size={88}
-                fallbackInitial={initial}
-                onUpload={handleAvatarUpload}
-                onRemove={handleAvatarRemove}
-              />
+              <Avatar
+                alt={fullName || user?.email || 'User'}
+                sx={{
+                  width: 80,
+                  height: 80,
+                  bgcolor: 'primary.main',
+                  color: 'primary.contrastText',
+                  fontSize: '2rem',
+                  fontWeight: 600,
+                }}
+              >
+                {initial}
+              </Avatar>
 
               <Box sx={{ textAlign: { xs: 'center', sm: 'start' } }}>
-                <Typography variant="subtitle2" fontWeight={600}>
-                  {t('User Profile')}
+                <Typography variant="subtitle1" fontWeight={600}>
+                  {fullName || user?.email || t('User Profile')}
                 </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5, maxWidth: 420 }}>
-                  {t.has('Upload png or jpg') ? t('Upload png or jpg') : 'Upload a profile photo (JPG, PNG, WebP up to 5MB). Changes reflect immediately.'}
+                <Typography variant="body2" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                  {user?.email || '—'}
                 </Typography>
               </Box>
             </Stack>

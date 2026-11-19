@@ -4,8 +4,8 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <RootNamespace>API</RootNamespace>
-    <UserSecretsId>aspnet-CoreStarter-API-7F3C2A91-4B6E-4D18-9C11-8E2A5F0B1D44</UserSecretsId>
+    <RootNamespace>Nasaq</RootNamespace>
+    <UserSecretsId>aspnet-Nasaq-API-7F3C2A91-4B6E-4D18-9C11-8E2A5F0B1D44</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>

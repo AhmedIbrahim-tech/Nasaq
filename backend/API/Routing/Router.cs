@@ -2,14 +2,10 @@ namespace API.Routing;
 
 public static class Router
 {
-    #region Const Params
-
     private const string Root = "api";
     private const string Version = "v1";
     private const string Rule = Root + "/" + Version + "/";
     private const string SingleRoute = "{id}";
-
-    #endregion
 
     public static class Auth
     {
@@ -20,7 +16,6 @@ public static class Router
         public const string Logout = Prefix + "/logout";
         public const string Me = Prefix + "/me";
         public const string Profile = Prefix + "/me/profile";
-        public const string Avatar = Prefix + "/me/avatar";
         public const string ChangePassword = Prefix + "/me/change-password";
         public const string FirstLoginChangePassword = Prefix + "/first-login-change-password";
     }
@@ -34,6 +29,19 @@ public static class Router
         public const string ReadAll = Prefix + "/read-all";
         public const string UnreadCount = Prefix + "/unread-count";
         public const string Recent = Prefix + "/recent";
+    }
+
+    public static class Employees
+    {
+        public const string Prefix = Rule + "employees";
+
+        public const string List = Prefix;
+        public const string Create = Prefix;
+        public const string Supervisors = Prefix + "/supervisors";
+        public const string MyProfile = Prefix + "/me";
+        public const string GetById = Prefix + "/" + SingleRoute;
+        public const string Update = Prefix + "/" + SingleRoute;
+        public const string ToggleStatus = Prefix + "/" + SingleRoute + "/status";
     }
 
     public static class Hubs

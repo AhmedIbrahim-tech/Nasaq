@@ -1,7 +1,6 @@
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -32,6 +31,7 @@ public static class WebApplicationExtensions
         CancellationToken cancellationToken = default)
     {
         var db = services.GetRequiredService<ApplicationDbContext>();
+        var logger = services.GetService<ILogger<ApplicationDbContext>>();
 
         var isConfiguredToMigrate = configuration.GetValue<bool>("Database:ApplyMigrationsOnStartup", false);
 
@@ -45,7 +45,16 @@ public static class WebApplicationExtensions
             {
                 if (pendingMigrations.Count != 0)
                 {
+                    logger?.LogInformation("Applying {Count} pending database migration(s): {Migrations}",
+                        pendingMigrations.Count, string.Join(", ", pendingMigrations));
+
                     await db.Database.MigrateAsync(cancellationToken);
+
+                    logger?.LogInformation("Database migrations applied successfully.");
+                }
+                else
+                {
+                    logger?.LogInformation("Database schema is up to date. No pending migrations.");
                 }
             }
             else
@@ -67,7 +76,13 @@ public static class WebApplicationExtensions
             }
         }
 
-        var initializer = services.GetRequiredService<DbInitializer>();
-        await initializer.SeedAsync();
+        var isConfiguredToSeed = configuration.GetValue<bool>("Database:SeedDataOnStartup", false)
+            || configuration.GetValue<bool>("DefaultAdmin:AutoSeed", false);
+
+        if (isConfiguredToSeed)
+        {
+            var initializer = services.GetRequiredService<DbInitializer>();
+            await initializer.SeedAsync();
+        }
     }
 }

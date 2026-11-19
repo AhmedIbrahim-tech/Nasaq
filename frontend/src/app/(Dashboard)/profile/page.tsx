@@ -1,7 +1,7 @@
 import { MyProfileView } from "@/modules/core/profile/views/MyProfileView";
 
 export const metadata = {
-  title: "My Profile — CoreStarter",
+  title: "My Profile — Nasaq",
   description: "View authenticated user account details and permissions",
 };
 

@@ -18,5 +18,5 @@ public sealed class EmailOptions
 
     public string DefaultFromAddress { get; set; } = "noreply@localhost";
 
-    public string DefaultFromName { get; set; } = "CoreStarter";
+    public string DefaultFromName { get; set; } = "Nasaq";
 }

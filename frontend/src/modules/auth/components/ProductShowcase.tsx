@@ -223,10 +223,10 @@ export default function ProductShowcase() {
                   letterSpacing: '0.02em',
                 }}
               >
-                CoreStarter &bull;{' '}
+                Nasaq &bull;{' '}
                 {t.has('PlatformManagement')
                   ? t('PlatformManagement')
-                  : 'Enterprise Starter Template'}
+                  : 'Attendance & Workforce Management'}
               </Typography>
             </Stack>
 

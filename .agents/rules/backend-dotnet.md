@@ -143,3 +143,26 @@ Use the `ResponseHandler` service (`backend/Application/Common/ResponseHandler.c
   logger.LogInformation("User {UserId} successfully updated profile at {Timestamp}", userId, DateTime.UtcNow);
   ```
 - Mask sensitive fields (passwords, tokens, credit cards) using `SensitiveDataMasker` before logging payloads.
+
+---
+
+## 9. Code Comments & Global Usings Policy
+
+### 9.1 Code Comments Policy (Strict)
+- **Self-Documenting Code is the Default:** Write clear, concise, self-explanatory C# code with expressive naming for classes, records, methods, and variables.
+- **Prohibited Comments:**
+  - Do NOT add XML documentation comments (`/// <summary>`) for internal application classes, controllers, endpoints, handlers, records, or DTOs unless explicitly required by an external contract.
+  - Do NOT write obvious or redundant comments that repeat what the code already expresses (e.g. `// Retrieves employees`, `// Update user details`, `// Check email`).
+  - Do NOT use decorative section headers or `#region` blocks for straightforward members.
+  - Do NOT explain basic variable assignments or trivial framework patterns.
+- **Permitted Comments (By Exception Only):**
+  - Allowed ONLY when genuinely necessary to explain non-obvious business rules, multi-stage dependent algorithms, critical execution order dependencies, non-obvious technical workarounds (e.g., `DeleteBehavior.Restrict` preventing SQL Server cascade cycles), or security-sensitive constraints (e.g., privilege escalation guards).
+  - Keep permitted comments short, focused, and explain **WHY** rather than **WHAT**.
+
+### 9.2 Global Usings Policy (Strict)
+- **Centralized Project Scope:** Each .NET project (`Domain`, `Application`, `Infrastructure`, `API`, `Tests`) maintains its own authoritative `GlobalUsings.cs` file.
+- **Compile Boundaries:** Respect Clean Architecture dependency boundaries. Never import namespaces that introduce circular dependencies, unauthorized layer leaks, or type ambiguities.
+- **No Redundant Local Directives:** When a namespace is declared in a project's `GlobalUsings.cs`, do NOT include redundant file-level `using` statements in individual source files.
+- **No Unused Directives:** Remove unused using directives from all files.
+- **No Duplication:** Never duplicate global using declarations within the same `GlobalUsings.cs` file.
+- **File-Level Usings by Exception:** Use file-level using statements only when a namespace is genuinely specific to that single file or when a global import would create naming collisions or unwanted global scope.

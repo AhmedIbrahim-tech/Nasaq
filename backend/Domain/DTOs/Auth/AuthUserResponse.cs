@@ -8,6 +8,4 @@ public sealed class AuthUserResponse
     public string? PhoneNumber { get; set; }
     public string? JobTitle { get; set; }
     public string? Department { get; set; }
-    public string? ProfileImagePath { get; set; }
-    public string? AvatarUrl { get; set; }
 }

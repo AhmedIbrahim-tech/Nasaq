@@ -1,21 +1,11 @@
-using System.Security.Claims;
-using System.Threading;
-using System.Threading.Tasks;
-using API.Controllers.Base;
-using API.Routing;
 using Application.Features.Auth.Commands.ChangePassword;
 using Application.Features.Auth.Commands.FirstLoginChangePassword;
 using Application.Features.Auth.Commands.Login;
 using Application.Features.Auth.Commands.Logout;
 using Application.Features.Auth.Commands.RefreshToken;
-using Application.Features.Auth.Commands.RemoveAvatar;
 using Application.Features.Auth.Commands.UpdateProfile;
-using Application.Features.Auth.Commands.UploadAvatar;
 using Application.Features.Auth.Queries.GetCurrentUser;
 using Domain.DTOs.Auth;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
@@ -53,16 +43,6 @@ public sealed class AuthController : ApiControllerBase
     [HttpPut(Router.Auth.Profile)]
     public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest request, CancellationToken cancellationToken) =>
         ActionResult(await _mediator.Send(new UpdateProfileCommand(CurrentUserId, request), cancellationToken));
-
-    [Authorize]
-    [HttpPost(Router.Auth.Avatar)]
-    public async Task<IActionResult> UploadAvatar(IFormFile file, CancellationToken cancellationToken) =>
-        ActionResult(await _mediator.Send(new UploadAvatarCommand(CurrentUserId, file), cancellationToken));
-
-    [Authorize]
-    [HttpDelete(Router.Auth.Avatar)]
-    public async Task<IActionResult> RemoveAvatar(CancellationToken cancellationToken) =>
-        ActionResult(await _mediator.Send(new RemoveAvatarCommand(CurrentUserId), cancellationToken));
 
     [Authorize]
     [HttpPost(Router.Auth.ChangePassword)]

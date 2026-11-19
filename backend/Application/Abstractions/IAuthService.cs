@@ -10,8 +10,6 @@ public interface IAuthService
     Task<GenericBaseResponse<object?>> LogoutAsync(LogoutRequest request, CancellationToken cancellationToken = default);
     Task<GenericBaseResponse<CurrentUserResponse>> GetCurrentUserAsync(string? userId, CancellationToken cancellationToken = default);
     Task<GenericBaseResponse<CurrentUserResponse>> UpdateProfileAsync(string? userId, UpdateProfileRequest request, CancellationToken cancellationToken = default);
-    Task<GenericBaseResponse<string>> UploadAvatarAsync(string? userId, Microsoft.AspNetCore.Http.IFormFile file, CancellationToken cancellationToken = default);
-    Task<GenericBaseResponse<bool>> RemoveAvatarAsync(string? userId, CancellationToken cancellationToken = default);
     Task<GenericBaseResponse<bool>> ChangePasswordAsync(string? userId, ChangePasswordRequest request, CancellationToken cancellationToken = default);
     Task<GenericBaseResponse<AuthResponse>> FirstLoginChangePasswordAsync(FirstLoginChangePasswordRequest request, CancellationToken cancellationToken = default);
 }

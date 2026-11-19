@@ -94,7 +94,7 @@ export const Logo: React.FC<LogoProps> = ({
     <Box
       component="img"
       src={logoSrc}
-      alt="Template Logo"
+      alt="Nasaq Logo"
       sx={{
         height: finalHeight,
         width: 'auto',

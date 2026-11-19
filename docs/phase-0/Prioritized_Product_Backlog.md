@@ -30,6 +30,7 @@
 | **US-017** | Operations | As an **Admin**, I want a daily attendance monitoring grid displaying both check-in and check-out times, GPS distance, and complete vs incomplete vs pending status. | Real-time tabular grid, multi-column sorting, search by employee name, filter by worksite, check-in status, missing check-out flag, and pending review state. |
 | **US-018** | Operations | As an **Admin**, I want to review and correct incomplete attendance records (e.g. forgotten check-out) with a mandatory reason so that records are accurate without applying unapproved penalties. | Displays incomplete record queue, manual departure time input, mandatory written rationale, immutable audit logging, no automatic point penalty. |
 | **US-019** | Audit | As an **Admin/Owner**, I want an immutable audit log of all managerial actions (point adjustments, record corrections, policy edits, exception decisions) so that accountability is guaranteed. | Chronological log of actor, action, target entity, before/after snapshot, IP address, and timestamp. |
+| **US-020** | Workforce | As an **Admin/SuperAdmin**, I want to manage employee profiles, provision system user accounts, and assign direct supervisors so that operational hierarchy and server-side data scoping are strictly enforced. | Direct supervisor assignment (1-to-many), server-side scoped queries (Supervisors view only assigned staff; unassigned hidden fail-closed), self-supervision prevention, active role validation, full audit trail. |
 
 ---
 
@@ -37,7 +38,7 @@
 
 | Story ID | Epic | User Story | Minimum Acceptance Criteria |
 |---|---|---|---|
-| **US-020** | Rewards | As an **Employee**, I want to track my progress toward the 30 Green Points reward and submit a payout request with my InstaPay / Vodafone Cash details. | Dynamic progress bar (x/30), unlock button when balance >= 30, payment method dropdown, masked phone number input, point reservation lock. |
-| **US-021** | Rewards | As an **Admin/Finance**, I want to review submitted reward claims, verify payment details, and mark payouts as Approved/Paid. | Claim queue, status transitions (Pending -> Approved -> Paid), audit record, final deduction of reserved points. |
-| **US-022** | Notifications | As an **Employee**, I want to receive in-app notifications when my leave is approved, a penalty is incurred, or a reward is processed. | Bell icon with unread badge count, notification list, tap-to-navigate to relevant detail view. |
-| **US-023** | Reporting | As an **Admin/Owner**, I want to export monthly attendance and deduction summary sheets to Excel/CSV for payroll processing. | Date range picker, staff breakdown, check-in/out timestamps, total early days, total late days, active deductions sum, one-click CSV export. |
+| **US-021** | Rewards | As an **Employee**, I want to track my progress toward the 30 Green Points reward and submit a payout request with my InstaPay / Vodafone Cash details. | Dynamic progress bar (x/30), unlock button when balance >= 30, payment method dropdown, masked phone number input, point reservation lock. |
+| **US-022** | Rewards | As an **Admin/Finance**, I want to review submitted reward claims, verify payment details, and mark payouts as Approved/Paid. | Claim queue, status transitions (Pending -> Approved -> Paid), audit record, final deduction of reserved points. |
+| **US-023** | Notifications | As an **Employee**, I want to receive in-app notifications when my leave is approved, a penalty is incurred, or a reward is processed. | Bell icon with unread badge count, notification list, tap-to-navigate to relevant detail view. |
+| **US-024** | Reporting | As an **Admin/Owner**, I want to export monthly attendance and deduction summary sheets to Excel/CSV for payroll processing. | Date range picker, staff breakdown, check-in/out timestamps, total early days, total late days, active deductions sum, one-click CSV export. |

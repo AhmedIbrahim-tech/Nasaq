@@ -19,8 +19,7 @@ public sealed class AuthService(
     SignInManager<ApplicationUser> signInManager,
     ITokenService tokenService,
     IRefreshTokenService refreshTokenService,
-    IOptions<JwtSettings> jwtSettings,
-    IFileStorageService fileStorage) : ResponseHandler, IAuthService
+    IOptions<JwtSettings> jwtSettings) : ResponseHandler, IAuthService
 {
     private const string InvalidCredentials = "Invalid email or password.";
 
@@ -130,72 +129,6 @@ public sealed class AuthService(
 
         var roles = await userManager.GetRolesAsync(user);
         return Success(AuthMapper.ToCurrentUserResponse(user, roles.ToList()), "Profile updated successfully.");
-    }
-
-    public async Task<GenericBaseResponse<string>> UploadAvatarAsync(string? userId, Microsoft.AspNetCore.Http.IFormFile file, CancellationToken cancellationToken = default)
-    {
-        if (string.IsNullOrEmpty(userId))
-            return Unauthorized<string>();
-
-        var user = await userManager.FindByIdAsync(userId);
-        if (user is null)
-            return Unauthorized<string>();
-
-        if (file is null || file.Length == 0)
-            return Fail<string>("No file was uploaded.");
-
-        await using var stream = file.OpenReadStream();
-        var storageResult = await fileStorage.SaveImageAsync(
-            stream,
-            file.FileName,
-            file.ContentType,
-            Application.Files.FileStorageCategory.Avatars,
-            cancellationToken);
-
-        if (!storageResult.Success)
-            return Fail<string>(storageResult.ErrorMessage ?? "Failed to save avatar image.");
-
-        var oldImagePath = user.ProfileImagePath;
-        user.ProfileImagePath = storageResult.RelativePathFromWebRoot;
-
-        var updateResult = await userManager.UpdateAsync(user);
-        if (!updateResult.Succeeded)
-        {
-            await fileStorage.DeleteIfExistsAsync(storageResult.RelativePathFromWebRoot, cancellationToken);
-            return Fail<string>(string.Join("; ", updateResult.Errors.Select(e => e.Description)));
-        }
-
-        if (!string.IsNullOrWhiteSpace(oldImagePath) && !string.Equals(oldImagePath, user.ProfileImagePath, StringComparison.OrdinalIgnoreCase))
-        {
-            await fileStorage.DeleteIfExistsAsync(oldImagePath, cancellationToken);
-        }
-
-        var publicUrl = fileStorage.ToPublicUrlPath(user.ProfileImagePath);
-        return Success(publicUrl, "Avatar uploaded successfully.");
-    }
-
-    public async Task<GenericBaseResponse<bool>> RemoveAvatarAsync(string? userId, CancellationToken cancellationToken = default)
-    {
-        if (string.IsNullOrEmpty(userId))
-            return Unauthorized<bool>();
-
-        var user = await userManager.FindByIdAsync(userId);
-        if (user is null)
-            return Unauthorized<bool>();
-
-        if (!string.IsNullOrWhiteSpace(user.ProfileImagePath))
-        {
-            var oldImagePath = user.ProfileImagePath;
-            user.ProfileImagePath = null;
-
-            var updateResult = await userManager.UpdateAsync(user);
-            if (!updateResult.Succeeded)
-                return Fail<bool>(string.Join("; ", updateResult.Errors.Select(e => e.Description)));
-
-            await fileStorage.DeleteIfExistsAsync(oldImagePath, cancellationToken);
-        }
-
-        return Success(true, "Avatar removed successfully.");
     }
 
     public async Task<GenericBaseResponse<bool>> ChangePasswordAsync(string? userId, ChangePasswordRequest request, CancellationToken cancellationToken = default)

@@ -1,15 +1,17 @@
-# Sharm Photographer — Scope Document v1.0 (Phase 0 Discovery Baseline)
+# NASAQ — Scope Document v1.0 (Phase 0 Discovery Baseline)
+### Client & Operating Company: Sharm Photographer
 
 > **Document Status:** Aligned & Consistent Baseline (Phase 0 Audit)  
+> **Official Product Name:** **NASAQ (نسق)**  
+> **Operating Company:** **Sharm Photographer**  
 > **Source Baseline:** `Sharm_Photographer_System_Master_Blueprint.md` & Video `Download.mp4`  
-> **Engineering Base:** CoreStarter (.NET 9 Clean Architecture + Next.js 16)  
-> **Company Name:** Sharm Photographer  
+> **Engineering Base:** CoreStarter (.NET 10 Clean Architecture + Next.js 16)  
 > **System Purpose:** Internal Employee Attendance & Workforce Management System
 
 ---
 
 ## 1. Executive Summary & Product Vision
-**Sharm Photographer** is an enterprise-grade internal **Smart Attendance and Workforce Management System** designed exclusively for managing the company's internal employees and operational processes across designated physical work locations (such as affiliated hotel sites and branches in Sharm El-Sheikh).
+**NASAQ (نسق)** is an enterprise-grade internal **Smart Attendance and Workforce Management System** developed exclusively for managing the internal employees and operational workforce of **Sharm Photographer** across designated physical work locations (such as affiliated hotel sites and branches in Sharm El-Sheikh).
 
 The platform enforces attendance governance, location compliance, and staff motivation:
 - Point-in-time geofenced GPS verification performed at the exact moments of **both Check-in and Check-out** (`DEC-005`). Continuous background location tracking is permanently excluded.

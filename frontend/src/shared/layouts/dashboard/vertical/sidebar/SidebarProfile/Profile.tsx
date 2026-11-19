@@ -13,7 +13,6 @@ import { CustomizerContext } from "@/theme/customizerContext";
 import { useLogout } from '@/modules/auth/hooks/useLogout';
 import { useAppSelector } from '@/store/hooks';
 import { useTranslations } from 'next-intl';
-import { getImageUrl } from '@/shared/utils/image.utils';
 import { formatUserRole } from '@/shared/utils/format.utils';
 
 export const Profile = () => {
@@ -34,7 +33,6 @@ export const Profile = () => {
   const rawRole = roles.length > 0 ? roles[0] : 'User';
   const displayRole = formatUserRole(rawRole, t);
   const initial = displayName.charAt(0).toUpperCase();
-  const avatarSrc = getImageUrl(user?.avatarUrl || user?.profileImagePath);
 
   return (
     <Box
@@ -60,7 +58,6 @@ export const Profile = () => {
         enterDelay={150}
       >
         <Avatar
-          src={avatarSrc}
           alt={displayName}
           sx={{
             height: 34,

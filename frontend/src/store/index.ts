@@ -12,6 +12,7 @@ import {
 import createWebStorage from "redux-persist/lib/storage/createWebStorage";
 import authReducer from "@/modules/auth/slices/auth.slice";
 import notificationsReducer from "@/modules/core/notifications/slices/notifications.slice";
+import employeesReducer from "@/modules/employees/slices/employee.slice";
 
 // SSR-safe storage with cross-tab overwrite protection for Next.js
 const createSafeStorage = () => {
@@ -97,6 +98,7 @@ export const purgeSensitiveAppState = createAction("app/purgeSensitiveState");
 const appReducer = combineReducers({
   auth: persistReducer(authPersistConfig, authReducer),
   notifications: notificationsReducer,
+  employees: employeesReducer,
 });
 
 /**
@@ -117,6 +119,7 @@ const rootReducer = (
     state = {
       auth: authState as any,
       notifications: undefined as any,
+      employees: undefined as any,
     };
   }
   return appReducer(state, action);

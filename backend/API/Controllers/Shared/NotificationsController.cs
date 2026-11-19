@@ -1,9 +1,3 @@
-using System;
-using System.Security.Claims;
-using System.Threading;
-using System.Threading.Tasks;
-using API.Controllers.Base;
-using API.Routing;
 using Application.Features.Notifications.Commands.DeleteNotification;
 using Application.Features.Notifications.Commands.MarkAllNotificationsRead;
 using Application.Features.Notifications.Commands.MarkNotificationRead;
@@ -11,9 +5,6 @@ using Application.Features.Notifications.Queries.GetNotificationById;
 using Application.Features.Notifications.Queries.GetNotificationsPage;
 using Application.Features.Notifications.Queries.GetRecentNotifications;
 using Application.Features.Notifications.Queries.GetUnreadNotificationCount;
-using Domain.Enums;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
 
