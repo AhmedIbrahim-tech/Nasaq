@@ -1,0 +1,16 @@
+global using System;
+global using System.Collections.Generic;
+global using System.Linq;
+global using System.Net;
+global using System.Threading;
+global using System.Threading.Tasks;
+global using Application.Abstractions;
+global using Domain.Authorization;
+global using Domain.Common;
+global using Domain.Entities;
+global using Domain.Enums;
+global using Domain.Identity;
+global using Domain.Repositories;
+global using FluentValidation;
+global using MediatR;
+global using Microsoft.EntityFrameworkCore;

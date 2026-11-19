@@ -1,0 +1,144 @@
+/* CoreStarter — Global Styles & Typography Configuration */
+
+/* Prevent document-level horizontal overflow across all viewports and reserve stable scrollbar gutter */
+html {
+  scrollbar-gutter: stable;
+  max-width: 100%;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Zero-flash theme background initialization */
+html.dark,
+html[data-theme-mode="dark"] {
+  color-scheme: dark;
+  background-color: #171c23;
+}
+
+html.light,
+html[data-theme-mode="light"] {
+  color-scheme: light;
+  background-color: #ffffff;
+}
+
+/* Arabic RTL Typography Fallback & Readability */
+html[dir="rtl"],
+body[dir="rtl"],
+[dir="rtl"] {
+  font-family: 'Cairo', 'Segoe UI', 'Tahoma', 'Arial', -apple-system, BlinkMacSystemFont, sans-serif;
+  text-align: right;
+  letter-spacing: normal !important;
+}
+
+[dir="rtl"] * {
+  letter-spacing: normal !important;
+}
+
+/* Enhanced Arabic Readability Type Scale without ballooning English */
+[dir="rtl"] .MuiTypography-body2 {
+  font-size: 0.875rem !important;
+  line-height: 1.5 !important;
+}
+
+[dir="rtl"] .MuiTypography-caption {
+  font-size: 0.8125rem !important;
+  line-height: 1.45 !important;
+}
+
+[dir="rtl"] .MuiTypography-body1 {
+  line-height: 1.6 !important;
+}
+
+[dir="rtl"] .MuiTypography-subtitle1,
+[dir="rtl"] .MuiTypography-subtitle2 {
+  line-height: 1.45 !important;
+}
+
+/* BiDi Isolation Helpers for Mixed-Direction Content (Emails, GUIDs, Dates, Phone Numbers, Codes) */
+.bidi-ltr {
+  direction: ltr;
+  unicode-bidi: isolate;
+  display: inline-block;
+}
+
+[dir="rtl"] [dir="ltr"] {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+[dir="rtl"] p[dir="ltr"]:not([style*="text-align"]),
+[dir="rtl"] div[dir="ltr"]:not(.MuiSwitch-root):not([style*="text-align"]),
+[dir="rtl"] input[dir="ltr"]:not([style*="text-align"]),
+[dir="rtl"] textarea[dir="ltr"]:not([style*="text-align"]) {
+  text-align: right;
+}
+
+.bidi-isolate {
+  unicode-bidi: isolate !important;
+}
+
+/* Responsive Table Container Enhancements */
+.responsive-table-container {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Bulletproof MUI Switch RTL Support — Zero clipping, perfect alignment */
+[dir="rtl"] .MuiSwitch-root {
+  direction: ltr !important;
+  overflow: visible !important;
+}
+
+[dir="rtl"] .MuiSwitch-root .MuiSwitch-track {
+  overflow: visible !important;
+}
+
+[dir="rtl"] .MuiSwitch-root .MuiSwitch-switchBase {
+  left: 0 !important;
+  right: auto !important;
+  top: 0 !important;
+}
+
+[dir="rtl"] .MuiSwitch-root.MuiSwitch-sizeSmall .MuiSwitch-switchBase:not(.Mui-checked) {
+  transform: translateX(0) !important;
+}
+
+[dir="rtl"] .MuiSwitch-root.MuiSwitch-sizeSmall .MuiSwitch-switchBase.Mui-checked {
+  transform: translateX(16px) !important;
+}
+
+[dir="rtl"] .MuiSwitch-root:not(.MuiSwitch-sizeSmall) .MuiSwitch-switchBase:not(.Mui-checked) {
+  transform: translateX(0) !important;
+}
+
+[dir="rtl"] .MuiSwitch-root:not(.MuiSwitch-sizeSmall) .MuiSwitch-switchBase.Mui-checked {
+  transform: translateX(20px) !important;
+}
+
+/* Ensure switch thumb is always a crisp distinct white knob */
+.MuiSwitch-root .MuiSwitch-thumb {
+  background-color: #ffffff !important;
+}
+
+.MuiSwitch-root .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track {
+  opacity: 1 !important;
+}
+
+/* Smooth transitions for responsive layout adjustments */
+* {
+  box-sizing: border-box;
+}

@@ -1,0 +1,15 @@
+global using System;
+global using System.Collections.Generic;
+global using System.Linq;
+global using System.Threading;
+global using System.Threading.Tasks;
+global using Application.Abstractions;
+global using Domain.Authorization;
+global using Domain.Common;
+global using Domain.Entities;
+global using Domain.Enums;
+global using Domain.Identity;
+global using Domain.Repositories;
+global using Infrastructure.Data;
+global using Microsoft.AspNetCore.Identity;
+global using Microsoft.EntityFrameworkCore;
