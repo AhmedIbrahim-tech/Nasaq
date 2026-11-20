@@ -15,6 +15,7 @@ export interface Employee {
   supervisorId?: string | null;
   supervisorName?: string | null;
   supervisorCode?: string | null;
+  profilePhoto?: string | null;
   created_Utc: string;
   created_By?: string | null;
   updated_Utc?: string | null;
@@ -45,6 +46,7 @@ export interface CreateEmployeeRequest {
   password?: string;
   userId?: string;
   supervisorId?: string | null;
+  photo?: File | null;
 }
 
 export interface UpdateEmployeeRequest {
@@ -58,6 +60,8 @@ export interface UpdateEmployeeRequest {
   userRole?: string;
   userId?: string;
   supervisorId?: string | null;
+  photo?: File | null;
+  removeProfilePhoto?: boolean;
 }
 
 export interface SupervisorLookup {

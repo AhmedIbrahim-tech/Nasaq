@@ -9,6 +9,11 @@ public class TestFixture : IDisposable
     public UserManager<ApplicationUser> UserManager { get; }
     public RoleManager<ApplicationRole> RoleManager { get; }
     public FakeTemporaryPasswordService PasswordService { get; }
+    public IUnitOfWork UnitOfWork { get; }
+    public FileService FileService { get; }
+    public FileValidationService ValidationService { get; }
+    public IOptions<StorageOptions> StorageOptionsWrapper { get; }
+    public string TempStorageDirectory { get; }
 
     public ApplicationUser SuperAdminUser { get; private set; } = null!;
     public ApplicationUser AdminUser { get; private set; } = null!;
@@ -53,6 +58,22 @@ public class TestFixture : IDisposable
         UserManager = ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
         RoleManager = ServiceProvider.GetRequiredService<RoleManager<ApplicationRole>>();
         PasswordService = new FakeTemporaryPasswordService();
+
+        TempStorageDirectory = Path.Combine(Path.GetTempPath(), "NASAQ_Test_EmployeePhoto_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(TempStorageDirectory);
+
+        var storageOptions = new StorageOptions
+        {
+            RootPath = TempStorageDirectory,
+            MaxFileSizeBytes = 10 * 1024 * 1024,
+            MaxFilesPerUpload = 5,
+            AllowedExtensions = [".pdf", ".jpg", ".jpeg", ".png", ".webp", ".docx", ".xlsx"]
+        };
+        StorageOptionsWrapper = Options.Create(storageOptions);
+
+        UnitOfWork = new UnitOfWork(DbContext);
+        FileService = new FileService(StorageOptionsWrapper, Microsoft.Extensions.Logging.Abstractions.NullLogger<FileService>.Instance);
+        ValidationService = new FileValidationService(StorageOptionsWrapper);
     }
 
     public async Task InitializeAsync()
@@ -263,5 +284,15 @@ public class TestFixture : IDisposable
     {
         DbContext.Dispose();
         ServiceProvider.Dispose();
+        if (Directory.Exists(TempStorageDirectory))
+        {
+            try
+            {
+                Directory.Delete(TempStorageDirectory, recursive: true);
+            }
+            catch
+            {
+            }
+        }
     }
 }

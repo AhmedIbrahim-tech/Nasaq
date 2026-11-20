@@ -8,6 +8,7 @@ public interface IApplicationDbContext
     DbSet<RefreshToken> RefreshTokens { get; }
     DbSet<AppNotification> AppNotifications { get; }
     DbSet<Employee> Employees { get; }
+    DbSet<StoredFile> StoredFiles { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     EntityEntry<TEntity> Entry<TEntity>(TEntity entity) where TEntity : class;

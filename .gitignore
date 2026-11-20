@@ -370,7 +370,7 @@ Web/wwwroot/uploads/
 .specify/
 
 
-Files/
+/Files/
 appsettings.Development.json
 modernize-next
 modernize
@@ -379,3 +379,7 @@ modernize
 .env*.local
 .env.local
 *.pem
+
+# NASAQ Local File Storage
+NASAQ_Storage/
+

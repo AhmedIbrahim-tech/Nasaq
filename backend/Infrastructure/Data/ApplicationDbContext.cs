@@ -10,6 +10,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<AppNotification> AppNotifications => Set<AppNotification>();
     public DbSet<Employee> Employees => Set<Employee>();
+    public DbSet<StoredFile> StoredFiles => Set<StoredFile>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

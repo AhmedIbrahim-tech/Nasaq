@@ -122,6 +122,9 @@ namespace Infrastructure.Data.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<Guid?>("ProfilePhoto")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<Guid?>("SupervisorId")
                         .HasColumnType("uniqueidentifier");
 
@@ -147,6 +150,8 @@ namespace Infrastructure.Data.Migrations
 
                     b.HasIndex("IsActive");
 
+                    b.HasIndex("ProfilePhoto");
+
                     b.HasIndex("SupervisorId");
 
                     b.HasIndex("UserId")
@@ -154,6 +159,74 @@ namespace Infrastructure.Data.Migrations
                         .HasFilter("[UserId] IS NOT NULL");
 
                     b.ToTable("Employees", (string)null);
+                });
+
+            modelBuilder.Entity("Domain.Entities.StoredFile", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Created_By")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("Created_Utc")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<long>("FileSize")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("OriginalFileName")
+                        .IsRequired()
+                        .HasMaxLength(260)
+                        .HasColumnType("nvarchar(260)");
+
+                    b.Property<Guid>("OwnerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("RelativePath")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("StoredFileName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Updated_By")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("Updated_Utc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("UploadedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UploadedBy")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Category", "OwnerId")
+                        .HasDatabaseName("IX_StoredFiles_Category_OwnerId");
+
+                    b.ToTable("StoredFiles", (string)null);
                 });
 
             modelBuilder.Entity("Domain.Identity.ApplicationRole", b =>
@@ -427,6 +500,11 @@ namespace Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Domain.Entities.Employee", b =>
                 {
+                    b.HasOne("Domain.Entities.StoredFile", null)
+                        .WithMany()
+                        .HasForeignKey("ProfilePhoto")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("Domain.Entities.Employee", "Supervisor")
                         .WithMany("SupervisedEmployees")
                         .HasForeignKey("SupervisorId")

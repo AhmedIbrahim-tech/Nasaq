@@ -72,9 +72,32 @@ export const employeeService = {
   },
 
   async createEmployee(data: CreateEmployeeRequest): Promise<Employee> {
+    const formData = new FormData();
+    formData.append("employeeCode", data.employeeCode);
+    formData.append("firstName", data.firstName);
+    formData.append("lastName", data.lastName);
+    formData.append("email", data.email);
+    if (data.phoneNumber) formData.append("phoneNumber", data.phoneNumber);
+    if (data.department) formData.append("department", data.department);
+    if (data.jobTitle) formData.append("jobTitle", data.jobTitle);
+    formData.append("hireDate", data.hireDate);
+    if (data.supervisorId) formData.append("supervisorId", data.supervisorId);
+    if (data.createUserAccount !== undefined) {
+      formData.append("createUserAccount", String(data.createUserAccount));
+    }
+    if (data.userRole) formData.append("userRole", data.userRole);
+    if (data.password) formData.append("password", data.password);
+    if (data.userId) formData.append("userId", data.userId);
+    if (data.photo) formData.append("profilePhoto", data.photo);
+
     const response = await api.post<GenericBaseResponse<Employee>>(
       Router.Employees.Create,
-      data
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
     );
     if (!response.data.data) {
       throw new Error(response.data.message || "Failed to create employee.");
@@ -83,9 +106,32 @@ export const employeeService = {
   },
 
   async updateEmployee(id: string, data: UpdateEmployeeRequest): Promise<Employee> {
+    const formData = new FormData();
+    formData.append("firstName", data.firstName);
+    formData.append("lastName", data.lastName);
+    formData.append("email", data.email);
+    if (data.phoneNumber) formData.append("phoneNumber", data.phoneNumber);
+    if (data.department) formData.append("department", data.department);
+    if (data.jobTitle) formData.append("jobTitle", data.jobTitle);
+    formData.append("hireDate", data.hireDate);
+    if (data.supervisorId) formData.append("supervisorId", data.supervisorId);
+    if (data.userRole) formData.append("userRole", data.userRole);
+    if (data.userId) formData.append("userId", data.userId);
+    if (data.removeProfilePhoto !== undefined) {
+      formData.append("removeProfilePhoto", String(data.removeProfilePhoto));
+    }
+    if (data.photo) {
+      formData.append("profilePhoto", data.photo);
+    }
+
     const response = await api.put<GenericBaseResponse<Employee>>(
       Router.Employees.Update(id),
-      data
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
     );
     if (!response.data.data) {
       throw new Error(response.data.message || "Failed to update employee.");

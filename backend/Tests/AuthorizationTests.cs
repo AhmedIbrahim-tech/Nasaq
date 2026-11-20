@@ -21,6 +21,8 @@ public class AuthorizationTests : IAsyncLifetime
         var adminContext = _fixture.CreateUserContext(_fixture.AdminUser, RoleNames.Admin);
         var handler = new UpdateEmployeeHandler(
             _fixture.DbContext,
+            _fixture.UnitOfWork,
+            _fixture.FileService,
             adminContext,
             _fixture.UserManager,
             _fixture.RoleManager);
@@ -57,6 +59,8 @@ public class AuthorizationTests : IAsyncLifetime
         var superAdminContext = _fixture.CreateUserContext(_fixture.SuperAdminUser, RoleNames.SuperAdmin);
         var handler = new CreateEmployeeHandler(
             _fixture.DbContext,
+            _fixture.UnitOfWork,
+            _fixture.FileService,
             superAdminContext,
             _fixture.UserManager,
             _fixture.RoleManager,
@@ -96,6 +100,8 @@ public class AuthorizationTests : IAsyncLifetime
         var supervisorContext = _fixture.CreateUserContext(_fixture.SupervisorAUser, RoleNames.Supervisor);
         var updateHandler = new UpdateEmployeeHandler(
             _fixture.DbContext,
+            _fixture.UnitOfWork,
+            _fixture.FileService,
             supervisorContext,
             _fixture.UserManager,
             _fixture.RoleManager);
@@ -121,6 +127,8 @@ public class AuthorizationTests : IAsyncLifetime
 
         var createHandler = new CreateEmployeeHandler(
             _fixture.DbContext,
+            _fixture.UnitOfWork,
+            _fixture.FileService,
             supervisorContext,
             _fixture.UserManager,
             _fixture.RoleManager,
@@ -152,6 +160,8 @@ public class AuthorizationTests : IAsyncLifetime
         var employeeContext = _fixture.CreateUserContext(_fixture.Employee1User, RoleNames.Employee);
         var updateHandler = new UpdateEmployeeHandler(
             _fixture.DbContext,
+            _fixture.UnitOfWork,
+            _fixture.FileService,
             employeeContext,
             _fixture.UserManager,
             _fixture.RoleManager);
@@ -238,6 +248,8 @@ public class AuthorizationTests : IAsyncLifetime
 
         var updateHandler = new UpdateEmployeeHandler(
             _fixture.DbContext,
+            _fixture.UnitOfWork,
+            _fixture.FileService,
             adminContext,
             _fixture.UserManager,
             _fixture.RoleManager);
@@ -302,6 +314,8 @@ public class AuthorizationTests : IAsyncLifetime
         var adminContext = _fixture.CreateUserContext(_fixture.AdminUser, RoleNames.Admin);
         var handler = new UpdateEmployeeHandler(
             _fixture.DbContext,
+            _fixture.UnitOfWork,
+            _fixture.FileService,
             adminContext,
             _fixture.UserManager,
             _fixture.RoleManager);
@@ -335,6 +349,8 @@ public class AuthorizationTests : IAsyncLifetime
         var adminContext = _fixture.CreateUserContext(_fixture.AdminUser, RoleNames.Admin);
         var handler = new UpdateEmployeeHandler(
             _fixture.DbContext,
+            _fixture.UnitOfWork,
+            _fixture.FileService,
             adminContext,
             _fixture.UserManager,
             _fixture.RoleManager);

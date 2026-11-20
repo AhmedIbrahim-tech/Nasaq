@@ -140,6 +140,7 @@ export const EmployeeListView: React.FC = () => {
           createUserAccount: formData.createUserAccount,
           userRole: formData.createUserAccount ? formData.userRole : undefined,
           password: formData.createUserAccount && formData.password ? formData.password : undefined,
+          photo: formData.photo || undefined,
         };
         await dispatch(createEmployeeThunk(payload)).unwrap();
         notify.success(t("EmployeeCreatedSuccess"));
@@ -154,6 +155,8 @@ export const EmployeeListView: React.FC = () => {
           hireDate: formData.hireDate,
           supervisorId: formData.supervisorId !== undefined ? formData.supervisorId : null,
           userRole: formData.userRole || undefined,
+          photo: formData.photo || undefined,
+          removeProfilePhoto: formData.removeProfilePhoto,
         };
         await dispatch(
           updateEmployeeThunk({ id: selectedEmployee.id, data: payload })

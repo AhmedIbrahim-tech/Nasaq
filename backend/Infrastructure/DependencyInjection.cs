@@ -25,6 +25,7 @@ public static class DependencyInjection
         services.Configure<EmailOptions>(configuration.GetSection(EmailOptions.SectionName));
         services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
         services.Configure<DefaultAdminOptions>(configuration.GetSection(DefaultAdminOptions.SectionName));
+        services.Configure<StorageOptions>(configuration.GetSection(StorageOptions.SectionName));
 
         var protectedUsersSection = configuration.GetSection(ProtectedUsersOptions.SectionName);
         if (protectedUsersSection.Exists())
@@ -84,6 +85,9 @@ public static class DependencyInjection
         services.AddScoped<ICurrentLanguage, CurrentLanguage>();
         services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<ITemporaryPasswordService, TemporaryPasswordService>();
+        services.AddScoped<IFileService, FileService>();
+        services.AddScoped<IFileValidationService, FileValidationService>();
+        services.AddScoped<IFileAccessAuthorizer, FileAccessAuthorizer>();
         services.AddScoped<DbInitializer>();
 
         return services;

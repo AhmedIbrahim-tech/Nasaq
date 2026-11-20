@@ -16,8 +16,12 @@ import Typography from "@mui/material/Typography";
 import Alert from "@mui/material/Alert";
 import CircularProgress from "@mui/material/CircularProgress";
 import Divider from "@mui/material/Divider";
+import Avatar from "@mui/material/Avatar";
+import Stack from "@mui/material/Stack";
+import { IconUser, IconCamera, IconTrash } from "@tabler/icons-react";
 import { useTranslations } from "next-intl";
 import { RoleNames } from "@/shared/constants/roles";
+import { Router } from "@/lib/api/router";
 import type { Employee, SupervisorLookup } from "../types";
 
 interface EmployeeFormDialogProps {
@@ -74,6 +78,19 @@ export const EmployeeFormDialog: React.FC<EmployeeFormDialogProps> = ({
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const [removePhotoRequested, setRemovePhotoRequested] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (photoPreview && photoPreview.startsWith("blob:")) {
+        URL.revokeObjectURL(photoPreview);
+      }
+    };
+  }, [photoPreview]);
 
   useEffect(() => {
     if (mode === "edit" && employee) {
@@ -93,6 +110,20 @@ export const EmployeeFormDialog: React.FC<EmployeeFormDialogProps> = ({
         password: "",
         supervisorId: employee.supervisorId || null,
       });
+      if (photoPreview && photoPreview.startsWith("blob:")) {
+        URL.revokeObjectURL(photoPreview);
+      }
+      setPhoto(null);
+      setPhotoError(null);
+      setRemovePhotoRequested(false);
+      if (employee.profilePhoto) {
+        setPhotoPreview(Router.Files.Download(employee.profilePhoto));
+      } else {
+        setPhotoPreview(null);
+      }
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     } else {
       setFormData({
         employeeCode: "",
@@ -108,9 +139,58 @@ export const EmployeeFormDialog: React.FC<EmployeeFormDialogProps> = ({
         password: "",
         supervisorId: null,
       });
+      if (photoPreview && photoPreview.startsWith("blob:")) {
+        URL.revokeObjectURL(photoPreview);
+      }
+      setPhoto(null);
+      setPhotoPreview(null);
+      setPhotoError(null);
+      setRemovePhotoRequested(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
     setErrors({});
   }, [mode, employee, open]);
+
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPhotoError(null);
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/jpg"];
+    if (!allowedTypes.includes(file.type.toLowerCase())) {
+      setPhotoError(t("InvalidImageFile"));
+      return;
+    }
+
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      setPhotoError(t("ProfilePhotoHint"));
+      return;
+    }
+
+    if (photoPreview && photoPreview.startsWith("blob:")) {
+      URL.revokeObjectURL(photoPreview);
+    }
+
+    setPhoto(file);
+    setPhotoPreview(URL.createObjectURL(file));
+    setRemovePhotoRequested(false);
+  };
+
+  const handleRemovePhoto = () => {
+    if (photoPreview && photoPreview.startsWith("blob:")) {
+      URL.revokeObjectURL(photoPreview);
+    }
+    setPhoto(null);
+    setPhotoPreview(null);
+    setPhotoError(null);
+    setRemovePhotoRequested(true);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -141,7 +221,15 @@ export const EmployeeFormDialog: React.FC<EmployeeFormDialogProps> = ({
     e.preventDefault();
     if (!validate()) return;
 
-    await onSubmit(formData);
+    if (mode === "create") {
+      await onSubmit({ ...formData, photo });
+    } else {
+      await onSubmit({
+        ...formData,
+        photo,
+        removeProfilePhoto: removePhotoRequested,
+      });
+    }
   };
 
   const allowedRoles = isSuperAdmin
@@ -157,6 +245,79 @@ export const EmployeeFormDialog: React.FC<EmployeeFormDialogProps> = ({
 
         <DialogContent dividers sx={{ p: 3 }}>
           <Grid container spacing={2.5}>
+            {/* Optional Profile Photo Selector */}
+            <Grid size={{ xs: 12 }}>
+              <Box
+                sx={{
+                  p: 2,
+                  border: "1px dashed",
+                  borderColor: photoError ? "error.main" : "divider",
+                  borderRadius: 2,
+                  bgcolor: "action.hover",
+                }}
+              >
+                <Stack direction={{ xs: "column", sm: "row" }} spacing={2.5} alignItems="center">
+                  <Avatar
+                    src={photoPreview || undefined}
+                    sx={{
+                      width: 80,
+                      height: 80,
+                      bgcolor: "primary.light",
+                      color: "primary.main",
+                      border: "2px solid",
+                      borderColor: "divider",
+                    }}
+                  >
+                    {!photoPreview && <IconUser size={44} />}
+                  </Avatar>
+
+                  <Box sx={{ flexGrow: 1, textAlign: { xs: "center", sm: "start" } }}>
+                    <Typography variant="subtitle2" fontWeight={600}>
+                      {t("ProfilePhoto")}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1.5 }}>
+                      {t("ProfilePhotoHint")}
+                    </Typography>
+
+                    <Stack direction="row" spacing={1} justifyContent={{ xs: "center", sm: "flex-start" }}>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/jpg"
+                        onChange={handlePhotoSelect}
+                        style={{ display: "none" }}
+                      />
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={<IconCamera size={16} />}
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        {photo || photoPreview ? t("ChangePhoto") : t("SelectProfilePhoto")}
+                      </Button>
+                      {(photo || photoPreview) && (
+                        <Button
+                          size="small"
+                          color="error"
+                          variant="text"
+                          startIcon={<IconTrash size={16} />}
+                          onClick={handleRemovePhoto}
+                        >
+                          {t("RemovePhoto")}
+                        </Button>
+                      )}
+                    </Stack>
+
+                    {photoError && (
+                      <Typography variant="caption" color="error" display="block" sx={{ mt: 1 }}>
+                        {photoError}
+                      </Typography>
+                    )}
+                  </Box>
+                </Stack>
+              </Box>
+            </Grid>
+
             {/* Employee Code */}
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField

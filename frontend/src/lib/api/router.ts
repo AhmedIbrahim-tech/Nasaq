@@ -34,6 +34,12 @@ export const Router = {
     ToggleStatus: (id: string) => `${PREFIX}/employees/${encodeURIComponent(id)}/status`,
   },
 
+  Files: {
+    Prefix: `${PREFIX}/files`,
+    GetById: (id: string) => `${PREFIX}/files/${encodeURIComponent(id)}`,
+    Download: (id: string) => `${PREFIX}/files/${encodeURIComponent(id)}/download`,
+  },
+
   Hubs: {
     Notifications: `${PREFIX}/hubs/notifications`,
   },
