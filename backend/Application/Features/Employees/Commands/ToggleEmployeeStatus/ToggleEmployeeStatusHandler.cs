@@ -61,6 +61,7 @@ public sealed class ToggleEmployeeStatusHandler(
             IsActive = employee.IsActive,
             UserId = employee.UserId,
             UserRole = userRole,
+            ProfilePhoto = employee.ProfilePhoto,
             Created_Utc = employee.Created_Utc,
             Created_By = employee.Created_By,
             Updated_Utc = employee.Updated_Utc,

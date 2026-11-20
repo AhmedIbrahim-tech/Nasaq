@@ -2,15 +2,25 @@ namespace Application.Features.Employees.Commands.UpdateEmployee;
 
 public sealed class UpdateEmployeeHandler(
     IApplicationDbContext dbContext,
+    IUnitOfWork unitOfWork,
+    IFileService fileService,
     ICurrentUser currentUser,
     UserManager<ApplicationUser> userManager,
-    RoleManager<ApplicationRole> roleManager)
+    RoleManager<ApplicationRole> roleManager,
+    ILogger<UpdateEmployeeHandler>? logger = null)
     : IRequestHandler<UpdateEmployeeCommand, GenericBaseResponse<EmployeeDto>>
 {
     public async Task<GenericBaseResponse<EmployeeDto>> Handle(
         UpdateEmployeeCommand request,
         CancellationToken cancellationToken)
     {
+        if (request.ProfilePhoto != null && request.RemoveProfilePhoto)
+        {
+            return GenericBaseResponse<EmployeeDto>.Fail(
+                "Cannot upload a new profile photo and request removal at the same time.",
+                HttpStatusCode.BadRequest);
+        }
+
         var employee = await dbContext.Employees
             .Include(e => e.User)
             .Include(e => e.Supervisor)
@@ -32,7 +42,6 @@ public sealed class UpdateEmployeeHandler(
             return GenericBaseResponse<EmployeeDto>.Conflict($"Email address '{normalizedEmail}' is already used by another employee.");
         }
 
-        // Prevent privilege escalation: non-SuperAdmin cannot assign SuperAdmin role
         var requestedRole = request.UserRole?.Trim();
         if (!string.IsNullOrWhiteSpace(requestedRole))
         {
@@ -49,88 +58,48 @@ public sealed class UpdateEmployeeHandler(
             }
         }
 
-        string? assignedRole = null;
+        ApplicationUser? linkedUser = null;
+        ApplicationUser? newExistingUser = null;
 
         if (employee.UserId != null)
         {
-            var user = await userManager.FindByIdAsync(employee.UserId);
-            if (user != null)
+            linkedUser = await userManager.FindByIdAsync(employee.UserId);
+            if (linkedUser != null)
             {
-                var currentRoles = await userManager.GetRolesAsync(user);
+                var userRoles = await userManager.GetRolesAsync(linkedUser);
 
-                // Prevent privilege escalation: non-SuperAdmin cannot modify a SuperAdmin account
-                if (currentRoles.Contains(RoleNames.SuperAdmin, StringComparer.OrdinalIgnoreCase) && !currentUser.IsSuperAdmin)
+                if (userRoles.Contains(RoleNames.SuperAdmin, StringComparer.OrdinalIgnoreCase) && !currentUser.IsSuperAdmin)
                 {
                     return GenericBaseResponse<EmployeeDto>.Fail(
                         "Permission denied: Only SuperAdmin can modify an account with SuperAdmin role.",
                         HttpStatusCode.Forbidden);
                 }
 
-                user.FullName = $"{request.FirstName.Trim()} {request.LastName.Trim()}";
-                user.JobTitle = request.JobTitle?.Trim();
-                user.Department = request.Department?.Trim();
-
-                if (!string.Equals(user.Email, normalizedEmail, StringComparison.OrdinalIgnoreCase))
+                if (!string.Equals(linkedUser.Email, normalizedEmail, StringComparison.OrdinalIgnoreCase))
                 {
                     var emailOwner = await userManager.FindByEmailAsync(normalizedEmail);
-                    if (emailOwner != null && emailOwner.Id != user.Id)
+                    if (emailOwner != null && emailOwner.Id != linkedUser.Id)
                     {
                         return GenericBaseResponse<EmployeeDto>.Conflict($"User account with email '{normalizedEmail}' already exists.");
                     }
-                    user.Email = normalizedEmail;
-                    user.UserName = normalizedEmail;
-                }
-
-                await userManager.UpdateAsync(user);
-
-                if (!string.IsNullOrWhiteSpace(requestedRole))
-                {
-                    await userManager.RemoveFromRolesAsync(user, currentRoles);
-                    if (await roleManager.RoleExistsAsync(requestedRole))
-                    {
-                        await userManager.AddToRoleAsync(user, requestedRole);
-                    }
-                    assignedRole = requestedRole;
-                }
-                else
-                {
-                    assignedRole = currentRoles.FirstOrDefault();
                 }
             }
         }
         else if (!string.IsNullOrWhiteSpace(request.UserId))
         {
-            var existingUser = await userManager.FindByIdAsync(request.UserId.Trim());
-            if (existingUser == null)
+            newExistingUser = await userManager.FindByIdAsync(request.UserId.Trim());
+            if (newExistingUser == null)
             {
                 return GenericBaseResponse<EmployeeDto>.NotFound($"User account with ID '{request.UserId}' was not found.");
             }
 
             var userAlreadyLinked = await dbContext.Employees
                 .AsNoTracking()
-                .AnyAsync(e => e.UserId == existingUser.Id && e.Id != request.Id, cancellationToken);
+                .AnyAsync(e => e.UserId == newExistingUser.Id && e.Id != request.Id, cancellationToken);
 
             if (userAlreadyLinked)
             {
                 return GenericBaseResponse<EmployeeDto>.Conflict("The specified user account is already linked to another employee.");
-            }
-
-            employee.UserId = existingUser.Id;
-
-            if (!string.IsNullOrWhiteSpace(requestedRole))
-            {
-                var currentRoles = await userManager.GetRolesAsync(existingUser);
-                await userManager.RemoveFromRolesAsync(existingUser, currentRoles);
-                if (await roleManager.RoleExistsAsync(requestedRole))
-                {
-                    await userManager.AddToRoleAsync(existingUser, requestedRole);
-                }
-                assignedRole = requestedRole;
-            }
-            else
-            {
-                var currentRoles = await userManager.GetRolesAsync(existingUser);
-                assignedRole = currentRoles.FirstOrDefault();
             }
         }
 
@@ -148,7 +117,6 @@ public sealed class UpdateEmployeeHandler(
 
             if (request.SupervisorId.HasValue)
             {
-                // Prevent self-supervision
                 if (request.SupervisorId.Value == employee.Id)
                 {
                     return GenericBaseResponse<EmployeeDto>.Fail(
@@ -187,52 +155,265 @@ public sealed class UpdateEmployeeHandler(
                     return GenericBaseResponse<EmployeeDto>.Fail("The selected employee does not have a supervisor or administrative role.");
                 }
 
-                employee.SupervisorId = request.SupervisorId;
                 supervisorName = supervisor.FullName;
                 supervisorCode = supervisor.EmployeeCode;
             }
             else
             {
-                employee.SupervisorId = null;
                 supervisorName = null;
                 supervisorCode = null;
             }
         }
 
-        employee.FirstName = request.FirstName.Trim();
-        employee.LastName = request.LastName.Trim();
-        employee.Email = normalizedEmail;
-        employee.PhoneNumber = request.PhoneNumber?.Trim();
-        employee.Department = request.Department?.Trim();
-        employee.JobTitle = request.JobTitle?.Trim();
-        employee.HireDate = request.HireDate;
+        string? assignedRole = null;
+        string? newCommittedPath = null;
+        string? oldPhysicalPathToDelete = null;
+        var commitAttempted = false;
+        var committed = false;
 
-        await dbContext.SaveChangesAsync(cancellationToken);
+        await unitOfWork.BeginTransactionAsync(cancellationToken);
 
-        var dto = new EmployeeDto
+        try
         {
-            Id = employee.Id,
-            EmployeeCode = employee.EmployeeCode,
-            FirstName = employee.FirstName,
-            LastName = employee.LastName,
-            FullName = employee.FullName,
-            Email = employee.Email,
-            PhoneNumber = employee.PhoneNumber,
-            Department = employee.Department,
-            JobTitle = employee.JobTitle,
-            HireDate = employee.HireDate,
-            IsActive = employee.IsActive,
-            UserId = employee.UserId,
-            UserRole = assignedRole,
-            SupervisorId = employee.SupervisorId,
-            SupervisorName = supervisorName,
-            SupervisorCode = supervisorCode,
-            Created_Utc = employee.Created_Utc,
-            Created_By = employee.Created_By,
-            Updated_Utc = employee.Updated_Utc,
-            Updated_By = employee.Updated_By
-        };
+            if (linkedUser != null)
+            {
+                var currentRoles = (await userManager.GetRolesAsync(linkedUser)).ToList();
 
-        return GenericBaseResponse<EmployeeDto>.Success(dto, "Employee updated successfully.");
+                linkedUser.FullName = $"{request.FirstName.Trim()} {request.LastName.Trim()}";
+                linkedUser.JobTitle = request.JobTitle?.Trim();
+                linkedUser.Department = request.Department?.Trim();
+
+                if (!string.Equals(linkedUser.Email, normalizedEmail, StringComparison.OrdinalIgnoreCase))
+                {
+                    linkedUser.Email = normalizedEmail;
+                    linkedUser.UserName = normalizedEmail;
+                }
+
+                var updateResult = await userManager.UpdateAsync(linkedUser);
+                if (!updateResult.Succeeded)
+                {
+                    await unitOfWork.RollbackAsync();
+                    var errors = updateResult.Errors.Select(e => e.Description).ToList();
+                    return GenericBaseResponse<EmployeeDto>.Fail(
+                        "Failed to update user account: " + string.Join("; ", errors),
+                        errors: errors);
+                }
+
+                if (!string.IsNullOrWhiteSpace(requestedRole))
+                {
+                    if (!currentRoles.Contains(requestedRole, StringComparer.OrdinalIgnoreCase))
+                    {
+                        if (currentRoles.Count > 0)
+                        {
+                            var removeResult = await userManager.RemoveFromRolesAsync(linkedUser, currentRoles);
+                            if (!removeResult.Succeeded)
+                            {
+                                await unitOfWork.RollbackAsync();
+                                var errors = removeResult.Errors.Select(e => e.Description).ToList();
+                                return GenericBaseResponse<EmployeeDto>.Fail(
+                                    "Failed to update user roles: " + string.Join("; ", errors),
+                                    errors: errors);
+                            }
+                        }
+
+                        if (await roleManager.RoleExistsAsync(requestedRole))
+                        {
+                            var addResult = await userManager.AddToRoleAsync(linkedUser, requestedRole);
+                            if (!addResult.Succeeded)
+                            {
+                                await unitOfWork.RollbackAsync();
+                                var errors = addResult.Errors.Select(e => e.Description).ToList();
+                                return GenericBaseResponse<EmployeeDto>.Fail(
+                                    "Failed to assign role to user account: " + string.Join("; ", errors),
+                                    errors: errors);
+                            }
+                        }
+                    }
+                    assignedRole = requestedRole;
+                }
+                else
+                {
+                    assignedRole = currentRoles.FirstOrDefault();
+                }
+            }
+            else if (newExistingUser != null)
+            {
+                var currentRoles = (await userManager.GetRolesAsync(newExistingUser)).ToList();
+
+                employee.UserId = newExistingUser.Id;
+
+                if (!string.IsNullOrWhiteSpace(requestedRole))
+                {
+                    if (!currentRoles.Contains(requestedRole, StringComparer.OrdinalIgnoreCase))
+                    {
+                        if (currentRoles.Count > 0)
+                        {
+                            var removeResult = await userManager.RemoveFromRolesAsync(newExistingUser, currentRoles);
+                            if (!removeResult.Succeeded)
+                            {
+                                await unitOfWork.RollbackAsync();
+                                var errors = removeResult.Errors.Select(e => e.Description).ToList();
+                                return GenericBaseResponse<EmployeeDto>.Fail(
+                                    "Failed to update user roles: " + string.Join("; ", errors),
+                                    errors: errors);
+                            }
+                        }
+
+                        if (await roleManager.RoleExistsAsync(requestedRole))
+                        {
+                            var addResult = await userManager.AddToRoleAsync(newExistingUser, requestedRole);
+                            if (!addResult.Succeeded)
+                            {
+                                await unitOfWork.RollbackAsync();
+                                var errors = addResult.Errors.Select(e => e.Description).ToList();
+                                return GenericBaseResponse<EmployeeDto>.Fail(
+                                    "Failed to assign role to user account: " + string.Join("; ", errors),
+                                    errors: errors);
+                            }
+                        }
+                    }
+                    assignedRole = requestedRole;
+                }
+                else
+                {
+                    assignedRole = currentRoles.FirstOrDefault();
+                }
+            }
+
+            employee.SupervisorId = request.SupervisorId;
+
+            if (request.RemoveProfilePhoto)
+            {
+                if (employee.ProfilePhoto.HasValue)
+                {
+                    var oldStoredFile = await dbContext.StoredFiles
+                        .FirstOrDefaultAsync(f => f.Id == employee.ProfilePhoto.Value, cancellationToken);
+                    if (oldStoredFile != null)
+                    {
+                        oldPhysicalPathToDelete = oldStoredFile.RelativePath;
+                        dbContext.StoredFiles.Remove(oldStoredFile);
+                    }
+                    employee.ProfilePhoto = null;
+                }
+            }
+            else if (request.ProfilePhoto != null)
+            {
+                if (employee.ProfilePhoto.HasValue)
+                {
+                    var oldStoredFile = await dbContext.StoredFiles
+                        .FirstOrDefaultAsync(f => f.Id == employee.ProfilePhoto.Value, cancellationToken);
+                    if (oldStoredFile != null)
+                    {
+                        oldPhysicalPathToDelete = oldStoredFile.RelativePath;
+                        dbContext.StoredFiles.Remove(oldStoredFile);
+                    }
+                }
+
+                var newStoredFile = await fileService.SaveAsync(
+                    request.ProfilePhoto,
+                    FileCategory.Employees,
+                    employee.Id,
+                    cancellationToken);
+
+                newCommittedPath = newStoredFile.RelativePath;
+                employee.ProfilePhoto = newStoredFile.Id;
+            }
+
+            employee.FirstName = request.FirstName.Trim();
+            employee.LastName = request.LastName.Trim();
+            employee.Email = normalizedEmail;
+            employee.PhoneNumber = request.PhoneNumber?.Trim();
+            employee.Department = request.Department?.Trim();
+            employee.JobTitle = request.JobTitle?.Trim();
+            employee.HireDate = request.HireDate;
+
+            await dbContext.SaveChangesAsync(cancellationToken);
+
+            commitAttempted = true;
+            await unitOfWork.CommitAsync();
+            committed = true;
+
+            if (oldPhysicalPathToDelete != null)
+            {
+                try
+                {
+                    await fileService.DeleteAsync(oldPhysicalPathToDelete, CancellationToken.None);
+                }
+                catch (Exception delEx)
+                {
+                    logger?.LogWarning(delEx, "Failed to delete old physical file '{Path}' after employee photo update.", oldPhysicalPathToDelete);
+                }
+            }
+
+            var dto = new EmployeeDto
+            {
+                Id = employee.Id,
+                EmployeeCode = employee.EmployeeCode,
+                FirstName = employee.FirstName,
+                LastName = employee.LastName,
+                FullName = employee.FullName,
+                Email = employee.Email,
+                PhoneNumber = employee.PhoneNumber,
+                Department = employee.Department,
+                JobTitle = employee.JobTitle,
+                HireDate = employee.HireDate,
+                IsActive = employee.IsActive,
+                UserId = employee.UserId,
+                UserRole = assignedRole,
+                SupervisorId = employee.SupervisorId,
+                SupervisorName = supervisorName,
+                SupervisorCode = supervisorCode,
+                ProfilePhoto = employee.ProfilePhoto,
+                Created_Utc = employee.Created_Utc,
+                Created_By = employee.Created_By,
+                Updated_Utc = employee.Updated_Utc,
+                Updated_By = employee.Updated_By
+            };
+
+            return GenericBaseResponse<EmployeeDto>.Success(dto, "Employee updated successfully.");
+        }
+        catch (Exception ex)
+        {
+            var rollbackSucceeded = false;
+
+            if (!committed)
+            {
+                try
+                {
+                    await unitOfWork.RollbackAsync();
+                    rollbackSucceeded = true;
+                }
+                catch (Exception rollbackEx)
+                {
+                    logger?.LogError(rollbackEx, "Failed to roll back database transaction during employee update. Database state cannot be confirmed.");
+                }
+            }
+
+            if (newCommittedPath != null)
+            {
+                if (!commitAttempted && rollbackSucceeded)
+                {
+                    try
+                    {
+                        await fileService.DeleteAsync(newCommittedPath, CancellationToken.None);
+                    }
+                    catch (Exception delEx)
+                    {
+                        logger?.LogWarning(delEx, "Failed to clean up new physical file '{Path}' during employee update rollback.", newCommittedPath);
+                    }
+                }
+                else if (commitAttempted && !committed)
+                {
+                    logger?.LogError(ex, "Transaction commit outcome is uncertain for employee update. Preserving physical file '{Path}' to prevent deleting referenced files.", newCommittedPath);
+                }
+            }
+
+            if (ex is InvalidOperationException or ArgumentException)
+            {
+                return GenericBaseResponse<EmployeeDto>.Fail(ex.Message, HttpStatusCode.BadRequest);
+            }
+
+            throw;
+        }
     }
 }

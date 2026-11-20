@@ -29,6 +29,8 @@ public class Employee : IAuditableEntity
     public virtual Employee? Supervisor { get; set; }
     public virtual ICollection<Employee> SupervisedEmployees { get; set; } = new List<Employee>();
 
+    public Guid? ProfilePhoto { get; set; }
+
     public DateTime Created_Utc { get; set; } = DateTime.UtcNow;
     public string? Created_By { get; set; }
     public DateTime? Updated_Utc { get; set; }

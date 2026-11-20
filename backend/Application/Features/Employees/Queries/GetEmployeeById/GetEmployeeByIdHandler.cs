@@ -76,6 +76,7 @@ public sealed class GetEmployeeByIdHandler(
             SupervisorId = employee.SupervisorId,
             SupervisorName = employee.Supervisor?.FullName,
             SupervisorCode = employee.Supervisor?.EmployeeCode,
+            ProfilePhoto = employee.ProfilePhoto,
             Created_Utc = employee.Created_Utc,
             Created_By = employee.Created_By,
             Updated_Utc = employee.Updated_Utc,

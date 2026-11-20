@@ -36,6 +36,9 @@ export const Router = {
 
   Files: {
     Prefix: `${PREFIX}/files`,
+    List: (category: string, ownerId: string) =>
+      `${PREFIX}/files?category=${encodeURIComponent(category)}&ownerId=${encodeURIComponent(ownerId)}`,
+    Upload: `${PREFIX}/files/upload`,
     GetById: (id: string) => `${PREFIX}/files/${encodeURIComponent(id)}`,
     Download: (id: string) => `${PREFIX}/files/${encodeURIComponent(id)}/download`,
   },

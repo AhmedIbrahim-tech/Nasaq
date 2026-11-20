@@ -18,6 +18,7 @@ public class EmployeeDto
     public Guid? SupervisorId { get; set; }
     public string? SupervisorName { get; set; }
     public string? SupervisorCode { get; set; }
+    public Guid? ProfilePhoto { get; set; }
     public DateTime Created_Utc { get; set; }
     public string? Created_By { get; set; }
     public DateTime? Updated_Utc { get; set; }

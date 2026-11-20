@@ -44,6 +44,16 @@ public static class Router
         public const string ToggleStatus = Prefix + "/" + SingleRoute + "/status";
     }
 
+    public static class Files
+    {
+        public const string Prefix = Rule + "files";
+
+        public const string List = Prefix;
+        public const string Upload = Prefix + "/upload";
+        public const string GetById = Prefix + "/" + SingleRoute;
+        public const string Download = Prefix + "/" + SingleRoute + "/download";
+    }
+
     public static class Hubs
     {
         public const string Notifications = "/" + Rule + "hubs/notifications";

@@ -1,7 +1,6 @@
 using Application.Features.Employees.Commands.CreateEmployee;
 using Application.Features.Employees.Commands.ToggleEmployeeStatus;
 using Application.Features.Employees.Commands.UpdateEmployee;
-using Application.Features.Employees.DTOs;
 using Application.Features.Employees.Queries.GetCurrentEmployeeProfile;
 using Application.Features.Employees.Queries.GetEmployeeById;
 using Application.Features.Employees.Queries.GetEmployees;
@@ -38,41 +37,28 @@ public sealed class EmployeesController : ApiControllerBase
 
     [HttpPost(Router.Employees.Create)]
     [Authorize(Policy = PolicyNames.EmployeeManagement)]
+    [Consumes("multipart/form-data")]
     public async Task<IActionResult> Create(
-        [FromBody] CreateEmployeeCommand command,
+        [FromForm] CreateEmployeeCommand command,
         CancellationToken cancellationToken = default) =>
         ActionResult(await _mediator.Send(command, cancellationToken));
 
     [HttpPut(Router.Employees.Update)]
     [Authorize(Policy = PolicyNames.EmployeeManagement)]
+    [Consumes("multipart/form-data")]
     public async Task<IActionResult> Update(
         [FromRoute] Guid id,
-        [FromBody] UpdateEmployeeRequest request,
-        CancellationToken cancellationToken = default)
-    {
-        var command = new UpdateEmployeeCommand(
-            id,
-            request.FirstName,
-            request.LastName,
-            request.Email,
-            request.PhoneNumber,
-            request.Department,
-            request.JobTitle,
-            request.HireDate,
-            request.UserRole,
-            request.UserId,
-            request.SupervisorId);
-
-        return ActionResult(await _mediator.Send(command, cancellationToken));
-    }
+        [FromForm] UpdateEmployeeCommand command,
+        CancellationToken cancellationToken = default) =>
+        ActionResult(await _mediator.Send(command with { Id = id }, cancellationToken));
 
     [HttpPatch(Router.Employees.ToggleStatus)]
     [Authorize(Policy = PolicyNames.EmployeeManagement)]
     public async Task<IActionResult> ToggleStatus(
         [FromRoute] Guid id,
-        [FromBody] ToggleStatusRequest? request = null,
+        [FromBody] ToggleEmployeeStatusCommand? command = null,
         CancellationToken cancellationToken = default) =>
         ActionResult(await _mediator.Send(
-            new ToggleEmployeeStatusCommand(id, request?.IsActive),
+            (command ?? new ToggleEmployeeStatusCommand(id)) with { Id = id },
             cancellationToken));
 }

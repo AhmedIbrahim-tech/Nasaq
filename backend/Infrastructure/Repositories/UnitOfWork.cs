@@ -1,24 +1,28 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using Domain.Entities;
-using Domain.Repositories;
-using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Infrastructure.Repositories;
 
-public sealed class UnitOfWork : IUnitOfWork
+public sealed class UnitOfWork(ApplicationDbContext context, ILogger<UnitOfWork> logger) : IUnitOfWork
 {
-    private readonly ApplicationDbContext _context;
-    private IDbContextTransaction? _transaction;
+    private enum TransactionState
+    {
+        None,
+        Active,
+        Committed,
+        RolledBack,
+        UncertainCommit
+    }
+
+    private readonly ApplicationDbContext _context = context;
+    private readonly ILogger<UnitOfWork> _logger = logger;
     private readonly List<Func<Task>> _postCommitActions = new();
+    private readonly bool _isInMemory = context.Database.ProviderName?.Contains("InMemory", StringComparison.OrdinalIgnoreCase) == true;
+
+    private IDbContextTransaction? _transaction;
+    private TransactionState _state = TransactionState.None;
+
     private IGenericRepository<AppNotification>? _appNotifications;
     private IGenericRepository<Employee>? _employees;
-
-    public UnitOfWork(ApplicationDbContext context) => _context = context;
 
     public IGenericRepository<AppNotification> AppNotifications =>
         _appNotifications ??= new GenericRepository<AppNotification>(_context);
@@ -29,27 +33,15 @@ public sealed class UnitOfWork : IUnitOfWork
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default) =>
         await _context.SaveChangesAsync(cancellationToken);
 
-    public bool HasActiveTransaction => _transaction is not null;
+    public bool HasActiveTransaction => _state == TransactionState.Active;
 
     public void RegisterPostCommitAction(Func<Task> action)
     {
-        if (action is null)
-            return;
+        ArgumentNullException.ThrowIfNull(action);
 
-        if (_transaction is null)
+        if (_state != TransactionState.Active)
         {
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    await action();
-                }
-                catch
-                {
-                    // Isolated background failure
-                }
-            });
-            return;
+            throw new InvalidOperationException("Cannot register a post-commit action without an active database transaction.");
         }
 
         _postCommitActions.Add(action);
@@ -57,30 +49,61 @@ public sealed class UnitOfWork : IUnitOfWork
 
     public async Task BeginTransactionAsync(CancellationToken cancellationToken = default)
     {
-        _transaction ??= await _context.Database.BeginTransactionAsync(cancellationToken);
+        if (_state == TransactionState.Active)
+        {
+            return;
+        }
+
+        if (_isInMemory)
+        {
+            _state = TransactionState.Active;
+            return;
+        }
+
+        _transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+        _state = TransactionState.Active;
     }
 
     public async Task CommitAsync()
     {
-        if (_transaction is null)
+        if (_state != TransactionState.Active)
+        {
             return;
+        }
 
         var actions = _postCommitActions.ToList();
         _postCommitActions.Clear();
 
         try
         {
-            await _transaction.CommitAsync();
+            if (_transaction is not null)
+            {
+                await _transaction.CommitAsync();
+            }
+
+            _state = TransactionState.Committed;
         }
-        catch
+        catch (Exception ex)
         {
+            _state = TransactionState.UncertainCommit;
             actions.Clear();
+            _logger.LogError(ex, "Transaction commit failed or outcome is uncertain.");
             throw;
         }
         finally
         {
-            await _transaction.DisposeAsync();
-            _transaction = null;
+            if (_transaction is not null)
+            {
+                try
+                {
+                    await _transaction.DisposeAsync();
+                }
+                catch (Exception disposeEx)
+                {
+                    _logger.LogWarning(disposeEx, "Failed to dispose transaction after commit.");
+                }
+                _transaction = null;
+            }
         }
 
         foreach (var action in actions)
@@ -89,9 +112,9 @@ public sealed class UnitOfWork : IUnitOfWork
             {
                 await action();
             }
-            catch
+            catch (Exception ex)
             {
-                // Isolate failure: post-commit actions must never reverse or fail an already-committed transaction
+                _logger.LogError(ex, "Post-commit action execution failed. The database transaction remains committed.");
             }
         }
     }
@@ -100,39 +123,76 @@ public sealed class UnitOfWork : IUnitOfWork
     {
         _postCommitActions.Clear();
 
-        if (_transaction is null)
+        if (_state == TransactionState.UncertainCommit)
+        {
+            _context.ChangeTracker.Clear();
+            _logger.LogWarning("RollbackAsync invoked on a transaction with an uncertain commit outcome. Database rollback cannot be performed.");
             return;
+        }
+
+        if (_state != TransactionState.Active)
+        {
+            _context.ChangeTracker.Clear();
+            return;
+        }
 
         try
         {
-            await _transaction.RollbackAsync();
+            if (_transaction is not null)
+            {
+                await _transaction.RollbackAsync();
+            }
+
+            _state = TransactionState.RolledBack;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to roll back database transaction.");
+            throw;
         }
         finally
         {
-            await _transaction.DisposeAsync();
-            _transaction = null;
+            if (_transaction is not null)
+            {
+                try
+                {
+                    await _transaction.DisposeAsync();
+                }
+                catch (Exception disposeEx)
+                {
+                    _logger.LogWarning(disposeEx, "Failed to dispose transaction after rollback.");
+                }
+                _transaction = null;
+            }
+
             _context.ChangeTracker.Clear();
         }
     }
 
     public async Task<int> ExecuteInTransactionAsync(Func<Task> action, CancellationToken cancellationToken = default)
     {
-        var isRoot = _transaction is null;
+        var isRoot = !HasActiveTransaction;
         if (isRoot)
+        {
             await BeginTransactionAsync(cancellationToken);
+        }
 
         try
         {
             await action();
             var rows = await SaveChangesAsync(cancellationToken);
             if (isRoot)
+            {
                 await CommitAsync();
+            }
             return rows;
         }
         catch
         {
             if (isRoot)
+            {
                 await RollbackAsync();
+            }
             throw;
         }
     }
@@ -141,15 +201,37 @@ public sealed class UnitOfWork : IUnitOfWork
     {
         _postCommitActions.Clear();
         if (_transaction is not null)
-            await _transaction.DisposeAsync();
-        await _context.DisposeAsync();
+        {
+            try
+            {
+                await _transaction.DisposeAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to dispose database transaction asynchronously.");
+            }
+            _transaction = null;
+        }
+
+        _state = TransactionState.None;
     }
 
     public void Dispose()
     {
         _postCommitActions.Clear();
-        _transaction?.Dispose();
-        _transaction = null;
-        _context.Dispose();
+        if (_transaction is not null)
+        {
+            try
+            {
+                _transaction.Dispose();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to dispose database transaction synchronously.");
+            }
+            _transaction = null;
+        }
+
+        _state = TransactionState.None;
     }
 }

@@ -2,10 +2,13 @@ namespace Application.Features.Employees.Commands.CreateEmployee;
 
 public sealed class CreateEmployeeHandler(
     IApplicationDbContext dbContext,
+    IUnitOfWork unitOfWork,
+    IFileService fileService,
     ICurrentUser currentUser,
     UserManager<ApplicationUser> userManager,
     RoleManager<ApplicationRole> roleManager,
-    ITemporaryPasswordService passwordService)
+    ITemporaryPasswordService passwordService,
+    ILogger<CreateEmployeeHandler>? logger = null)
     : IRequestHandler<CreateEmployeeCommand, GenericBaseResponse<EmployeeDto>>
 {
     public async Task<GenericBaseResponse<EmployeeDto>> Handle(CreateEmployeeCommand request, CancellationToken cancellationToken)
@@ -31,7 +34,6 @@ public sealed class CreateEmployeeHandler(
             return GenericBaseResponse<EmployeeDto>.Conflict($"Email address '{normalizedEmail}' is already in use by another employee.");
         }
 
-        // Prevent privilege escalation: non-SuperAdmin cannot assign SuperAdmin role
         var requestedRole = request.UserRole?.Trim();
         if (!string.IsNullOrWhiteSpace(requestedRole))
         {
@@ -48,12 +50,9 @@ public sealed class CreateEmployeeHandler(
             }
         }
 
-        string? linkedUserId = null;
-        string? assignedRole = null;
         string? supervisorName = null;
         string? supervisorCode = null;
 
-        // Only SuperAdmin and Admin can assign direct supervisors
         if (request.SupervisorId.HasValue)
         {
             if (!currentUser.IsSuperAdmin && !currentUser.IsAdmin)
@@ -105,41 +104,6 @@ public sealed class CreateEmployeeHandler(
             {
                 return GenericBaseResponse<EmployeeDto>.Conflict($"A user account with email '{normalizedEmail}' already exists.");
             }
-
-            var roleToAssign = !string.IsNullOrWhiteSpace(requestedRole) ? requestedRole : RoleNames.Employee;
-
-            var newUser = new ApplicationUser
-            {
-                UserName = normalizedEmail,
-                Email = normalizedEmail,
-                FullName = $"{request.FirstName.Trim()} {request.LastName.Trim()}",
-                JobTitle = request.JobTitle?.Trim(),
-                Department = request.Department?.Trim(),
-                EmailConfirmed = true,
-                IsActive = true,
-                MustChangePasswordOnNextLogin = true
-            };
-
-            var initialPassword = !string.IsNullOrWhiteSpace(request.Password)
-                ? request.Password
-                : passwordService.GenerateTemporaryPassword();
-
-            var createResult = await userManager.CreateAsync(newUser, initialPassword);
-            if (!createResult.Succeeded)
-            {
-                var errors = createResult.Errors.Select(e => e.Description).ToList();
-                return GenericBaseResponse<EmployeeDto>.Fail(
-                    "Failed to create user account: " + string.Join("; ", errors),
-                    errors: errors);
-            }
-
-            if (await roleManager.RoleExistsAsync(roleToAssign))
-            {
-                await userManager.AddToRoleAsync(newUser, roleToAssign);
-            }
-
-            linkedUserId = newUser.Id;
-            assignedRole = roleToAssign;
         }
         else if (!string.IsNullOrWhiteSpace(request.UserId))
         {
@@ -157,68 +121,208 @@ public sealed class CreateEmployeeHandler(
             {
                 return GenericBaseResponse<EmployeeDto>.Conflict("The specified user account is already linked to another employee.");
             }
-
-            if (!string.IsNullOrWhiteSpace(requestedRole))
-            {
-                var currentRoles = await userManager.GetRolesAsync(existingUser);
-                if (!currentRoles.Contains(requestedRole, StringComparer.OrdinalIgnoreCase))
-                {
-                    await userManager.AddToRoleAsync(existingUser, requestedRole);
-                }
-                assignedRole = requestedRole;
-            }
-            else
-            {
-                var currentRoles = await userManager.GetRolesAsync(existingUser);
-                assignedRole = currentRoles.FirstOrDefault();
-            }
-
-            linkedUserId = existingUser.Id;
         }
 
-        var employee = new Employee
+        string? linkedUserId = null;
+        string? assignedRole = null;
+        StoredFile? storedFile = null;
+        var commitAttempted = false;
+        var committed = false;
+
+        await unitOfWork.BeginTransactionAsync(cancellationToken);
+
+        try
         {
-            Id = Guid.NewGuid(),
-            EmployeeCode = normalizedCode,
-            FirstName = request.FirstName.Trim(),
-            LastName = request.LastName.Trim(),
-            Email = normalizedEmail,
-            PhoneNumber = request.PhoneNumber?.Trim(),
-            Department = request.Department?.Trim(),
-            JobTitle = request.JobTitle?.Trim(),
-            HireDate = request.HireDate,
-            IsActive = true,
-            UserId = linkedUserId,
-            SupervisorId = request.SupervisorId
-        };
+            if (request.CreateUserAccount)
+            {
+                var roleToAssign = !string.IsNullOrWhiteSpace(requestedRole) ? requestedRole : RoleNames.Employee;
 
-        await dbContext.Employees.AddAsync(employee, cancellationToken);
-        await dbContext.SaveChangesAsync(cancellationToken);
+                var newUser = new ApplicationUser
+                {
+                    UserName = normalizedEmail,
+                    Email = normalizedEmail,
+                    FullName = $"{request.FirstName.Trim()} {request.LastName.Trim()}",
+                    JobTitle = request.JobTitle?.Trim(),
+                    Department = request.Department?.Trim(),
+                    EmailConfirmed = true,
+                    IsActive = true,
+                    MustChangePasswordOnNextLogin = true
+                };
 
-        var dto = new EmployeeDto
+                var initialPassword = !string.IsNullOrWhiteSpace(request.Password)
+                    ? request.Password
+                    : passwordService.GenerateTemporaryPassword();
+
+                var createResult = await userManager.CreateAsync(newUser, initialPassword);
+                if (!createResult.Succeeded)
+                {
+                    await unitOfWork.RollbackAsync();
+                    var errors = createResult.Errors.Select(e => e.Description).ToList();
+                    return GenericBaseResponse<EmployeeDto>.Fail(
+                        "Failed to create user account: " + string.Join("; ", errors),
+                        errors: errors);
+                }
+
+                if (await roleManager.RoleExistsAsync(roleToAssign))
+                {
+                    var roleResult = await userManager.AddToRoleAsync(newUser, roleToAssign);
+                    if (!roleResult.Succeeded)
+                    {
+                        await unitOfWork.RollbackAsync();
+                        var errors = roleResult.Errors.Select(e => e.Description).ToList();
+                        return GenericBaseResponse<EmployeeDto>.Fail(
+                            "Failed to assign role to user account: " + string.Join("; ", errors),
+                            errors: errors);
+                    }
+                }
+
+                linkedUserId = newUser.Id;
+                assignedRole = roleToAssign;
+            }
+            else if (!string.IsNullOrWhiteSpace(request.UserId))
+            {
+                var existingUser = await userManager.FindByIdAsync(request.UserId.Trim());
+                if (existingUser == null)
+                {
+                    await unitOfWork.RollbackAsync();
+                    return GenericBaseResponse<EmployeeDto>.NotFound($"User account with ID '{request.UserId}' was not found.");
+                }
+
+                if (!string.IsNullOrWhiteSpace(requestedRole))
+                {
+                    var currentRoles = await userManager.GetRolesAsync(existingUser);
+                    if (!currentRoles.Contains(requestedRole, StringComparer.OrdinalIgnoreCase))
+                    {
+                        if (await roleManager.RoleExistsAsync(requestedRole))
+                        {
+                            var addRoleResult = await userManager.AddToRoleAsync(existingUser, requestedRole);
+                            if (!addRoleResult.Succeeded)
+                            {
+                                await unitOfWork.RollbackAsync();
+                                var errors = addRoleResult.Errors.Select(e => e.Description).ToList();
+                                return GenericBaseResponse<EmployeeDto>.Fail(
+                                    "Failed to assign requested role to existing user account: " + string.Join("; ", errors),
+                                    errors: errors);
+                            }
+                        }
+                    }
+                    assignedRole = requestedRole;
+                }
+                else
+                {
+                    var currentRoles = await userManager.GetRolesAsync(existingUser);
+                    assignedRole = currentRoles.FirstOrDefault();
+                }
+
+                linkedUserId = existingUser.Id;
+            }
+
+            var employeeId = Guid.NewGuid();
+            var employee = new Employee
+            {
+                Id = employeeId,
+                EmployeeCode = normalizedCode,
+                FirstName = request.FirstName.Trim(),
+                LastName = request.LastName.Trim(),
+                Email = normalizedEmail,
+                PhoneNumber = request.PhoneNumber?.Trim(),
+                Department = request.Department?.Trim(),
+                JobTitle = request.JobTitle?.Trim(),
+                HireDate = request.HireDate,
+                IsActive = true,
+                UserId = linkedUserId,
+                SupervisorId = request.SupervisorId,
+                ProfilePhoto = null
+            };
+
+            await dbContext.Employees.AddAsync(employee, cancellationToken);
+
+            if (request.ProfilePhoto is not null)
+            {
+                storedFile = await fileService.SaveAsync(
+                    request.ProfilePhoto,
+                    FileCategory.Employees,
+                    employeeId,
+                    cancellationToken);
+
+                employee.ProfilePhoto = storedFile.Id;
+            }
+
+            await dbContext.SaveChangesAsync(cancellationToken);
+
+            commitAttempted = true;
+            await unitOfWork.CommitAsync();
+            committed = true;
+
+            var dto = new EmployeeDto
+            {
+                Id = employee.Id,
+                EmployeeCode = employee.EmployeeCode,
+                FirstName = employee.FirstName,
+                LastName = employee.LastName,
+                FullName = employee.FullName,
+                Email = employee.Email,
+                PhoneNumber = employee.PhoneNumber,
+                Department = employee.Department,
+                JobTitle = employee.JobTitle,
+                HireDate = employee.HireDate,
+                IsActive = employee.IsActive,
+                UserId = employee.UserId,
+                UserRole = assignedRole,
+                SupervisorId = employee.SupervisorId,
+                SupervisorName = supervisorName,
+                SupervisorCode = supervisorCode,
+                ProfilePhoto = employee.ProfilePhoto,
+                Created_Utc = employee.Created_Utc,
+                Created_By = employee.Created_By,
+                Updated_Utc = employee.Updated_Utc,
+                Updated_By = employee.Updated_By
+            };
+
+            return GenericBaseResponse<EmployeeDto>.Created(dto, "Employee created successfully.");
+        }
+        catch (Exception ex)
         {
-            Id = employee.Id,
-            EmployeeCode = employee.EmployeeCode,
-            FirstName = employee.FirstName,
-            LastName = employee.LastName,
-            FullName = employee.FullName,
-            Email = employee.Email,
-            PhoneNumber = employee.PhoneNumber,
-            Department = employee.Department,
-            JobTitle = employee.JobTitle,
-            HireDate = employee.HireDate,
-            IsActive = employee.IsActive,
-            UserId = employee.UserId,
-            UserRole = assignedRole,
-            SupervisorId = employee.SupervisorId,
-            SupervisorName = supervisorName,
-            SupervisorCode = supervisorCode,
-            Created_Utc = employee.Created_Utc,
-            Created_By = employee.Created_By,
-            Updated_Utc = employee.Updated_Utc,
-            Updated_By = employee.Updated_By
-        };
+            var rollbackSucceeded = false;
 
-        return GenericBaseResponse<EmployeeDto>.Created(dto, "Employee created successfully.");
+            if (!committed)
+            {
+                try
+                {
+                    await unitOfWork.RollbackAsync();
+                    rollbackSucceeded = true;
+                }
+                catch (Exception rollbackEx)
+                {
+                    logger?.LogError(rollbackEx, "Failed to roll back database transaction during employee creation. Database state cannot be confirmed.");
+                }
+            }
+
+            if (storedFile?.RelativePath != null)
+            {
+                if (!commitAttempted && rollbackSucceeded)
+                {
+                    try
+                    {
+                        await fileService.DeleteAsync(storedFile.RelativePath, CancellationToken.None);
+                    }
+                    catch (Exception deleteEx)
+                    {
+                        logger?.LogWarning(deleteEx, "Failed to clean up physical file '{Path}' after employee creation rollback.", storedFile.RelativePath);
+                    }
+                }
+                else if (commitAttempted && !committed)
+                {
+                    logger?.LogError(ex, "Transaction commit outcome is uncertain for employee creation. Preserving physical file '{Path}' to prevent deleting referenced files.", storedFile.RelativePath);
+                }
+            }
+
+            if (ex is InvalidOperationException or ArgumentException)
+            {
+                return GenericBaseResponse<EmployeeDto>.Fail(ex.Message, HttpStatusCode.BadRequest);
+            }
+
+            throw;
+        }
     }
 }

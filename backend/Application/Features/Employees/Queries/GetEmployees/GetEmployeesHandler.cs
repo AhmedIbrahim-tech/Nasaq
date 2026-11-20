@@ -124,6 +124,7 @@ public sealed class GetEmployeesHandler(
             SupervisorId = e.SupervisorId,
             SupervisorName = e.Supervisor != null ? e.Supervisor.FullName : null,
             SupervisorCode = e.Supervisor != null ? e.Supervisor.EmployeeCode : null,
+            ProfilePhoto = e.ProfilePhoto,
             Created_Utc = e.Created_Utc,
             Created_By = e.Created_By,
             Updated_Utc = e.Updated_Utc,

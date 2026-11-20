@@ -31,5 +31,18 @@ public sealed class UpdateEmployeeValidator : AbstractValidator<UpdateEmployeeCo
 
         RuleFor(x => x.HireDate)
             .NotEmpty().WithMessage("Hire date is required.");
+
+        RuleFor(x => x)
+            .Must(x => !(x.ProfilePhoto != null && x.RemoveProfilePhoto))
+            .WithMessage("Cannot upload a new profile photo and request removal at the same time.");
+
+        When(x => x.ProfilePhoto != null, () =>
+        {
+            RuleFor(x => x.ProfilePhoto!.FileName)
+                .NotEmpty().WithMessage("Profile photo file name is required.");
+
+            RuleFor(x => x.ProfilePhoto!.Length)
+                .GreaterThan(0).WithMessage("Profile photo file cannot be empty.");
+        });
     }
 }

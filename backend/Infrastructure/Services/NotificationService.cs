@@ -1,28 +1,16 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using Application.Abstractions;
 using Application.Common;
-using Domain.Common;
-using Domain.Entities;
-using Domain.Enums;
-using Domain.Repositories;
-using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Services;
 
-public sealed class NotificationService : ResponseHandler, INotificationService
+public sealed class NotificationService(
+    IUnitOfWork unitOfWork,
+    INotificationRealtimePublisher publisher,
+    ILogger<NotificationService> logger)
+    : ResponseHandler, INotificationService
 {
-    private readonly IUnitOfWork _unitOfWork;
-    private readonly INotificationRealtimePublisher _publisher;
-
-    public NotificationService(IUnitOfWork unitOfWork, INotificationRealtimePublisher publisher)
-    {
-        _unitOfWork = unitOfWork;
-        _publisher = publisher;
-    }
+    private readonly IUnitOfWork _unitOfWork = unitOfWork;
+    private readonly INotificationRealtimePublisher _publisher = publisher;
+    private readonly ILogger<NotificationService> _logger = logger;
 
     public async Task CreateAsync(string userId, string title, string message, NotificationCategory category = NotificationCategory.Info, string? actionUrl = null, CancellationToken cancellationToken = default)
     {
@@ -41,6 +29,7 @@ public sealed class NotificationService : ResponseHandler, INotificationService
         };
 
         await _unitOfWork.AppNotifications.AddAsync(entity, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         var item = new NotificationItem(
             entity.Notification_ID,
@@ -53,7 +42,6 @@ public sealed class NotificationService : ResponseHandler, INotificationService
 
         if (_unitOfWork.HasActiveTransaction)
         {
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
             _unitOfWork.RegisterPostCommitAction(async () =>
             {
                 await _publisher.PublishCreatedAsync(userId, item);
@@ -61,8 +49,14 @@ public sealed class NotificationService : ResponseHandler, INotificationService
         }
         else
         {
-            await _unitOfWork.ExecuteInTransactionAsync(() => Task.CompletedTask, cancellationToken);
-            await _publisher.PublishCreatedAsync(userId, item, cancellationToken);
+            try
+            {
+                await _publisher.PublishCreatedAsync(userId, item, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to publish created notification realtime event for user {UserId}", userId);
+            }
         }
     }
 
@@ -160,10 +154,10 @@ public sealed class NotificationService : ResponseHandler, INotificationService
 
         entity.Is_Read = true;
         _unitOfWork.AppNotifications.Update(entity);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         if (_unitOfWork.HasActiveTransaction)
         {
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
             _unitOfWork.RegisterPostCommitAction(async () =>
             {
                 await _publisher.PublishReadStateChangedAsync(userId, notificationId, true);
@@ -171,8 +165,14 @@ public sealed class NotificationService : ResponseHandler, INotificationService
         }
         else
         {
-            await _unitOfWork.ExecuteInTransactionAsync(() => Task.CompletedTask, cancellationToken);
-            await _publisher.PublishReadStateChangedAsync(userId, notificationId, true, cancellationToken);
+            try
+            {
+                await _publisher.PublishReadStateChangedAsync(userId, notificationId, true, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to publish read state change realtime event for user {UserId}, notification {NotificationId}", userId, notificationId);
+            }
         }
     }
 
@@ -191,7 +191,14 @@ public sealed class NotificationService : ResponseHandler, INotificationService
         }
         else
         {
-            await _publisher.PublishMarkedAllReadAsync(userId, cancellationToken);
+            try
+            {
+                await _publisher.PublishMarkedAllReadAsync(userId, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to publish marked all read realtime event for user {UserId}", userId);
+            }
         }
     }
 
@@ -203,10 +210,10 @@ public sealed class NotificationService : ResponseHandler, INotificationService
             return false;
 
         _unitOfWork.AppNotifications.Remove(entity);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         if (_unitOfWork.HasActiveTransaction)
         {
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
             _unitOfWork.RegisterPostCommitAction(async () =>
             {
                 await _publisher.PublishDeletedAsync(userId, notificationId);
@@ -214,8 +221,14 @@ public sealed class NotificationService : ResponseHandler, INotificationService
         }
         else
         {
-            await _unitOfWork.ExecuteInTransactionAsync(() => Task.CompletedTask, cancellationToken);
-            await _publisher.PublishDeletedAsync(userId, notificationId, cancellationToken);
+            try
+            {
+                await _publisher.PublishDeletedAsync(userId, notificationId, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to publish deleted notification realtime event for user {UserId}, notification {NotificationId}", userId, notificationId);
+            }
         }
         return true;
     }

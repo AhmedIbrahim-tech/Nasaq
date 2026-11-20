@@ -38,5 +38,14 @@ public sealed class CreateEmployeeValidator : AbstractValidator<CreateEmployeeCo
             RuleFor(x => x.Password)
                 .MinimumLength(6).WithMessage("Password must be at least 6 characters.");
         });
+
+        When(x => x.ProfilePhoto != null, () =>
+        {
+            RuleFor(x => x.ProfilePhoto!.FileName)
+                .NotEmpty().WithMessage("Profile photo file name is required.");
+
+            RuleFor(x => x.ProfilePhoto!.Length)
+                .GreaterThan(0).WithMessage("Profile photo file cannot be empty.");
+        });
     }
 }

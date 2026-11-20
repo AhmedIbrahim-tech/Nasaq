@@ -73,5 +73,15 @@ public class EmployeeConfiguration : IEntityTypeConfiguration<Employee>
             .WithMany(s => s.SupervisedEmployees)
             .HasForeignKey(e => e.SupervisorId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Property(e => e.ProfilePhoto)
+            .IsRequired(false);
+
+        builder.HasIndex(e => e.ProfilePhoto);
+
+        builder.HasOne<StoredFile>()
+            .WithMany()
+            .HasForeignKey(e => e.ProfilePhoto)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }
