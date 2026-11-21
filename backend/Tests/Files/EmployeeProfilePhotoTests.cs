@@ -26,7 +26,8 @@ public class EmployeeProfilePhotoTests : IAsyncLifetime, IDisposable
             AllowedExtensions = [".pdf", ".jpg", ".jpeg", ".png", ".webp", ".docx", ".xlsx"]
         };
         _optionsWrapper = Options.Create(_storageOptions);
-        _fileService = new FileService(_optionsWrapper, NullLogger<FileService>.Instance);
+        var valService = new FileValidationService(_optionsWrapper);
+        _fileService = new FileService(_optionsWrapper, valService, _fixture.DbContext, new FakeCurrentUser(), NullLogger<FileService>.Instance);
     }
 
     public async Task InitializeAsync()

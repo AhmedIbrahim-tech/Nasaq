@@ -1,9 +1,13 @@
+using Application.Features.Employees.Commands.BulkDeleteEmployees;
 using Application.Features.Employees.Commands.CreateEmployee;
+using Application.Features.Employees.Commands.DeleteEmployee;
 using Application.Features.Employees.Commands.ToggleEmployeeStatus;
 using Application.Features.Employees.Commands.UpdateEmployee;
+using Application.Features.Employees.Commands.UpdateMyProfilePhoto;
 using Application.Features.Employees.Queries.GetCurrentEmployeeProfile;
 using Application.Features.Employees.Queries.GetEmployeeById;
 using Application.Features.Employees.Queries.GetEmployees;
+using Application.Features.Employees.Queries.GetEmployeesSummary;
 using Application.Features.Employees.Queries.GetSupervisors;
 
 namespace API.Controllers;
@@ -19,9 +23,21 @@ public sealed class EmployeesController : ApiControllerBase
         CancellationToken cancellationToken = default) =>
         ActionResult(await _mediator.Send(query, cancellationToken));
 
+    [HttpGet(Router.Employees.Summary)]
+    [Authorize(Policy = PolicyNames.RequireSupervisor)]
+    public async Task<IActionResult> GetSummary(CancellationToken cancellationToken = default) =>
+        ActionResult(await _mediator.Send(new GetEmployeesSummaryQuery(), cancellationToken));
+
     [HttpGet(Router.Employees.MyProfile)]
     public async Task<IActionResult> GetMyProfile(CancellationToken cancellationToken = default) =>
         ActionResult(await _mediator.Send(new GetCurrentEmployeeProfileQuery(), cancellationToken));
+
+    [HttpPut(Router.Employees.MyProfilePhoto)]
+    [Consumes(MultipartFormData)]
+    public async Task<IActionResult> UpdateMyPhoto(
+        [FromForm] UpdateMyProfilePhotoCommand command,
+        CancellationToken cancellationToken = default) =>
+        ActionResult(await _mediator.Send(command, cancellationToken));
 
     [HttpGet(Router.Employees.Supervisors)]
     [Authorize(Policy = PolicyNames.EmployeeManagement)]
@@ -37,7 +53,7 @@ public sealed class EmployeesController : ApiControllerBase
 
     [HttpPost(Router.Employees.Create)]
     [Authorize(Policy = PolicyNames.EmployeeManagement)]
-    [Consumes("multipart/form-data")]
+    [Consumes(MultipartFormData)]
     public async Task<IActionResult> Create(
         [FromForm] CreateEmployeeCommand command,
         CancellationToken cancellationToken = default) =>
@@ -45,7 +61,7 @@ public sealed class EmployeesController : ApiControllerBase
 
     [HttpPut(Router.Employees.Update)]
     [Authorize(Policy = PolicyNames.EmployeeManagement)]
-    [Consumes("multipart/form-data")]
+    [Consumes(MultipartFormData)]
     public async Task<IActionResult> Update(
         [FromRoute] Guid id,
         [FromForm] UpdateEmployeeCommand command,
@@ -61,4 +77,18 @@ public sealed class EmployeesController : ApiControllerBase
         ActionResult(await _mediator.Send(
             (command ?? new ToggleEmployeeStatusCommand(id)) with { Id = id },
             cancellationToken));
+
+    [HttpDelete(Router.Employees.Delete)]
+    [Authorize(Policy = PolicyNames.EmployeeManagement)]
+    public async Task<IActionResult> Delete(
+        [FromRoute] Guid id,
+        CancellationToken cancellationToken = default) =>
+        ActionResult(await _mediator.Send(new DeleteEmployeeCommand(id), cancellationToken));
+
+    [HttpPost(Router.Employees.BulkDelete)]
+    [Authorize(Policy = PolicyNames.EmployeeManagement)]
+    public async Task<IActionResult> BulkDelete(
+        [FromBody] BulkDeleteEmployeesCommand command,
+        CancellationToken cancellationToken = default) =>
+        ActionResult(await _mediator.Send(command, cancellationToken));
 }

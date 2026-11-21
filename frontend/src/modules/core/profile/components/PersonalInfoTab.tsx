@@ -31,6 +31,7 @@ import { useAppDispatch } from '@/store/hooks';
 import { updateUserProfile } from '@/modules/auth/slices/auth.slice';
 import { updateProfile } from '@/modules/auth/services/auth.service';
 import { notify } from '@/shared/services/notification.service';
+import { ProfilePhotoAvatar } from '@/shared/components/avatar';
 import type { CurrentUserResponse, AuthUserResponse } from '@/modules/auth/types';
 
 interface PersonalInfoTabProps {
@@ -157,19 +158,11 @@ export function PersonalInfoTab({
               spacing={2.5}
               alignItems={{ xs: 'center', sm: 'center' }}
             >
-              <Avatar
-                alt={fullName || user?.email || 'User'}
-                sx={{
-                  width: 80,
-                  height: 80,
-                  bgcolor: 'primary.main',
-                  color: 'primary.contrastText',
-                  fontSize: '2rem',
-                  fontWeight: 600,
-                }}
-              >
-                {initial}
-              </Avatar>
+              <ProfilePhotoAvatar
+                photoId={user?.profilePhoto}
+                name={fullName || user?.fullName || user?.email}
+                size={80}
+              />
 
               <Box sx={{ textAlign: { xs: 'center', sm: 'start' } }}>
                 <Typography variant="subtitle1" fontWeight={600}>

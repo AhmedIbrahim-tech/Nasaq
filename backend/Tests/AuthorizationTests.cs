@@ -1,3 +1,5 @@
+using Domain.DTOs.Auth;
+
 namespace Tests;
 
 public class AuthorizationTests : IAsyncLifetime
@@ -373,5 +375,51 @@ public class AuthorizationTests : IAsyncLifetime
         Assert.False(response.Succeeded);
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         Assert.Contains("Cannot assign an inactive employee as a supervisor", response.Message);
+    }
+
+    [Fact]
+    public async Task Scenario12_UpdateProfile_SynchronizesUserAndEmployee_Successfully()
+    {
+        var authService = new AuthService(
+            _fixture.UserManager,
+            null!,
+            null!,
+            null!,
+            Options.Create(new JwtSettings()),
+            _fixture.DbContext);
+
+        var request = new UpdateProfileRequest
+        {
+            FullName = "Sarah Updated",
+            PhoneNumber = "+966512345678",
+            JobTitle = "Senior Analyst",
+            Department = "Information Technology"
+        };
+
+        var response = await authService.UpdateProfileAsync(_fixture.Employee1User.Id, request, CancellationToken.None);
+
+        Assert.True(response.Succeeded);
+        Assert.NotNull(response.Data);
+        Assert.Equal("Sarah Updated", response.Data.FullName);
+        Assert.Equal("+966512345678", response.Data.PhoneNumber);
+        Assert.Equal("Senior Analyst", response.Data.JobTitle);
+        Assert.Equal("Information Technology", response.Data.Department);
+
+        // Verify ApplicationUser persistence
+        var user = await _fixture.UserManager.FindByIdAsync(_fixture.Employee1User.Id);
+        Assert.NotNull(user);
+        Assert.Equal("Sarah Updated", user.FullName);
+        Assert.Equal("+966512345678", user.PhoneNumber);
+        Assert.Equal("Senior Analyst", user.JobTitle);
+        Assert.Equal("Information Technology", user.Department);
+
+        // Verify linked Employee persistence
+        var employee = await _fixture.DbContext.Employees.FirstOrDefaultAsync(e => e.UserId == user.Id);
+        Assert.NotNull(employee);
+        Assert.Equal("Sarah", employee.FirstName);
+        Assert.Equal("Updated", employee.LastName);
+        Assert.Equal("+966512345678", employee.PhoneNumber);
+        Assert.Equal("Senior Analyst", employee.JobTitle);
+        Assert.Equal("Information Technology", employee.Department);
     }
 }

@@ -35,6 +35,14 @@ public sealed class CreateEmployeeHandler(
         }
 
         var requestedRole = request.UserRole?.Trim();
+        var firstName = !string.IsNullOrWhiteSpace(request.FirstNameEn) ? request.FirstNameEn.Trim() : request.FirstName.Trim();
+        var lastName = !string.IsNullOrWhiteSpace(request.LastNameEn) ? request.LastNameEn.Trim() : request.LastName.Trim();
+        var firstNameAr = !string.IsNullOrWhiteSpace(request.FirstNameAr) ? request.FirstNameAr.Trim() : null;
+        var lastNameAr = !string.IsNullOrWhiteSpace(request.LastNameAr) ? request.LastNameAr.Trim() : null;
+        var department = request.Department?.Trim();
+        var departmentAr = request.DepartmentAr?.Trim();
+        var jobTitle = request.JobTitle?.Trim();
+        var jobTitleAr = request.JobTitleAr?.Trim();
         if (!string.IsNullOrWhiteSpace(requestedRole))
         {
             if (!RoleNames.All.Contains(requestedRole, StringComparer.OrdinalIgnoreCase))
@@ -141,9 +149,14 @@ public sealed class CreateEmployeeHandler(
                 {
                     UserName = normalizedEmail,
                     Email = normalizedEmail,
-                    FullName = $"{request.FirstName.Trim()} {request.LastName.Trim()}",
-                    JobTitle = request.JobTitle?.Trim(),
-                    Department = request.Department?.Trim(),
+                    FullName = $"{firstName} {lastName}".Trim(),
+                    FullNameAr = !string.IsNullOrWhiteSpace(firstNameAr) || !string.IsNullOrWhiteSpace(lastNameAr)
+                        ? $"{firstNameAr} {lastNameAr}".Trim()
+                        : null,
+                    JobTitle = jobTitle,
+                    JobTitleAr = jobTitleAr,
+                    Department = department,
+                    DepartmentAr = departmentAr,
                     EmailConfirmed = true,
                     IsActive = true,
                     MustChangePasswordOnNextLogin = true
@@ -217,21 +230,48 @@ public sealed class CreateEmployeeHandler(
                 linkedUserId = existingUser.Id;
             }
 
+            string? workLocationName = null;
+            if (request.WorkLocationId.HasValue)
+            {
+                var location = await dbContext.WorkLocations
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(w => w.Id == request.WorkLocationId.Value, cancellationToken);
+
+                if (location == null)
+                {
+                    await unitOfWork.RollbackAsync();
+                    return GenericBaseResponse<EmployeeDto>.NotFound("The selected work location was not found.");
+                }
+
+                if (!location.IsActive)
+                {
+                    await unitOfWork.RollbackAsync();
+                    return GenericBaseResponse<EmployeeDto>.Fail("Cannot assign an inactive work location to an employee.");
+                }
+
+                workLocationName = location.Name;
+            }
+
             var employeeId = Guid.NewGuid();
             var employee = new Employee
             {
                 Id = employeeId,
                 EmployeeCode = normalizedCode,
-                FirstName = request.FirstName.Trim(),
-                LastName = request.LastName.Trim(),
+                FirstName = firstName,
+                LastName = lastName,
+                FirstNameAr = firstNameAr,
+                LastNameAr = lastNameAr,
                 Email = normalizedEmail,
                 PhoneNumber = request.PhoneNumber?.Trim(),
-                Department = request.Department?.Trim(),
-                JobTitle = request.JobTitle?.Trim(),
+                Department = department,
+                DepartmentAr = departmentAr,
+                JobTitle = jobTitle,
+                JobTitleAr = jobTitleAr,
                 HireDate = request.HireDate,
                 IsActive = true,
                 UserId = linkedUserId,
                 SupervisorId = request.SupervisorId,
+                WorkLocationId = request.WorkLocationId,
                 ProfilePhoto = null
             };
 
@@ -260,11 +300,17 @@ public sealed class CreateEmployeeHandler(
                 EmployeeCode = employee.EmployeeCode,
                 FirstName = employee.FirstName,
                 LastName = employee.LastName,
+                FirstNameAr = employee.FirstNameAr,
+                LastNameAr = employee.LastNameAr,
                 FullName = employee.FullName,
+                FullNameAr = employee.FullNameAr,
+                FullNameEn = employee.FullNameEn,
                 Email = employee.Email,
                 PhoneNumber = employee.PhoneNumber,
                 Department = employee.Department,
+                DepartmentAr = employee.DepartmentAr,
                 JobTitle = employee.JobTitle,
+                JobTitleAr = employee.JobTitleAr,
                 HireDate = employee.HireDate,
                 IsActive = employee.IsActive,
                 UserId = employee.UserId,
@@ -272,6 +318,8 @@ public sealed class CreateEmployeeHandler(
                 SupervisorId = employee.SupervisorId,
                 SupervisorName = supervisorName,
                 SupervisorCode = supervisorCode,
+                WorkLocationId = employee.WorkLocationId,
+                WorkLocationName = workLocationName,
                 ProfilePhoto = employee.ProfilePhoto,
                 Created_Utc = employee.Created_Utc,
                 Created_By = employee.Created_By,

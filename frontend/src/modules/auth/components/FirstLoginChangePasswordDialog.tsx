@@ -171,9 +171,19 @@ export function FirstLoginChangePasswordDialog({
       fullWidth
       disableEscapeKeyDown
       aria-labelledby="first-login-change-password-title"
+      PaperProps={{
+        component: 'form',
+        onSubmit: handleSubmit,
+        noValidate: true,
+        sx: {
+          maxHeight: 'calc(100% - 64px)',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        },
+      }}
     >
-      <form onSubmit={handleSubmit} noValidate>
-        <DialogTitle id="first-login-change-password-title" sx={{ pb: 1 }}>
+      <DialogTitle component="div" id="first-login-change-password-title" sx={{ pb: 1, flexShrink: 0 }}>
           <Stack direction="row" spacing={1.5} alignItems="center">
             <Box
               sx={{
@@ -189,7 +199,7 @@ export function FirstLoginChangePasswordDialog({
               <IconLockCheck size={24} />
             </Box>
             <Box>
-              <Typography variant="h6" fontWeight={700}>
+              <Typography component="div" variant="h6" fontWeight={700}>
                 {t.has('ChangePasswordRequired')
                   ? t('ChangePasswordRequired')
                   : 'Initial Password Setup Required'}
@@ -203,7 +213,7 @@ export function FirstLoginChangePasswordDialog({
           </Stack>
         </DialogTitle>
 
-        <DialogContent dividers sx={{ pt: 2.5 }}>
+        <DialogContent dividers sx={{ pt: 2.5, flex: '1 1 auto', overflowY: 'auto' }}>
           <Stack spacing={2.5}>
             <Alert
               severity="info"
@@ -295,7 +305,7 @@ export function FirstLoginChangePasswordDialog({
           </Stack>
         </DialogContent>
 
-        <DialogActions sx={{ px: 3, py: 2 }}>
+        <DialogActions sx={{ px: 3, py: 2, flexShrink: 0, borderTop: 1, borderColor: 'divider' }}>
           <Button onClick={handleCancel} disabled={isLoading} color="inherit">
             {t.has('Cancel') ? t('Cancel') : 'Cancel'}
           </Button>
@@ -320,7 +330,6 @@ export function FirstLoginChangePasswordDialog({
               : 'Set Password & Sign In'}
           </Button>
         </DialogActions>
-      </form>
     </Dialog>
   );
 }

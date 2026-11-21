@@ -373,7 +373,7 @@ Web/wwwroot/uploads/
 /Files/
 appsettings.Development.json
 modernize-next
-modernize
+/modernize/
 
 # Local environment and secret configuration
 .env*.local

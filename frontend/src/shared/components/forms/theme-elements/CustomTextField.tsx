@@ -14,13 +14,6 @@ const CustomTextField = styled((props: any) => <TextField {...props} />)(({ them
   '& .Mui-disabled .MuiOutlinedInput-notchedOutline': {
     borderColor: theme.palette.grey[200],
   },
-  '& .MuiOutlinedInput-input:-webkit-autofill, & .MuiOutlinedInput-input:-webkit-autofill:hover, & .MuiOutlinedInput-input:-webkit-autofill:focus, & .MuiOutlinedInput-input:-webkit-autofill:active, & .MuiOutlinedInput-input:autofill': {
-    WebkitTextFillColor: `${theme.palette.text.primary} !important`,
-    caretColor: theme.palette.text.primary,
-    WebkitBoxShadow: `0 0 0 1000px ${theme.palette.background.paper} inset !important`,
-    boxShadow: `0 0 0 1000px ${theme.palette.background.paper} inset !important`,
-    transition: 'background-color 5000000s ease-in-out 0s',
-  },
 }));
 
 export default CustomTextField;

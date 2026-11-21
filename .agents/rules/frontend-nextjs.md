@@ -53,6 +53,8 @@ src/modules/notifications/
 - **Typed Hooks:** Always use `useAppDispatch` and `useAppSelector` from `src/store/hooks.ts` instead of untyped `useDispatch` and `useSelector`.
 - **Redux Persist:** Persisted slices (like `auth`) must use the SSR-safe web storage helper with revision locking to prevent cross-tab state overwrites.
 - **Async Operations:** Handle complex asynchronous actions via `createAsyncThunk` placed under `slices/thunks/`.
+- **UI Preferences Persistence:** Centralize client UI customization under `customizerContext.tsx` persisting to `localStorage` under `nasaq.ui.preferences.v1`. Protect against SSR hydration errors by initializing on mount.
+- **Authenticated Image & Avatar Architecture:** For protected media files (such as employee profile photos), never pass raw API URLs to `<Avatar src="...">` or `<img>` as browser native image requests do not attach Bearer tokens. Always use `<ProfilePhotoAvatar>` (`@/shared/components/avatar`) and `useAuthenticatedPhotoUrl` (`@/shared/hooks/useAuthenticatedPhotoUrl`). These standardise authenticated Axios blob fetching, in-flight deduplication, blob caching, event-driven cache invalidation via `broadcastPhotoInvalidation`, local file upload preview bridging, and initial/icon fallbacks.
 
 ---
 
@@ -98,3 +100,15 @@ src/modules/notifications/
 - **Dynamic Imports:** Use `next/dynamic` for heavy components, charts, or modal dialogs not required on initial render.
 - **Images:** Always use `next/image` with explicit dimensions (`width`, `height`) or `fill` to prevent Layout Shift (CLS).
 - **Memoization:** Use `useMemo` and `useCallback` judiciously on expensive calculations and callbacks passed to memoized children.
+
+---
+
+## 8. Layout Spacing, Bidi Direction & Icon Alignment Standards
+
+- **CSS Logical Properties:** Always use CSS Logical Properties (`insetInlineEnd`, `insetInlineStart`, `marginInlineStart`, `marginInlineEnd`, `paddingInlineStart`, `paddingInlineEnd`, `borderInlineStart`, `textAlign: 'start' | 'end'`). Never use manual direction ternaries (e.g. `isRtl ? { left: X } : { right: X }`) on physical CSS properties that `stylis-plugin-rtl` flips automatically.
+- **Flex Gap Architecture:** Use CSS Flexbox `gap` (or MUI `Stack` with `useFlexGap: true`) for adjacent action buttons, toolbar controls, switchers, and dialog actions instead of legacy sibling margins.
+- **Icon Spacing:** Maintain standard 8px separation between icons and text labels across buttons, alerts, navigation items, and input adornments.
+- **Floating Overlays & Dialogs:** Position dialog close buttons and floating notification toasts using `insetInlineEnd` to ensure consistent alignment in both Arabic RTL and English LTR without overlap.
+- **Global Required Field Asterisks:** All required field indicators (`*`) must globally render in `theme.palette.error.main` via `Components.tsx` and `CustomFormLabel.tsx`.
+- **Close Button vs. Cancel Semantics:** Dedicated Close actions (`DialogCloseButton`) must use danger error styling (`color: 'error.main'`), while Cancel actions in forms and confirm dialogs must remain neutral secondary actions (`variant="outlined" color="inherit"`).
+- **Date-Only Timezone Safety:** Use `toDateInputValue` for date inputs and `formatDateOnly` for tabular and dialog displays to prevent timezone off-by-one day shifts.

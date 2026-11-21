@@ -19,7 +19,8 @@ public sealed class AuthService(
     SignInManager<ApplicationUser> signInManager,
     ITokenService tokenService,
     IRefreshTokenService refreshTokenService,
-    IOptions<JwtSettings> jwtSettings) : ResponseHandler, IAuthService
+    IOptions<JwtSettings> jwtSettings,
+    IApplicationDbContext dbContext) : ResponseHandler, IAuthService
 {
     private const string InvalidCredentials = "Invalid email or password.";
 
@@ -49,12 +50,15 @@ public sealed class AuthService(
 
             var setupToken = CreateSetupToken(user);
             var roles = await userManager.GetRolesAsync(user);
+            var employee = await dbContext.Employees
+                .AsNoTracking()
+                .FirstOrDefaultAsync(e => e.UserId == user.Id, cancellationToken);
 
             return Success(new AuthResponse
             {
                 RequiresPasswordChange = true,
                 SetupToken = setupToken,
-                User = AuthMapper.ToUserResponse(user),
+                User = AuthMapper.ToUserResponse(user, employee),
                 Roles = roles.ToList()
             }, "Password change is required before accessing the system.");
         }
@@ -102,7 +106,11 @@ public sealed class AuthService(
             return Unauthorized<CurrentUserResponse>();
 
         var roles = await userManager.GetRolesAsync(user);
-        return Success(AuthMapper.ToCurrentUserResponse(user, roles.ToList()));
+        var employee = await dbContext.Employees
+            .AsNoTracking()
+            .FirstOrDefaultAsync(e => e.UserId == user.Id, cancellationToken);
+
+        return Success(AuthMapper.ToCurrentUserResponse(user, roles.ToList(), employee));
     }
 
     public async Task<GenericBaseResponse<CurrentUserResponse>> UpdateProfileAsync(string? userId, UpdateProfileRequest request, CancellationToken cancellationToken = default)
@@ -114,21 +122,63 @@ public sealed class AuthService(
         if (user is null)
             return Unauthorized<CurrentUserResponse>();
 
+        var employee = await dbContext.Employees
+            .FirstOrDefaultAsync(e => e.UserId == user.Id, cancellationToken);
+
         if (!string.IsNullOrWhiteSpace(request.FullName))
-            user.FullName = request.FullName.Trim();
+        {
+            var trimmed = request.FullName.Trim();
+            user.FullName = trimmed;
+            if (employee != null)
+            {
+                var parts = trimmed.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+                employee.FirstName = parts[0];
+                employee.LastName = parts.Length > 1 ? parts[1] : string.Empty;
+            }
+        }
+
         if (request.PhoneNumber is not null)
-            user.PhoneNumber = string.IsNullOrWhiteSpace(request.PhoneNumber) ? null : request.PhoneNumber.Trim();
+        {
+            var trimmedPhone = string.IsNullOrWhiteSpace(request.PhoneNumber) ? null : request.PhoneNumber.Trim();
+            user.PhoneNumber = trimmedPhone;
+            if (employee != null)
+            {
+                employee.PhoneNumber = trimmedPhone;
+            }
+        }
+
         if (request.JobTitle is not null)
-            user.JobTitle = string.IsNullOrWhiteSpace(request.JobTitle) ? null : request.JobTitle.Trim();
+        {
+            var trimmedTitle = string.IsNullOrWhiteSpace(request.JobTitle) ? null : request.JobTitle.Trim();
+            user.JobTitle = trimmedTitle;
+            if (employee != null)
+            {
+                employee.JobTitle = trimmedTitle;
+            }
+        }
+
         if (request.Department is not null)
-            user.Department = string.IsNullOrWhiteSpace(request.Department) ? null : request.Department.Trim();
+        {
+            var trimmedDept = string.IsNullOrWhiteSpace(request.Department) ? null : request.Department.Trim();
+            user.Department = trimmedDept;
+            if (employee != null)
+            {
+                employee.Department = trimmedDept;
+            }
+        }
 
         var updateResult = await userManager.UpdateAsync(user);
         if (!updateResult.Succeeded)
             return Fail<CurrentUserResponse>(string.Join("; ", updateResult.Errors.Select(e => e.Description)));
 
+        if (employee != null)
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+
         var roles = await userManager.GetRolesAsync(user);
-        return Success(AuthMapper.ToCurrentUserResponse(user, roles.ToList()), "Profile updated successfully.");
+
+        return Success(AuthMapper.ToCurrentUserResponse(user, roles.ToList(), employee), "Profile updated successfully.");
     }
 
     public async Task<GenericBaseResponse<bool>> ChangePasswordAsync(string? userId, ChangePasswordRequest request, CancellationToken cancellationToken = default)
@@ -304,6 +354,9 @@ public sealed class AuthService(
     {
         var access = await tokenService.CreateAccessTokenAsync(user, cancellationToken);
         var roles = await userManager.GetRolesAsync(user);
+        var employee = await dbContext.Employees
+            .AsNoTracking()
+            .FirstOrDefaultAsync(e => e.UserId == user.Id, cancellationToken);
 
         return new AuthResponse
         {
@@ -311,7 +364,7 @@ public sealed class AuthService(
             RefreshToken = refreshToken,
             AccessTokenExpiresAtUtc = access.ExpiresAtUtc,
             RefreshTokenExpiresAtUtc = refreshExpiresAtUtc,
-            User = AuthMapper.ToUserResponse(user),
+            User = AuthMapper.ToUserResponse(user, employee),
             Roles = roles.ToList()
         };
     }

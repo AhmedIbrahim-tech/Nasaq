@@ -15,8 +15,10 @@ export interface GenericBaseResponse<T = unknown> {
  */
 export interface PaginatedResult<T = unknown> {
   items: T[];
+  data?: T[];
   totalCount: number;
-  pageNumber: number;
+  currentPage?: number;
+  pageNumber?: number;
   pageSize: number;
   totalPages: number;
   hasPreviousPage?: boolean;

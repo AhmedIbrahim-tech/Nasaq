@@ -18,6 +18,7 @@ public sealed class GetCurrentEmployeeProfileHandler(
         var employee = await dbContext.Employees
             .AsNoTracking()
             .Include(e => e.Supervisor)
+            .Include(e => e.WorkLocation)
             .FirstOrDefaultAsync(e => e.UserId == currentUser.UserId, cancellationToken);
 
         if (employee == null)
@@ -51,6 +52,8 @@ public sealed class GetCurrentEmployeeProfileHandler(
             SupervisorId = employee.SupervisorId,
             SupervisorName = employee.Supervisor?.FullName,
             SupervisorCode = employee.Supervisor?.EmployeeCode,
+            WorkLocationId = employee.WorkLocationId,
+            WorkLocationName = employee.WorkLocation?.Name,
             ProfilePhoto = employee.ProfilePhoto,
             Created_Utc = employee.Created_Utc,
             Created_By = employee.Created_By,

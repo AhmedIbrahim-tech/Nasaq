@@ -44,20 +44,6 @@ const Breadcrumb = ({ subtitle, items, title, children }: BreadCrumbType) => {
         >
           {title}
         </Typography>
-        {subtitle && (
-          <Typography
-            color="textSecondary"
-            variant="h6"
-            fontWeight={400}
-            sx={{
-              fontSize: { xs: "0.8rem", sm: "0.875rem" },
-              mt: 0.5,
-              mb: 0,
-            }}
-          >
-            {subtitle}
-          </Typography>
-        )}
         <Breadcrumbs
           separator={
             <IconCircle
@@ -69,7 +55,7 @@ const Breadcrumb = ({ subtitle, items, title, children }: BreadCrumbType) => {
           }
           sx={{
             alignItems: "center",
-            mt: items ? { xs: "6px", sm: "10px" } : 0,
+            mt: items ? { xs: "8px", sm: "10px" } : 0,
             flexWrap: "wrap",
             "& .MuiBreadcrumbs-ol": { flexWrap: "wrap" },
           }}

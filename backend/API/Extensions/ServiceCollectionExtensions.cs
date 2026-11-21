@@ -277,6 +277,42 @@ public static class ServiceCollectionExtensions
 
             options.AddPolicy(PolicyNames.EmployeeView, policy =>
                 policy.RequireRole(RoleNames.SuperAdmin, RoleNames.Admin, RoleNames.Supervisor, RoleNames.Employee));
+
+            options.AddPolicy(PolicyNames.LocationManagement, policy =>
+                policy.RequireRole(RoleNames.SuperAdmin, RoleNames.Admin));
+
+            options.AddPolicy(PolicyNames.LocationView, policy =>
+                policy.RequireRole(RoleNames.SuperAdmin, RoleNames.Admin, RoleNames.Supervisor, RoleNames.Employee));
+
+            options.AddPolicy(PolicyNames.ScheduleManagement, policy =>
+                policy.RequireRole(RoleNames.SuperAdmin, RoleNames.Admin));
+
+            options.AddPolicy(PolicyNames.ScheduleView, policy =>
+                policy.RequireRole(RoleNames.SuperAdmin, RoleNames.Admin, RoleNames.Supervisor, RoleNames.Employee));
+
+            options.AddPolicy(PolicyNames.AttendanceManagement, policy =>
+                policy.RequireRole(RoleNames.SuperAdmin, RoleNames.Admin));
+
+            options.AddPolicy(PolicyNames.AttendanceView, policy =>
+                policy.RequireRole(RoleNames.SuperAdmin, RoleNames.Admin, RoleNames.Supervisor, RoleNames.Employee));
+
+            options.AddPolicy(PolicyNames.PointsManagement, policy =>
+                policy.RequireRole(RoleNames.SuperAdmin, RoleNames.Admin));
+
+            options.AddPolicy(PolicyNames.PointsView, policy =>
+                policy.RequireRole(RoleNames.SuperAdmin, RoleNames.Admin, RoleNames.Supervisor, RoleNames.Employee));
+
+            options.AddPolicy(PolicyNames.LeaveManagement, policy =>
+                policy.RequireRole(RoleNames.SuperAdmin, RoleNames.Admin, RoleNames.Supervisor));
+
+            options.AddPolicy(PolicyNames.LeaveView, policy =>
+                policy.RequireRole(RoleNames.SuperAdmin, RoleNames.Admin, RoleNames.Supervisor, RoleNames.Employee));
+
+            options.AddPolicy(PolicyNames.ReportsView, policy =>
+                policy.RequireRole(RoleNames.SuperAdmin, RoleNames.Admin, RoleNames.Supervisor));
+
+            options.AddPolicy(PolicyNames.ReportsExport, policy =>
+                policy.RequireRole(RoleNames.SuperAdmin, RoleNames.Admin, RoleNames.Supervisor));
         });
 
         return services;

@@ -93,7 +93,7 @@ public sealed class FileService(
 
             return storedFile;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             if (committedPath != null)
             {

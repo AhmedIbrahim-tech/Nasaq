@@ -17,7 +17,7 @@ import Collapse from '@mui/material/Collapse';
 import Chip from '@mui/material/Chip';
 import Divider from '@mui/material/Divider';
 import Stack from '@mui/material/Stack';
-import { alpha } from '@mui/material/styles';
+import { alpha, useTheme } from '@mui/material/styles';
 import {
   IconSearch,
   IconFilter,
@@ -80,6 +80,8 @@ export function DataTableToolbar<T>({
   primaryAction,
 }: DataTableToolbarProps<T>) {
   const t = useTranslations();
+  const theme = useTheme();
+  const isRtl = theme.direction === 'rtl';
   const [columnMenuAnchorEl, setColumnMenuAnchorEl] = useState<null | HTMLElement>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(Boolean(searchValue));
 
@@ -350,8 +352,8 @@ export function DataTableToolbar<T>({
                 anchorEl={columnMenuAnchorEl}
                 open={Boolean(columnMenuAnchorEl)}
                 onClose={handleCloseColumnMenu}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                anchorOrigin={{ vertical: 'bottom', horizontal: isRtl ? 'left' : 'right' }}
+                transformOrigin={{ vertical: 'top', horizontal: isRtl ? 'left' : 'right' }}
                 slotProps={{
                   paper: {
                     sx: { minWidth: 180, borderRadius: 2, p: 0.5 },

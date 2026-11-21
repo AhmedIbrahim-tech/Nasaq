@@ -13,6 +13,7 @@ public sealed class GetEmployeeByIdHandler(
         var employee = await dbContext.Employees
             .AsNoTracking()
             .Include(e => e.Supervisor)
+            .Include(e => e.WorkLocation)
             .FirstOrDefaultAsync(e => e.Id == request.Id, cancellationToken);
 
         if (employee == null)
@@ -76,6 +77,8 @@ public sealed class GetEmployeeByIdHandler(
             SupervisorId = employee.SupervisorId,
             SupervisorName = employee.Supervisor?.FullName,
             SupervisorCode = employee.Supervisor?.EmployeeCode,
+            WorkLocationId = employee.WorkLocationId,
+            WorkLocationName = employee.WorkLocation?.Name,
             ProfilePhoto = employee.ProfilePhoto,
             Created_Utc = employee.Created_Utc,
             Created_By = employee.Created_By,

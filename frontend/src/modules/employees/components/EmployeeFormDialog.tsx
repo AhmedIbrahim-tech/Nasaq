@@ -22,6 +22,10 @@ import { IconUser, IconCamera, IconTrash } from "@tabler/icons-react";
 import { useTranslations } from "next-intl";
 import { RoleNames } from "@/shared/constants/roles";
 import { Router } from "@/lib/api/router";
+import DialogCloseButton from "@/shared/components/buttons/DialogCloseButton";
+import { toDateInputValue } from "@/shared/utils/i18nFormatters";
+import { ProfilePhotoAvatar } from "@/shared/components/avatar";
+import type { WorkLocation } from "@/modules/locations";
 import type { Employee, SupervisorLookup } from "../types";
 
 interface EmployeeFormDialogProps {
@@ -32,6 +36,7 @@ interface EmployeeFormDialogProps {
   isSuperAdmin: boolean;
   departments: string[];
   supervisors: SupervisorLookup[];
+  locations?: WorkLocation[];
   onClose: () => void;
   onSubmit: (data: any) => Promise<void>;
 }
@@ -44,6 +49,7 @@ export const EmployeeFormDialog: React.FC<EmployeeFormDialogProps> = ({
   isSuperAdmin,
   departments,
   supervisors,
+  locations = [],
   onClose,
   onSubmit,
 }) => {
@@ -62,6 +68,7 @@ export const EmployeeFormDialog: React.FC<EmployeeFormDialogProps> = ({
     userRole: string;
     password: string;
     supervisorId: string | null;
+    workLocationId: string | null;
   }>({
     employeeCode: "",
     firstName: "",
@@ -70,11 +77,12 @@ export const EmployeeFormDialog: React.FC<EmployeeFormDialogProps> = ({
     phoneNumber: "",
     department: "",
     jobTitle: "",
-    hireDate: new Date().toISOString().split("T")[0],
+    hireDate: toDateInputValue(new Date().toISOString()),
     createUserAccount: false,
     userRole: RoleNames.Employee,
     password: "",
     supervisorId: null,
+    workLocationId: null,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -102,25 +110,20 @@ export const EmployeeFormDialog: React.FC<EmployeeFormDialogProps> = ({
         phoneNumber: employee.phoneNumber || "",
         department: employee.department || "",
         jobTitle: employee.jobTitle || "",
-        hireDate: employee.hireDate
-          ? new Date(employee.hireDate).toISOString().split("T")[0]
-          : new Date().toISOString().split("T")[0],
+        hireDate: toDateInputValue(employee.hireDate) || toDateInputValue(new Date().toISOString()),
         createUserAccount: false,
         userRole: (employee.userRole || RoleNames.Employee) as any,
         password: "",
         supervisorId: employee.supervisorId || null,
+        workLocationId: employee.workLocationId || null,
       });
       if (photoPreview && photoPreview.startsWith("blob:")) {
         URL.revokeObjectURL(photoPreview);
       }
       setPhoto(null);
+      setPhotoPreview(null);
       setPhotoError(null);
       setRemovePhotoRequested(false);
-      if (employee.profilePhoto) {
-        setPhotoPreview(Router.Files.Download(employee.profilePhoto));
-      } else {
-        setPhotoPreview(null);
-      }
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
@@ -133,11 +136,12 @@ export const EmployeeFormDialog: React.FC<EmployeeFormDialogProps> = ({
         phoneNumber: "",
         department: "",
         jobTitle: "",
-        hireDate: new Date().toISOString().split("T")[0],
+        hireDate: toDateInputValue(new Date().toISOString()),
         createUserAccount: false,
         userRole: RoleNames.Employee,
         password: "",
         supervisorId: null,
+        workLocationId: null,
       });
       if (photoPreview && photoPreview.startsWith("blob:")) {
         URL.revokeObjectURL(photoPreview);
@@ -237,13 +241,39 @@ export const EmployeeFormDialog: React.FC<EmployeeFormDialogProps> = ({
     : [RoleNames.Employee, RoleNames.Supervisor, RoleNames.Admin];
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <form onSubmit={handleSubmit}>
-        <DialogTitle sx={{ fontWeight: 600 }}>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="md"
+      fullWidth
+      PaperProps={{
+        component: "form",
+        onSubmit: handleSubmit,
+        sx: {
+          maxHeight: "calc(100% - 64px)",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+        },
+      }}
+    >
+      <DialogTitle
+        component="div"
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          p: 2.5,
+          flexShrink: 0,
+        }}
+      >
+        <Typography component="div" variant="h6" fontWeight={700}>
           {mode === "create" ? t("AddNewEmployee") : t("EditEmployee")}
-        </DialogTitle>
+        </Typography>
+        <DialogCloseButton onClose={onClose} disabled={isSubmitting} />
+      </DialogTitle>
 
-        <DialogContent dividers sx={{ p: 3 }}>
+      <DialogContent dividers sx={{ p: 3, flex: "1 1 auto", overflowY: "auto", minHeight: 0 }}>
           <Grid container spacing={2.5}>
             {/* Optional Profile Photo Selector */}
             <Grid size={{ xs: 12 }}>
@@ -257,19 +287,17 @@ export const EmployeeFormDialog: React.FC<EmployeeFormDialogProps> = ({
                 }}
               >
                 <Stack direction={{ xs: "column", sm: "row" }} spacing={2.5} alignItems="center">
-                  <Avatar
-                    src={photoPreview || undefined}
+                  <ProfilePhotoAvatar
+                    src={photoPreview}
+                    photoId={removePhotoRequested ? null : (mode === "edit" ? employee?.profilePhoto : null)}
+                    name={formData.firstName || formData.lastName ? `${formData.firstName} ${formData.lastName}` : (employee?.fullName || undefined)}
+                    size={80}
+                    colorScheme="soft"
                     sx={{
-                      width: 80,
-                      height: 80,
-                      bgcolor: "primary.light",
-                      color: "primary.main",
                       border: "2px solid",
                       borderColor: "divider",
                     }}
-                  >
-                    {!photoPreview && <IconUser size={44} />}
-                  </Avatar>
+                  />
 
                   <Box sx={{ flexGrow: 1, textAlign: { xs: "center", sm: "start" } }}>
                     <Typography variant="subtitle2" fontWeight={600}>
@@ -279,34 +307,41 @@ export const EmployeeFormDialog: React.FC<EmployeeFormDialogProps> = ({
                       {t("ProfilePhotoHint")}
                     </Typography>
 
-                    <Stack direction="row" spacing={1} justifyContent={{ xs: "center", sm: "flex-start" }}>
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp,image/jpg"
-                        onChange={handlePhotoSelect}
-                        style={{ display: "none" }}
-                      />
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        startIcon={<IconCamera size={16} />}
-                        onClick={() => fileInputRef.current?.click()}
-                      >
-                        {photo || photoPreview ? t("ChangePhoto") : t("SelectProfilePhoto")}
-                      </Button>
-                      {(photo || photoPreview) && (
-                        <Button
-                          size="small"
-                          color="error"
-                          variant="text"
-                          startIcon={<IconTrash size={16} />}
-                          onClick={handleRemovePhoto}
-                        >
-                          {t("RemovePhoto")}
-                        </Button>
-                      )}
-                    </Stack>
+                    {(() => {
+                      const hasActivePhoto = Boolean(
+                        photo || (mode === "edit" && employee?.profilePhoto && !removePhotoRequested)
+                      );
+                      return (
+                        <Stack direction="row" spacing={1} justifyContent={{ xs: "center", sm: "flex-start" }}>
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp,image/jpg"
+                            onChange={handlePhotoSelect}
+                            style={{ display: "none" }}
+                          />
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            startIcon={<IconCamera size={16} />}
+                            onClick={() => fileInputRef.current?.click()}
+                          >
+                            {hasActivePhoto ? t("ChangePhoto") : t("SelectProfilePhoto")}
+                          </Button>
+                          {hasActivePhoto && (
+                            <Button
+                              size="small"
+                              color="error"
+                              variant="text"
+                              startIcon={<IconTrash size={16} />}
+                              onClick={handleRemovePhoto}
+                            >
+                              {t("RemovePhoto")}
+                            </Button>
+                          )}
+                        </Stack>
+                      );
+                    })()}
 
                     {photoError && (
                       <Typography variant="caption" color="error" display="block" sx={{ mt: 1 }}>
@@ -379,6 +414,12 @@ export const EmployeeFormDialog: React.FC<EmployeeFormDialogProps> = ({
                 label={t("PhoneNumber")}
                 value={formData.phoneNumber}
                 onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                slotProps={{
+                  htmlInput: {
+                    dir: "ltr",
+                    placeholder: "+966 50 000 0000",
+                  },
+                }}
               />
             </Grid>
 
@@ -427,6 +468,14 @@ export const EmployeeFormDialog: React.FC<EmployeeFormDialogProps> = ({
                 onChange={(e) =>
                   setFormData({ ...formData, supervisorId: e.target.value ? e.target.value : null })
                 }
+                SelectProps={{
+                  displayEmpty: true,
+                  renderValue: (selected: any) => {
+                    if (!selected) return <em>{t("UnassignedSupervisor")}</em>;
+                    const found = supervisors.find((s) => s.id === selected);
+                    return found ? `${found.fullName} (${found.employeeCode})` : selected;
+                  },
+                }}
               >
                 <MenuItem value="">
                   <em>{t("UnassignedSupervisor")}</em>
@@ -438,6 +487,36 @@ export const EmployeeFormDialog: React.FC<EmployeeFormDialogProps> = ({
                       {s.fullName} ({s.employeeCode}) {s.role ? `— ${s.role}` : ""}
                     </MenuItem>
                   ))}
+              </TextField>
+            </Grid>
+
+            {/* Work Location Selection */}
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                select
+                fullWidth
+                label={t("WorkLocation")}
+                value={formData.workLocationId || ""}
+                onChange={(e) =>
+                  setFormData({ ...formData, workLocationId: e.target.value ? e.target.value : null })
+                }
+                SelectProps={{
+                  displayEmpty: true,
+                  renderValue: (selected: any) => {
+                    if (!selected) return <em>{t("UnassignedLocation")}</em>;
+                    const found = locations.find((l) => l.id === selected);
+                    return found ? found.name : selected;
+                  },
+                }}
+              >
+                <MenuItem value="">
+                  <em>{t("UnassignedLocation")}</em>
+                </MenuItem>
+                {locations.map((loc) => (
+                  <MenuItem key={loc.id} value={loc.id}>
+                    {loc.name} {!loc.isActive ? `(${t("Inactive")})` : ""}
+                  </MenuItem>
+                ))}
               </TextField>
             </Grid>
 
@@ -527,8 +606,8 @@ export const EmployeeFormDialog: React.FC<EmployeeFormDialogProps> = ({
           </Grid>
         </DialogContent>
 
-        <DialogActions sx={{ px: 3, py: 2 }}>
-          <Button onClick={onClose} color="inherit" disabled={isSubmitting}>
+        <DialogActions sx={{ px: 3, py: 2, gap: 1.5, flex: "0 0 auto", flexShrink: 0, borderTop: 1, borderColor: "divider" }}>
+          <Button onClick={onClose} variant="outlined" color="inherit" disabled={isSubmitting}>
             {t("Cancel")}
           </Button>
           <Button
@@ -541,7 +620,6 @@ export const EmployeeFormDialog: React.FC<EmployeeFormDialogProps> = ({
             {mode === "create" ? t("CreateEmployee") : t("SaveEmployee")}
           </Button>
         </DialogActions>
-      </form>
     </Dialog>
   );
 };

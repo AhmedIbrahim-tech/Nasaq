@@ -11,16 +11,16 @@ import { IconMoon, IconSun } from '@tabler/icons-react';
 import PageContainer from '@/shared/components/container/PageContainer';
 import LoginForm from '../components/LoginForm';
 import ProductShowcase from '../components/ProductShowcase';
+import NasaqBrand from '../components/NasaqBrand';
 import { useAuthSessionContext } from '../context/AuthSessionContext';
 import { CustomizerContext } from '@/theme/customizerContext';
 import Language from '@/shared/layouts/dashboard/vertical/header/Language';
-import Logo from '@/shared/layouts/dashboard/shared/logo/Logo';
 import Loading from '@/app/loading';
 
 export default function SideLoginView() {
   const t = useTranslations();
   const { status } = useAuthSessionContext();
-  const { activeMode, setActiveMode, activeDir } = useContext(CustomizerContext);
+  const { activeMode, setActiveMode } = useContext(CustomizerContext);
   const router = useRouter();
 
   useEffect(() => {
@@ -29,17 +29,17 @@ export default function SideLoginView() {
     }
   }, [status, router]);
 
-  if (status === 'initializing' || status === 'authenticated') {
+  if (status === 'authenticated') {
     return <Loading />;
   }
 
   return (
     <PageContainer
-      title={t.has('LoginTitle') ? t('LoginTitle') : 'Login — Nasaq'}
+      title={t.has('LoginTitle') ? t('LoginTitle') : 'Login — NASAQ'}
       description={
         t.has('LoginDescription')
           ? t('LoginDescription')
-          : 'Nasaq Employee Attendance Management (Sharm Photographer)'
+          : 'NASAQ — Employee Attendance & Workforce Management'
       }
     >
       <Box
@@ -52,11 +52,13 @@ export default function SideLoginView() {
           bgcolor: 'background.default',
         }}
       >
-        {/* Left Panel: 55% — Nasaq Showcase (Hidden on Mobile/Tablet xs/sm/md) */}
+        {/* Left Panel: 55% — NASAQ Workforce Attendance Showcase (Desktop only) */}
         <Box
           component="section"
           aria-label={
-            t.has('ProductShowcase') ? t('ProductShowcase') : 'Nasaq System'
+            t.has('WorkforceShowcaseTitle')
+              ? t('WorkforceShowcaseTitle')
+              : 'NASAQ Employee Attendance'
           }
           sx={{
             flex: { xs: 'none', lg: '0 0 55%' },
@@ -110,11 +112,17 @@ export default function SideLoginView() {
             }}
           >
             <Box sx={{ display: { xs: 'flex', lg: 'none' } }}>
-              <Logo />
+              <NasaqBrand variant="compact" height={32} />
             </Box>
             <Box sx={{ display: { xs: 'none', lg: 'block' } }} />
 
-            <Stack direction="row" spacing={1} alignItems="center">
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: { xs: 1.25, sm: 1.5 },
+              }}
+            >
               <Language />
               <Tooltip
                 title={
@@ -145,12 +153,11 @@ export default function SideLoginView() {
                     p: 0.85,
                     width: 38,
                     height: 38,
-                    borderRadius: 2,
+                    borderRadius: '8px',
                     border: '1px solid',
                     borderColor: 'divider',
                     bgcolor: (theme) =>
                       theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : '#ffffff',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
                     transition: 'all 0.2s ease',
                     '&:hover': {
                       borderColor: 'primary.main',
@@ -166,10 +173,10 @@ export default function SideLoginView() {
                   )}
                 </IconButton>
               </Tooltip>
-            </Stack>
+            </Box>
           </Box>
 
-          {/* Form Container with vertical spacing */}
+          {/* Form Container with responsive vertical spacing */}
           <Box sx={{ width: '100%', my: 'auto', pt: { xs: 7, lg: 4 }, pb: { xs: 4, lg: 2 } }}>
             <LoginForm />
           </Box>

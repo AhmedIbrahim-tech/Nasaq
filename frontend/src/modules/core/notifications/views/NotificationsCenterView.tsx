@@ -44,6 +44,7 @@ export const NotificationsCenterView: React.FC = () => {
     setSelectedCategory,
     setSearchQuery,
     setSelectedNotification,
+    resetFilters,
   } = useNotifications(true);
 
   const totalPages = Math.ceil(totalCount / pageSize);
@@ -134,6 +135,8 @@ export const NotificationsCenterView: React.FC = () => {
             onSetSearch={setSearchQuery}
             onMarkAllAsRead={handleMarkAllAsRead}
             onRefresh={fetchNotifications}
+            onReset={resetFilters}
+            hasActiveFilters={Boolean(searchQuery || selectedCategory || unreadOnly)}
           />
 
           {/* Error Alert */}

@@ -9,6 +9,7 @@ import type {
   UpdateEmployeeRequest,
   ToggleEmployeeStatusRequest,
   SupervisorLookup,
+  EmployeesSummary,
 } from "../types";
 
 export const employeeService = {
@@ -71,6 +72,22 @@ export const employeeService = {
     return response.data.data ?? [];
   },
 
+  async getSummary(): Promise<EmployeesSummary> {
+    const response = await api.get<GenericBaseResponse<EmployeesSummary>>(
+      Router.Employees.Summary
+    );
+    return (
+      response.data.data ?? {
+        totalEmployees: 0,
+        activeEmployees: 0,
+        inactiveEmployees: 0,
+        assignedLocationCount: 0,
+        unassignedLocationCount: 0,
+        supervisorCount: 0,
+      }
+    );
+  },
+
   async createEmployee(data: CreateEmployeeRequest): Promise<Employee> {
     const formData = new FormData();
     formData.append("employeeCode", data.employeeCode);
@@ -82,6 +99,7 @@ export const employeeService = {
     if (data.jobTitle) formData.append("jobTitle", data.jobTitle);
     formData.append("hireDate", data.hireDate);
     if (data.supervisorId) formData.append("supervisorId", data.supervisorId);
+    if (data.workLocationId) formData.append("workLocationId", data.workLocationId);
     if (data.createUserAccount !== undefined) {
       formData.append("createUserAccount", String(data.createUserAccount));
     }
@@ -92,12 +110,7 @@ export const employeeService = {
 
     const response = await api.post<GenericBaseResponse<Employee>>(
       Router.Employees.Create,
-      formData,
-      {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      }
+      formData
     );
     if (!response.data.data) {
       throw new Error(response.data.message || "Failed to create employee.");
@@ -115,6 +128,10 @@ export const employeeService = {
     if (data.jobTitle) formData.append("jobTitle", data.jobTitle);
     formData.append("hireDate", data.hireDate);
     if (data.supervisorId) formData.append("supervisorId", data.supervisorId);
+    if (data.workLocationId !== undefined) {
+      if (data.workLocationId) formData.append("workLocationId", data.workLocationId);
+      else formData.append("workLocationId", "");
+    }
     if (data.userRole) formData.append("userRole", data.userRole);
     if (data.userId) formData.append("userId", data.userId);
     if (data.removeProfilePhoto !== undefined) {
@@ -126,12 +143,7 @@ export const employeeService = {
 
     const response = await api.put<GenericBaseResponse<Employee>>(
       Router.Employees.Update(id),
-      formData,
-      {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      }
+      formData
     );
     if (!response.data.data) {
       throw new Error(response.data.message || "Failed to update employee.");
@@ -146,6 +158,43 @@ export const employeeService = {
     );
     if (!response.data.data) {
       throw new Error(response.data.message || "Failed to toggle status.");
+    }
+    return response.data.data;
+  },
+
+  async deleteEmployee(id: string): Promise<void> {
+    const response = await api.delete<GenericBaseResponse<object>>(
+      Router.Employees.Delete(id)
+    );
+    if (!response.data.succeeded) {
+      throw new Error(response.data.message || "Failed to delete employee.");
+    }
+  },
+
+  async bulkDeleteEmployees(ids: string[]): Promise<number> {
+    const response = await api.post<GenericBaseResponse<number>>(
+      Router.Employees.BulkDelete,
+      { ids }
+    );
+    if (!response.data.succeeded) {
+      throw new Error(response.data.message || "Failed to delete selected employees.");
+    }
+    return response.data.data ?? ids.length;
+  },
+
+  async updateMyPhoto(data: { photo?: File; removePhoto?: boolean }): Promise<Employee> {
+    const formData = new FormData();
+    if (data.photo) formData.append("photo", data.photo);
+    if (data.removePhoto !== undefined) {
+      formData.append("removePhoto", String(data.removePhoto));
+    }
+
+    const response = await api.put<GenericBaseResponse<Employee>>(
+      Router.Employees.MyProfilePhoto,
+      formData
+    );
+    if (!response.data.data) {
+      throw new Error(response.data.message || "Failed to update profile photo.");
     }
     return response.data.data;
   },

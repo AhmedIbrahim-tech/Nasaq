@@ -11,6 +11,7 @@ import MenuItem from '@mui/material/MenuItem';
 import Typography from '@mui/material/Typography';
 import Skeleton from '@mui/material/Skeleton';
 import Stack from '@mui/material/Stack';
+import { useTheme } from '@mui/material/styles';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslations, useLocale } from 'next-intl';
@@ -23,6 +24,8 @@ import type { NotificationItem } from '@/modules/core/notifications/types';
 
 const Notifications: React.FC = () => {
   const t = useTranslations();
+  const theme = useTheme();
+  const isRtl = theme.direction === 'rtl';
   const locale = useLocale();
   const router = useRouter();
   const [anchorEl2, setAnchorEl2] = useState<null | HTMLElement>(null);
@@ -93,8 +96,8 @@ const Notifications: React.FC = () => {
         keepMounted
         open={Boolean(anchorEl2)}
         onClose={handleClose2}
-        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+        anchorOrigin={{ horizontal: isRtl ? 'left' : 'right', vertical: 'bottom' }}
+        transformOrigin={{ horizontal: isRtl ? 'left' : 'right', vertical: 'top' }}
         sx={{
           '& .MuiMenu-paper': {
             width: '360px',

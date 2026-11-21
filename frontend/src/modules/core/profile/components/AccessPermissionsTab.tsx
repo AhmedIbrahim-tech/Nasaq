@@ -285,11 +285,11 @@ export function AccessPermissionsTab({ user, roles }: AccessPermissionsTabProps)
 
             {isPlatformUser ? (
               <Box sx={{ p: 2, borderRadius: '8px', bgcolor: 'action.hover' }}>
-                <Typography variant="subtitle2" fontWeight={600} color="secondary.main">
-                  {t('Platform Account Scope')}
+                <Typography variant="subtitle2" fontWeight={600} color="primary.main">
+                  {t('SuperAdmin')}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                  {t('PlatformSuperAdminSecurityDesc')}
+                  {t('FullSystemAccess')}
                 </Typography>
               </Box>
             ) : (

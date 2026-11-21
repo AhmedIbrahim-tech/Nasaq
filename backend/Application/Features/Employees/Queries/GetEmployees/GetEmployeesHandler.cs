@@ -40,9 +40,13 @@ public sealed class GetEmployeesHandler(
                 e.EmployeeCode.ToLower().Contains(search) ||
                 e.FirstName.ToLower().Contains(search) ||
                 e.LastName.ToLower().Contains(search) ||
+                (e.FirstNameAr != null && e.FirstNameAr.ToLower().Contains(search)) ||
+                (e.LastNameAr != null && e.LastNameAr.ToLower().Contains(search)) ||
                 e.Email.ToLower().Contains(search) ||
                 (e.Department != null && e.Department.ToLower().Contains(search)) ||
-                (e.JobTitle != null && e.JobTitle.ToLower().Contains(search)));
+                (e.DepartmentAr != null && e.DepartmentAr.ToLower().Contains(search)) ||
+                (e.JobTitle != null && e.JobTitle.ToLower().Contains(search)) ||
+                (e.JobTitleAr != null && e.JobTitleAr.ToLower().Contains(search)));
         }
 
         if (!string.IsNullOrWhiteSpace(request.Department))
@@ -82,6 +86,7 @@ public sealed class GetEmployeesHandler(
 
         var employees = await query
             .Include(e => e.Supervisor)
+            .Include(e => e.WorkLocation)
             .Skip((int)skip)
             .Take(pageSize)
             .ToListAsync(cancellationToken);
@@ -124,6 +129,8 @@ public sealed class GetEmployeesHandler(
             SupervisorId = e.SupervisorId,
             SupervisorName = e.Supervisor != null ? e.Supervisor.FullName : null,
             SupervisorCode = e.Supervisor != null ? e.Supervisor.EmployeeCode : null,
+            WorkLocationId = e.WorkLocationId,
+            WorkLocationName = e.WorkLocation != null ? e.WorkLocation.Name : null,
             ProfilePhoto = e.ProfilePhoto,
             Created_Utc = e.Created_Utc,
             Created_By = e.Created_By,

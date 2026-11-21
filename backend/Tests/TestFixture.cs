@@ -71,9 +71,9 @@ public class TestFixture : IDisposable
         };
         StorageOptionsWrapper = Options.Create(storageOptions);
 
-        UnitOfWork = new UnitOfWork(DbContext);
-        FileService = new FileService(StorageOptionsWrapper, Microsoft.Extensions.Logging.Abstractions.NullLogger<FileService>.Instance);
+        UnitOfWork = new UnitOfWork(DbContext, Microsoft.Extensions.Logging.Abstractions.NullLogger<UnitOfWork>.Instance);
         ValidationService = new FileValidationService(StorageOptionsWrapper);
+        FileService = new FileService(StorageOptionsWrapper, ValidationService, DbContext, new FakeCurrentUser(), Microsoft.Extensions.Logging.Abstractions.NullLogger<FileService>.Instance);
     }
 
     public async Task InitializeAsync()

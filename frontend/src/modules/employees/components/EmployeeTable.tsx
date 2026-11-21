@@ -26,8 +26,12 @@ import {
   IconUserX,
   IconShield,
   IconUserCircle,
+  IconMapPin,
 } from "@tabler/icons-react";
 import { useTranslations } from "next-intl";
+import { useTheme } from "@mui/material/styles";
+import { formatDateOnly } from "@/shared/utils/i18nFormatters";
+import { ProfilePhotoAvatar } from "@/shared/components/avatar";
 import type { Employee } from "../types";
 
 interface EmployeeTableProps {
@@ -48,6 +52,8 @@ export const EmployeeTable: React.FC<EmployeeTableProps> = ({
   onToggleStatus,
 }) => {
   const t = useTranslations();
+  const theme = useTheme();
+  const isRtl = theme.direction === "rtl";
   const [menuAnchor, setMenuAnchor] = useState<null | { el: HTMLElement; employee: Employee }>(null);
 
   const handleOpenMenu = (event: React.MouseEvent<HTMLElement>, employee: Employee) => {
@@ -125,6 +131,7 @@ export const EmployeeTable: React.FC<EmployeeTableProps> = ({
               <TableCell>{t("Department")}</TableCell>
               <TableCell>{t("JobTitle")}</TableCell>
               <TableCell>{t("DirectSupervisor")}</TableCell>
+              <TableCell>{t("WorkLocation")}</TableCell>
               <TableCell>{t("SystemRole")}</TableCell>
               <TableCell>{t("Status")}</TableCell>
               <TableCell>{t("HireDate")}</TableCell>
@@ -151,13 +158,21 @@ export const EmployeeTable: React.FC<EmployeeTableProps> = ({
                   </Typography>
                 </TableCell>
                 <TableCell>
-                  <Box>
-                    <Typography variant="subtitle2" fontWeight={600}>
-                      {employee.fullName || `${employee.firstName} ${employee.lastName}`}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {employee.email}
-                    </Typography>
+                  <Box display="flex" alignItems="center" gap={1.5}>
+                    <ProfilePhotoAvatar
+                      photoId={employee.profilePhoto}
+                      name={employee.fullName || `${employee.firstName} ${employee.lastName}`}
+                      size={36}
+                      colorScheme="soft"
+                    />
+                    <Box minWidth={0}>
+                      <Typography variant="subtitle2" fontWeight={600} noWrap>
+                        {employee.fullName || `${employee.firstName} ${employee.lastName}`}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" noWrap display="block">
+                        {employee.email}
+                      </Typography>
+                    </Box>
                   </Box>
                 </TableCell>
                 <TableCell>
@@ -189,6 +204,20 @@ export const EmployeeTable: React.FC<EmployeeTableProps> = ({
                   )}
                 </TableCell>
                 <TableCell>
+                  {employee.workLocationName ? (
+                    <Chip
+                      size="small"
+                      icon={<IconMapPin size={14} />}
+                      label={employee.workLocationName}
+                      variant="outlined"
+                    />
+                  ) : (
+                    <Typography variant="caption" color="text.secondary">
+                      {t("NoLocationAssigned")}
+                    </Typography>
+                  )}
+                </TableCell>
+                <TableCell>
                   {employee.userRole ? (
                     <Chip
                       size="small"
@@ -211,10 +240,8 @@ export const EmployeeTable: React.FC<EmployeeTableProps> = ({
                   />
                 </TableCell>
                 <TableCell>
-                  <Typography variant="body2" color="text.secondary">
-                    {employee.hireDate
-                      ? new Date(employee.hireDate).toLocaleDateString()
-                      : "-"}
+                  <Typography variant="body2" color="text.secondary" sx={{ direction: "ltr", display: "inline-block" }}>
+                    {employee.hireDate ? formatDateOnly(employee.hireDate, isRtl) : "-"}
                   </Typography>
                 </TableCell>
                 <TableCell align="right">

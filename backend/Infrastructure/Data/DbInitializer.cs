@@ -22,6 +22,8 @@ public sealed class DbInitializer(
 
         await SeedRolesAsync();
         await SeedUsersAndEmployeesAsync();
+        await SeedLocationsAsync();
+        await SeedLeaveTypesAsync();
 
         logger.LogInformation("NASAQ database initialization & data seeding completed successfully.");
     }
@@ -79,22 +81,52 @@ public sealed class DbInitializer(
                 Permissions.Employees.View,
                 Permissions.Employees.Create,
                 Permissions.Employees.Edit,
-                Permissions.Employees.ToggleStatus
+                Permissions.Employees.ToggleStatus,
+                Permissions.Locations.View,
+                Permissions.Locations.Create,
+                Permissions.Locations.Edit,
+                Permissions.Locations.ToggleStatus,
+                Permissions.Leaves.View,
+                Permissions.Leaves.ViewSelf,
+                Permissions.Leaves.Submit,
+                Permissions.Leaves.Cancel,
+                Permissions.Leaves.Approve,
+                Permissions.Leaves.ManageTypes
             ],
             RoleNames.Admin =>
             [
                 Permissions.Employees.View,
                 Permissions.Employees.Create,
                 Permissions.Employees.Edit,
-                Permissions.Employees.ToggleStatus
+                Permissions.Employees.ToggleStatus,
+                Permissions.Locations.View,
+                Permissions.Locations.Create,
+                Permissions.Locations.Edit,
+                Permissions.Locations.ToggleStatus,
+                Permissions.Leaves.View,
+                Permissions.Leaves.ViewSelf,
+                Permissions.Leaves.Submit,
+                Permissions.Leaves.Cancel,
+                Permissions.Leaves.Approve,
+                Permissions.Leaves.ManageTypes
             ],
             RoleNames.Supervisor =>
             [
-                Permissions.Employees.View
+                Permissions.Employees.View,
+                Permissions.Locations.View,
+                Permissions.Leaves.View,
+                Permissions.Leaves.ViewSelf,
+                Permissions.Leaves.Submit,
+                Permissions.Leaves.Cancel,
+                Permissions.Leaves.Approve
             ],
             RoleNames.Employee =>
             [
-                Permissions.Employees.ViewSelf
+                Permissions.Employees.ViewSelf,
+                Permissions.Locations.View,
+                Permissions.Leaves.ViewSelf,
+                Permissions.Leaves.Submit,
+                Permissions.Leaves.Cancel
             ],
             _ => []
         };
@@ -396,5 +428,99 @@ public sealed class DbInitializer(
         }
 
         return employee;
+    }
+
+    private async Task SeedLocationsAsync()
+    {
+        if (!await dbContext.WorkLocations.AnyAsync())
+        {
+            var hq = new WorkLocation
+            {
+                Name = "HQ - Riyadh",
+                Latitude = 24.713552,
+                Longitude = 46.675296,
+                RadiusMeters = 150.0,
+                AccuracyThresholdMeters = 50.0,
+                IsActive = true
+            };
+
+            var branch = new WorkLocation
+            {
+                Name = "Main Branch - Jeddah",
+                Latitude = 21.543333,
+                Longitude = 39.172778,
+                RadiusMeters = 200.0,
+                AccuracyThresholdMeters = 50.0,
+                IsActive = true
+            };
+
+            dbContext.WorkLocations.AddRange(hq, branch);
+            await dbContext.SaveChangesAsync();
+            logger.LogInformation("Seeded default work locations: {HQ}, {Branch}", hq.Name, branch.Name);
+
+            var emp = await dbContext.Employees.FirstOrDefaultAsync(e => e.EmployeeCode == "EMP-001");
+            if (emp != null)
+            {
+                emp.WorkLocationId = hq.Id;
+                await dbContext.SaveChangesAsync();
+            }
+        }
+    }
+
+    private async Task SeedLeaveTypesAsync()
+    {
+        if (!await dbContext.LeaveTypes.AnyAsync())
+        {
+            var annual = new LeaveType
+            {
+                Name = "Annual Leave",
+                NameAr = "إجازة سنوية",
+                Code = "ANNUAL",
+                Description = "Standard annual vacation leave entitlement",
+                IsPaid = true,
+                RequiresAttachment = false,
+                DefaultDaysPerYear = 21,
+                IsActive = true
+            };
+
+            var sick = new LeaveType
+            {
+                Name = "Sick Leave",
+                NameAr = "إجازة مرضية",
+                Code = "SICK",
+                Description = "Medical and health related absence requiring supporting documentation",
+                IsPaid = true,
+                RequiresAttachment = true,
+                DefaultDaysPerYear = 15,
+                IsActive = true
+            };
+
+            var emergency = new LeaveType
+            {
+                Name = "Emergency Leave",
+                NameAr = "إجازة اضطرارية",
+                Code = "EMERGENCY",
+                Description = "Short notice urgent personal circumstances",
+                IsPaid = true,
+                RequiresAttachment = false,
+                DefaultDaysPerYear = 5,
+                IsActive = true
+            };
+
+            var unpaid = new LeaveType
+            {
+                Name = "Unpaid Leave",
+                NameAr = "إجازة بدون راتب",
+                Code = "UNPAID",
+                Description = "Approved extended leave without salary compensation",
+                IsPaid = false,
+                RequiresAttachment = false,
+                IsActive = true
+            };
+
+            dbContext.LeaveTypes.AddRange(annual, sick, emergency, unpaid);
+            await dbContext.SaveChangesAsync();
+            logger.LogInformation("Seeded default leave types: Annual, Sick, Emergency, Unpaid.");
+        }
     }
 }

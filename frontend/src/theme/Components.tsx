@@ -50,49 +50,33 @@ const components: any = (theme: Theme) => {
           maxWidth: "100% !important",
           whiteSpace: "normal !important",
           transformOrigin: "initial !important",
+          textAlign: "start !important",
         },
-        "[dir='rtl'] .MuiInputLabel-root": {
-          textAlign: "right !important",
-        },
-        "[dir='ltr'] .MuiInputLabel-root": {
-          textAlign: "left !important",
+        ".MuiFormLabel-asterisk, .MuiInputLabel-asterisk, span.MuiFormLabel-asterisk": {
+          color: `${theme.palette.error.main} !important`,
         },
         ".MuiOutlinedInput-notchedOutline legend": {
           display: "none !important",
         },
-        "[dir='rtl'] .MuiFormHelperText-root": {
-          textAlign: "right !important",
-          marginLeft: "0 !important",
-          marginRight: "0 !important",
+        ".MuiFormHelperText-root": {
+          textAlign: "start !important",
+          marginInline: "0 !important",
         },
-        "[dir='ltr'] .MuiFormHelperText-root": {
-          textAlign: "left !important",
-          marginLeft: "0 !important",
-          marginRight: "0 !important",
+        ".MuiSelect-icon": {
+          insetInlineEnd: "10px !important",
+          insetInlineStart: "auto !important",
         },
-        "[dir='rtl'] .MuiSelect-icon": {
-          left: "10px !important",
-          right: "auto !important",
+        ".MuiAutocomplete-endAdornment": {
+          insetInlineEnd: "10px !important",
+          insetInlineStart: "auto !important",
         },
-        "[dir='ltr'] .MuiSelect-icon": {
-          right: "10px !important",
-          left: "auto !important",
+        ".MuiInputAdornment-positionStart": {
+          marginInlineEnd: "8px !important",
+          marginInlineStart: "0 !important",
         },
-        "[dir='rtl'] .MuiAutocomplete-endAdornment": {
-          left: "10px !important",
-          right: "auto !important",
-        },
-        "[dir='ltr'] .MuiAutocomplete-endAdornment": {
-          right: "10px !important",
-          left: "auto !important",
-        },
-        "[dir='rtl'] .MuiInputAdornment-positionStart": {
-          marginLeft: "8px !important",
-          marginRight: "0 !important",
-        },
-        "[dir='ltr'] .MuiInputAdornment-positionStart": {
-          marginRight: "8px !important",
-          marginLeft: "0 !important",
+        ".MuiInputAdornment-positionEnd": {
+          marginInlineStart: "8px !important",
+          marginInlineEnd: "0 !important",
         },
         ".border-none": {
           border: "0px",
@@ -184,6 +168,11 @@ const components: any = (theme: Theme) => {
         {
           clipPath: "inset(0 0 5% 0 round 20px)",
         },
+      },
+    },
+    MuiStack: {
+      defaultProps: {
+        useFlexGap: true,
       },
     },
     MuiButtonGroup: {
@@ -486,11 +475,22 @@ const components: any = (theme: Theme) => {
     MuiAlert: {
       styleOverrides: {
         root: {
-           gap: "12px",
+          gap: "12px",
         },
         icon: {
           margin: "0 !important",
           flexShrink: 0,
+        },
+        message: {
+          padding: 0,
+          minWidth: 0,
+        },
+        action: {
+          padding: 0,
+          marginInlineStart: "auto",
+          marginInlineEnd: 0,
+          marginRight: "0 !important",
+          marginLeft: "0 !important",
         },
         filledSuccess: {
           color: "white",
@@ -564,6 +564,12 @@ const components: any = (theme: Theme) => {
           "&.Mui-disabled": {
             color: theme.palette.text.disabled,
           },
+          "& .MuiFormLabel-asterisk": {
+            color: `${theme.palette.error.main} !important`,
+          },
+        },
+        asterisk: {
+          color: `${theme.palette.error.main} !important`,
         },
       },
     },
@@ -594,12 +600,18 @@ const components: any = (theme: Theme) => {
           "&.Mui-disabled": {
             color: theme.palette.text.disabled,
           },
+          "& .MuiInputLabel-asterisk": {
+            color: `${theme.palette.error.main} !important`,
+          },
           "[dir='rtl'] &": {
             textAlign: "right !important",
           },
           "[dir='ltr'] &": {
             textAlign: "left !important",
           },
+        },
+        asterisk: {
+          color: `${theme.palette.error.main} !important`,
         },
       },
     },
@@ -941,10 +953,22 @@ const components: any = (theme: Theme) => {
               : "0 20px 40px -8px rgba(0, 0, 0, 0.12)",
           backgroundImage: "none",
           overflow: "hidden",
-          margin: 16,
-          maxHeight: "calc(100% - 32px)",
+          margin: { xs: "10px", sm: "32px" },
+          maxHeight: "calc(100% - 64px)",
+          display: "flex",
+          flexDirection: "column",
+          "& > form": {
+            display: "flex",
+            flexDirection: "column",
+            flex: "1 1 auto",
+            minHeight: 0,
+            maxHeight: "100%",
+            height: "100%",
+            overflow: "hidden",
+          },
           "@media (max-width: 600px)": {
-            margin: 10,
+            margin: "10px",
+            maxHeight: "calc(100% - 20px)",
             width: "calc(100% - 20px) !important",
             borderRadius: "12px",
           },
@@ -952,12 +976,17 @@ const components: any = (theme: Theme) => {
       },
     },
     MuiDialogTitle: {
+      defaultProps: {
+        component: "div",
+      },
       styleOverrides: {
         root: {
           fontSize: "1.15rem",
           fontWeight: 700,
           padding: "20px 24px 14px 24px",
           borderBottom: `1px solid ${theme.palette.divider}`,
+          flex: "0 0 auto",
+          flexShrink: 0,
           "@media (max-width: 600px)": {
             padding: "16px 16px 12px 16px",
           },
@@ -968,6 +997,9 @@ const components: any = (theme: Theme) => {
       styleOverrides: {
         root: {
           padding: "24px",
+          flex: "1 1 auto",
+          minHeight: 0,
+          overflowY: "auto",
           "&.MuiDialogContent-dividers": {
             borderColor: theme.palette.divider,
           },
@@ -988,7 +1020,12 @@ const components: any = (theme: Theme) => {
         root: {
           padding: "14px 24px 18px 24px",
           borderTop: `1px solid ${theme.palette.divider}`,
-          gap: "10px",
+          gap: "12px",
+          flex: "0 0 auto",
+          flexShrink: 0,
+          "& > :not(style) ~ :not(style)": {
+            margin: "0 !important",
+          },
           "@media (max-width: 600px)": {
             padding: "12px 16px 16px 16px",
             flexDirection: "column-reverse",

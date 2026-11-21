@@ -8,6 +8,7 @@ import type {
   UpdateEmployeeRequest,
   ToggleEmployeeStatusRequest,
   SupervisorLookup,
+  EmployeesSummary,
 } from "../types";
 
 export interface EmployeesState {
@@ -19,6 +20,8 @@ export interface EmployeesState {
   pageSize: number;
   selectedEmployee: Employee | null;
   currentProfile: Employee | null;
+  summary: EmployeesSummary | null;
+  summaryLoading: boolean;
   loading: boolean;
   actionLoading: boolean;
   error: string | null;
@@ -34,6 +37,8 @@ const initialState: EmployeesState = {
   pageSize: 10,
   selectedEmployee: null,
   currentProfile: null,
+  summary: null,
+  summaryLoading: false,
   loading: false,
   actionLoading: false,
   error: null,
@@ -90,6 +95,19 @@ export const fetchSupervisorsThunk = createAsyncThunk<SupervisorLookup[], void>(
   }
 );
 
+export const fetchEmployeesSummaryThunk = createAsyncThunk<EmployeesSummary, void>(
+  "employees/fetchSummary",
+  async (_, { rejectWithValue }) => {
+    try {
+      return await employeeService.getSummary();
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || error.message || "Failed to load employees summary."
+      );
+    }
+  }
+);
+
 export const createEmployeeThunk = createAsyncThunk<Employee, CreateEmployeeRequest>(
   "employees/createEmployee",
   async (data, { rejectWithValue }) => {
@@ -122,6 +140,34 @@ export const toggleEmployeeStatusThunk = createAsyncThunk<
     return rejectWithValue(error.response?.data?.message || error.message || "Failed to update employee status.");
   }
 });
+
+export const deleteEmployeeThunk = createAsyncThunk<string, string>(
+  "employees/deleteEmployee",
+  async (id, { rejectWithValue }) => {
+    try {
+      await employeeService.deleteEmployee(id);
+      return id;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || error.message || "Failed to delete employee."
+      );
+    }
+  }
+);
+
+export const bulkDeleteEmployeesThunk = createAsyncThunk<string[], string[]>(
+  "employees/bulkDeleteEmployees",
+  async (ids, { rejectWithValue }) => {
+    try {
+      await employeeService.bulkDeleteEmployees(ids);
+      return ids;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || error.message || "Failed to delete selected employees."
+      );
+    }
+  }
+);
 
 export const employeesSlice = createSlice({
   name: "employees",
@@ -198,6 +244,18 @@ export const employeesSlice = createSlice({
       state.supervisors = action.payload;
     });
 
+    // Fetch Employees Summary
+    builder.addCase(fetchEmployeesSummaryThunk.pending, (state) => {
+      state.summaryLoading = true;
+    });
+    builder.addCase(fetchEmployeesSummaryThunk.fulfilled, (state, action) => {
+      state.summaryLoading = false;
+      state.summary = action.payload;
+    });
+    builder.addCase(fetchEmployeesSummaryThunk.rejected, (state) => {
+      state.summaryLoading = false;
+    });
+
     // Create Employee
     builder.addCase(createEmployeeThunk.pending, (state) => {
       state.actionLoading = true;
@@ -249,6 +307,37 @@ export const employeesSlice = createSlice({
       }
     });
     builder.addCase(toggleEmployeeStatusThunk.rejected, (state, action) => {
+      state.actionLoading = false;
+      state.error = action.payload as string;
+    });
+
+    // Delete Employee
+    builder.addCase(deleteEmployeeThunk.pending, (state) => {
+      state.actionLoading = true;
+      state.error = null;
+    });
+    builder.addCase(deleteEmployeeThunk.fulfilled, (state, action) => {
+      state.actionLoading = false;
+      state.items = state.items.filter((e) => e.id !== action.payload);
+      state.totalCount = Math.max(0, state.totalCount - 1);
+    });
+    builder.addCase(deleteEmployeeThunk.rejected, (state, action) => {
+      state.actionLoading = false;
+      state.error = action.payload as string;
+    });
+
+    // Bulk Delete Employees
+    builder.addCase(bulkDeleteEmployeesThunk.pending, (state) => {
+      state.actionLoading = true;
+      state.error = null;
+    });
+    builder.addCase(bulkDeleteEmployeesThunk.fulfilled, (state, action) => {
+      state.actionLoading = false;
+      const deletedSet = new Set(action.payload);
+      state.items = state.items.filter((e) => !deletedSet.has(e.id));
+      state.totalCount = Math.max(0, state.totalCount - action.payload.length);
+    });
+    builder.addCase(bulkDeleteEmployeesThunk.rejected, (state, action) => {
       state.actionLoading = false;
       state.error = action.payload as string;
     });

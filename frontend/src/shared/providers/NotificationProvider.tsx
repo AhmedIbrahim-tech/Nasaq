@@ -106,7 +106,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
           sx={{
             position: 'fixed',
             top: { xs: 16, sm: 24 },
-            [isRtl ? 'left' : 'right']: { xs: 16, sm: 24 },
+            insetInlineEnd: { xs: 16, sm: 24 },
             zIndex: (theme) => Math.max(theme.zIndex.snackbar + 100, 2100),
             display: 'flex',
             flexDirection: 'column',

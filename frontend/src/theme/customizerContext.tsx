@@ -1,127 +1,170 @@
-'use client'
-import { createContext, useState, ReactNode, useEffect, useCallback } from 'react';
+'use client';
+
+import React, { createContext, useState, ReactNode, useEffect, useCallback, useRef } from 'react';
 import config from './config';
-import React from "react";
+
+export const NASAQ_UI_PREFERENCES_KEY = 'nasaq.ui.preferences.v1';
+
+// Legacy keys for backward-compatibility & migration
+export const THEME_MODE_STORAGE_KEY = 'corestarter-theme-mode';
+const LEGACY_LANG_KEY = 'corestarter_lang';
+const LEGACY_DIR_KEY = 'corestarter_dir';
+
+export interface NasaqUiPreferences {
+  version: 1;
+  activeMode: 'light' | 'dark';
+  activeDir: 'rtl' | 'ltr';
+  isLanguage: 'ar' | 'en';
+  activeTheme: string;
+  activeLayout: 'vertical' | 'horizontal';
+  isLayout: 'full' | 'boxed';
+  isCollapse: 'full-sidebar' | 'mini-sidebar';
+  isBorderRadius: number;
+  isCardShadow: boolean;
+}
+
+const DEFAULT_PREFERENCES: NasaqUiPreferences = {
+  version: 1,
+  activeMode: (config.activeMode as 'light' | 'dark') || 'light',
+  activeDir: (config.activeDir as 'rtl' | 'ltr') || 'ltr',
+  isLanguage: (config.isLanguage as 'ar' | 'en') || 'en',
+  activeTheme: config.activeTheme || 'BLUE_THEME',
+  activeLayout: (config.activeLayout as 'vertical' | 'horizontal') || 'vertical',
+  isLayout: (config.isLayout as 'full' | 'boxed') || 'full',
+  isCollapse: (config.isCollapse as 'full-sidebar' | 'mini-sidebar') || 'full-sidebar',
+  isBorderRadius: config.isBorderRadius ?? 7,
+  isCardShadow: config.isCardShadow ?? true,
+};
+
+function sanitizePreferences(raw: any): NasaqUiPreferences {
+  const mode = raw?.activeMode === 'dark' || raw?.activeMode === 'light' ? raw.activeMode : DEFAULT_PREFERENCES.activeMode;
+  const lang = raw?.isLanguage === 'ar' || raw?.isLanguage === 'en' ? raw.isLanguage : DEFAULT_PREFERENCES.isLanguage;
+  const dir = raw?.activeDir === 'rtl' || raw?.activeDir === 'ltr' ? raw.activeDir : lang === 'ar' ? 'rtl' : 'ltr';
+  const layout = raw?.activeLayout === 'horizontal' ? 'horizontal' : 'vertical';
+  const boxedLayout = raw?.isLayout === 'boxed' ? 'boxed' : 'full';
+  const collapse = raw?.isCollapse === 'mini-sidebar' ? 'mini-sidebar' : 'full-sidebar';
+  const radius = typeof raw?.isBorderRadius === 'number' && raw.isBorderRadius >= 0 && raw.isBorderRadius <= 24 ? raw.isBorderRadius : DEFAULT_PREFERENCES.isBorderRadius;
+  const shadow = typeof raw?.isCardShadow === 'boolean' ? raw.isCardShadow : DEFAULT_PREFERENCES.isCardShadow;
+  const theme = typeof raw?.activeTheme === 'string' && raw.activeTheme.length > 0 ? raw.activeTheme : DEFAULT_PREFERENCES.activeTheme;
+
+  return {
+    version: 1,
+    activeMode: mode,
+    activeDir: dir,
+    isLanguage: lang,
+    activeTheme: theme,
+    activeLayout: layout,
+    isLayout: boxedLayout,
+    isCollapse: collapse,
+    isBorderRadius: radius,
+    isCardShadow: shadow,
+  };
+}
+
+function loadStoredPreferences(): NasaqUiPreferences {
+  if (typeof window === 'undefined') {
+    return DEFAULT_PREFERENCES;
+  }
+
+  try {
+    const serialized = localStorage.getItem(NASAQ_UI_PREFERENCES_KEY);
+    if (serialized) {
+      const parsed = JSON.parse(serialized);
+      return sanitizePreferences(parsed);
+    }
+
+    // Migrate from legacy keys if available
+    const legacyMode = localStorage.getItem(THEME_MODE_STORAGE_KEY);
+    const legacyLang = localStorage.getItem(LEGACY_LANG_KEY);
+    const legacyDir = localStorage.getItem(LEGACY_DIR_KEY);
+
+    if (legacyMode || legacyLang || legacyDir) {
+      const migrated = sanitizePreferences({
+        activeMode: legacyMode,
+        isLanguage: legacyLang,
+        activeDir: legacyDir || (legacyLang === 'ar' ? 'rtl' : 'ltr'),
+      });
+      try {
+        localStorage.setItem(NASAQ_UI_PREFERENCES_KEY, JSON.stringify(migrated));
+      } catch {
+        // Ignore quota/access errors
+      }
+      return migrated;
+    }
+  } catch {
+    // Return safe defaults on parse error
+  }
+
+  return DEFAULT_PREFERENCES;
+}
+
+function persistPreferences(prefs: NasaqUiPreferences) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(NASAQ_UI_PREFERENCES_KEY, JSON.stringify(prefs));
+    // Keep legacy keys synchronized for backward compatibility
+    localStorage.setItem(THEME_MODE_STORAGE_KEY, prefs.activeMode);
+    localStorage.setItem(LEGACY_LANG_KEY, prefs.isLanguage);
+    localStorage.setItem(LEGACY_DIR_KEY, prefs.activeDir);
+  } catch {
+    // Ignore quota or disabled storage errors
+  }
+}
 
 // Define the shape of the context state
-interface CustomizerContextState {
-  activeDir: string;
-  setActiveDir: (dir: string) => void;
-  activeMode: string;
-  setActiveMode: (mode: string) => void;
+export interface CustomizerContextState {
+  activeDir: 'rtl' | 'ltr';
+  setActiveDir: (dir: 'rtl' | 'ltr') => void;
+  activeMode: 'light' | 'dark';
+  setActiveMode: (mode: 'light' | 'dark') => void;
   activeTheme: string;
   setActiveTheme: (theme: string) => void;
-  activeLayout: string;
-  setActiveLayout: (layout: string) => void;
+  activeLayout: 'vertical' | 'horizontal';
+  setActiveLayout: (layout: 'vertical' | 'horizontal') => void;
   isCardShadow: boolean;
   setIsCardShadow: (shadow: boolean) => void;
-  isLayout: string;
-  setIsLayout: (layout: string) => void;
+  isLayout: 'full' | 'boxed';
+  setIsLayout: (layout: 'full' | 'boxed') => void;
   isBorderRadius: number;
   setIsBorderRadius: (radius: number) => void;
-  isCollapse: string;
-  setIsCollapse: (collapse: string) => void;
-  isLanguage: string;
-  setIsLanguage: (lang: string) => void;
+  isCollapse: 'full-sidebar' | 'mini-sidebar';
+  setIsCollapse: (collapse: 'full-sidebar' | 'mini-sidebar') => void;
+  isLanguage: 'ar' | 'en';
+  setIsLanguage: (lang: 'ar' | 'en') => void;
   isSidebarHover: boolean;
   setIsSidebarHover: (isHover: boolean) => void;
   isMobileSidebar: boolean;
   setIsMobileSidebar: (isMobileSidebar: boolean) => void;
 }
 
-// Create the context with an initial value
 export const CustomizerContext = createContext<CustomizerContextState | any>(undefined);
 
-// Define the type for the children prop
 interface CustomizerContextProps {
   children: ReactNode;
 }
 
-export const THEME_MODE_STORAGE_KEY = 'corestarter-theme-mode';
-
-const getValidThemeMode = (value: string | null | undefined): 'light' | 'dark' | null => {
-  if (value === 'light' || value === 'dark') {
-    return value;
-  }
-  return null;
-};
-
-// Create the provider component
 export const CustomizerContextProvider: React.FC<CustomizerContextProps> = ({ children }) => {
-  const [activeDir, setActiveDirState] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const savedDir = localStorage.getItem('corestarter_dir');
-        const savedLang = localStorage.getItem('corestarter_lang');
-        if (savedDir) return savedDir;
-        if (savedLang) return savedLang === 'ar' ? 'rtl' : 'ltr';
-      } catch {
-        // Ignore localStorage errors
-      }
-    }
-    return config.activeDir;
-  });
-  const [activeMode, setActiveModeState] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const savedMode = localStorage.getItem(THEME_MODE_STORAGE_KEY);
-        const validMode = getValidThemeMode(savedMode);
-        if (validMode) {
-          return validMode;
-        }
-      } catch {
-        // Ignore localStorage errors
-      }
-    }
-    return config.activeMode;
-  });
-  const [activeTheme, setActiveTheme] = useState<string>(config.activeTheme);
-  const [activeLayout, setActiveLayout] = useState<string>(config.activeLayout);
-  const [isCardShadow, setIsCardShadow] = useState<boolean>(config.isCardShadow);
-  const [isLayout, setIsLayout] = useState<string>(config.isLayout);
-  const [isBorderRadius, setIsBorderRadius] = useState<number>(config.isBorderRadius);
-  const [isCollapse, setIsCollapse] = useState<string>(config.isCollapse);
-  const [isLanguage, setIsLanguageState] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const savedLang = localStorage.getItem('corestarter_lang');
-        if (savedLang) return savedLang;
-      } catch {
-        // Ignore localStorage errors
-      }
-    }
-    return config.isLanguage;
-  });
+  const [preferences, setPreferences] = useState<NasaqUiPreferences>(DEFAULT_PREFERENCES);
   const [isSidebarHover, setIsSidebarHover] = useState<boolean>(false);
   const [isMobileSidebar, setIsMobileSidebar] = useState<boolean>(false);
+  const isHydratedRef = useRef(false);
 
-  // Load persisted theme and language/dir preferences on mount
+  // Load preferences from localStorage on initial client mount
   useEffect(() => {
-    try {
-      const savedMode = localStorage.getItem(THEME_MODE_STORAGE_KEY);
-      const validMode = getValidThemeMode(savedMode);
-      if (validMode) {
-        setActiveModeState(validMode);
-      }
-
-      const savedLang = localStorage.getItem('corestarter_lang');
-      const savedDir = localStorage.getItem('corestarter_dir');
-      if (savedLang) {
-        setIsLanguageState(savedLang);
-        setActiveDirState(savedDir || (savedLang === 'ar' ? 'rtl' : 'ltr'));
-      }
-    } catch {
-      // Ignore localStorage errors in SSR/restricted environments
-    }
+    const stored = loadStoredPreferences();
+    setPreferences(stored);
+    isHydratedRef.current = true;
   }, []);
 
-  // Multi-tab synchronization for theme changes
+  // Multi-tab synchronization for NASAQ UI preferences
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === THEME_MODE_STORAGE_KEY) {
-        const validMode = getValidThemeMode(e.newValue);
-        if (validMode) {
-          setActiveModeState(validMode);
+      if (e.key === NASAQ_UI_PREFERENCES_KEY && e.newValue) {
+        try {
+          const updated = sanitizePreferences(JSON.parse(e.newValue));
+          setPreferences(updated);
+        } catch {
+          // Ignore parse errors
         }
       }
     };
@@ -129,78 +172,104 @@ export const CustomizerContextProvider: React.FC<CustomizerContextProps> = ({ ch
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  const setActiveMode = useCallback((mode: string) => {
-    const validMode = getValidThemeMode(mode);
-    if (!validMode) {
-      return;
-    }
-    setActiveModeState(validMode);
-    try {
-      localStorage.setItem(THEME_MODE_STORAGE_KEY, validMode);
-    } catch {
-      // Ignore localStorage errors
-    }
+  // State setters that automatically synchronize with centralized localStorage
+  const updatePreference = useCallback(<K extends keyof NasaqUiPreferences>(key: K, value: NasaqUiPreferences[K]) => {
+    setPreferences((prev) => {
+      const updated = { ...prev, [key]: value };
+      persistPreferences(updated);
+      return updated;
+    });
   }, []);
 
-  const setIsLanguage = useCallback((lang: string) => {
-    setIsLanguageState(lang);
-    const newDir = lang === 'ar' ? 'rtl' : 'ltr';
-    setActiveDirState(newDir);
-    try {
-      localStorage.setItem('corestarter_lang', lang);
-      localStorage.setItem('corestarter_dir', newDir);
-    } catch {
-      // Ignore localStorage errors
-    }
-  }, []);
+  const setActiveMode = useCallback((mode: string) => {
+    const validMode: 'light' | 'dark' = mode === 'dark' ? 'dark' : 'light';
+    updatePreference('activeMode', validMode);
+  }, [updatePreference]);
 
   const setActiveDir = useCallback((dir: string) => {
-    setActiveDirState(dir);
-    try {
-      localStorage.setItem('corestarter_dir', dir);
-    } catch {
-      // Ignore localStorage errors
-    }
+    const validDir: 'rtl' | 'ltr' = dir === 'rtl' ? 'rtl' : 'ltr';
+    updatePreference('activeDir', validDir);
+  }, [updatePreference]);
+
+  const setIsLanguage = useCallback((lang: string) => {
+    const validLang: 'ar' | 'en' = lang === 'ar' ? 'ar' : 'en';
+    const autoDir: 'rtl' | 'ltr' = validLang === 'ar' ? 'rtl' : 'ltr';
+    setPreferences((prev) => {
+      const updated: NasaqUiPreferences = {
+        ...prev,
+        isLanguage: validLang,
+        activeDir: autoDir,
+      };
+      persistPreferences(updated);
+      return updated;
+    });
   }, []);
 
-  // Set attributes on document element
+  const setActiveTheme = useCallback((theme: string) => {
+    updatePreference('activeTheme', theme);
+  }, [updatePreference]);
+
+  const setActiveLayout = useCallback((layout: string) => {
+    updatePreference('activeLayout', layout === 'horizontal' ? 'horizontal' : 'vertical');
+  }, [updatePreference]);
+
+  const setIsLayout = useCallback((layout: string) => {
+    updatePreference('isLayout', layout === 'boxed' ? 'boxed' : 'full');
+  }, [updatePreference]);
+
+  const setIsCollapse = useCallback((collapse: string) => {
+    updatePreference('isCollapse', collapse === 'mini-sidebar' ? 'mini-sidebar' : 'full-sidebar');
+  }, [updatePreference]);
+
+  const setIsBorderRadius = useCallback((radius: number) => {
+    updatePreference('isBorderRadius', radius);
+  }, [updatePreference]);
+
+  const setIsCardShadow = useCallback((shadow: boolean) => {
+    updatePreference('isCardShadow', shadow);
+  }, [updatePreference]);
+
+  // Synchronize document element attributes & data properties
   useEffect(() => {
+    if (typeof document === 'undefined') return;
+
     document.documentElement.classList.remove('light', 'dark');
-    document.documentElement.classList.add(activeMode);
-    document.documentElement.setAttribute("data-theme-mode", activeMode);
-    document.documentElement.setAttribute("dir", activeDir);
-    document.documentElement.setAttribute("lang", isLanguage);
-    document.documentElement.setAttribute('data-color-theme', activeTheme);
-    document.documentElement.setAttribute("data-layout", activeLayout);
-    document.documentElement.setAttribute("data-boxed-layout", isLayout);
-    document.documentElement.setAttribute("data-sidebar-type", isCollapse);
-  }, [activeMode, activeDir, isLanguage, activeTheme, activeLayout, isLayout, isCollapse]);
+    document.documentElement.classList.add(preferences.activeMode);
+    document.documentElement.setAttribute('data-theme-mode', preferences.activeMode);
+    document.documentElement.setAttribute('dir', preferences.activeDir);
+    document.documentElement.setAttribute('lang', preferences.isLanguage);
+    document.documentElement.setAttribute('data-color-theme', preferences.activeTheme);
+    document.documentElement.setAttribute('data-layout', preferences.activeLayout);
+    document.documentElement.setAttribute('data-boxed-layout', preferences.isLayout);
+    document.documentElement.setAttribute('data-sidebar-type', preferences.isCollapse);
+    document.body.setAttribute('data-color-theme', preferences.activeTheme);
+  }, [preferences]);
 
   return (
     <CustomizerContext.Provider
       value={{
-        activeDir,
+        activeDir: preferences.activeDir,
         setActiveDir,
-        activeMode,
+        activeMode: preferences.activeMode,
         setActiveMode,
-        activeTheme,
+        activeTheme: preferences.activeTheme,
         setActiveTheme,
-        activeLayout,
+        activeLayout: preferences.activeLayout,
         setActiveLayout,
-        isCardShadow,
+        isCardShadow: preferences.isCardShadow,
         setIsCardShadow,
-        isLayout,
+        isLayout: preferences.isLayout,
         setIsLayout,
-        isBorderRadius,
+        isBorderRadius: preferences.isBorderRadius,
         setIsBorderRadius,
-        isCollapse,
+        isCollapse: preferences.isCollapse,
         setIsCollapse,
-        isLanguage,
+        isLanguage: preferences.isLanguage,
         setIsLanguage,
         isSidebarHover,
         setIsSidebarHover,
         isMobileSidebar,
-        setIsMobileSidebar
+        setIsMobileSidebar,
       }}
     >
       {children}

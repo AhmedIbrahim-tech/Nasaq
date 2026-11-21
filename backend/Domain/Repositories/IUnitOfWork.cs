@@ -9,6 +9,7 @@ public interface IUnitOfWork : IAsyncDisposable, IDisposable
 {
     IGenericRepository<AppNotification> AppNotifications { get; }
     IGenericRepository<Employee> Employees { get; }
+    IGenericRepository<WorkLocation> WorkLocations { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 

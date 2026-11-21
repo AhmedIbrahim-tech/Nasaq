@@ -16,6 +16,7 @@ import IconButton from '@mui/material/IconButton';
 import { IconLock, IconEye, IconEyeOff, IconCheck, IconShieldLock } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
 
+import DialogCloseButton from '@/shared/components/buttons/DialogCloseButton';
 import type { ChangePasswordRequest } from '@/modules/auth/types';
 
 interface ChangePasswordDialogProps {
@@ -97,121 +98,159 @@ export function ChangePasswordDialog({
   };
 
   return (
-    <Dialog open={open} onClose={isLoading ? undefined : onClose} maxWidth="sm" fullWidth>
-      <form onSubmit={handleSubmit}>
-        <DialogTitle sx={{ pb: 1 }}>
-          <Stack direction="row" spacing={1.5} alignItems="center">
-            <IconShieldLock size={24} color="#5D87FF" />
-            <Typography variant="h5" fontWeight={600}>
-              {t.has('Change Password') ? t('Change Password') : 'Change Password'}
-            </Typography>
-          </Stack>
-        </DialogTitle>
+    <Dialog
+      open={open}
+      onClose={isLoading ? undefined : onClose}
+      maxWidth="sm"
+      fullWidth
+      PaperProps={{
+        component: 'form',
+        onSubmit: handleSubmit,
+        sx: {
+          maxHeight: 'calc(100% - 64px)',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        },
+      }}
+    >
+      <DialogTitle
+        component="div"
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          p: 2.5,
+          flex: '0 0 auto',
+        }}
+      >
+        <Stack direction="row" spacing={1.5} alignItems="center">
+          <IconShieldLock size={24} color="#5D87FF" />
+          <Typography component="div" variant="h5" fontWeight={600}>
+            {t.has('Change Password') ? t('Change Password') : 'Change Password'}
+          </Typography>
+        </Stack>
+        <DialogCloseButton onClose={onClose} disabled={isLoading} />
+      </DialogTitle>
 
-        <DialogContent dividers sx={{ pt: 2 }}>
-          <Stack spacing={2.5}>
-            {errorMessage && (
-              <Alert severity="error" sx={{ borderRadius: 2 }}>
-                {errorMessage}
-              </Alert>
-            )}
-
-            {validationError && (
-              <Alert severity="warning" sx={{ borderRadius: 2 }}>
-                {validationError}
-              </Alert>
-            )}
-
-            <Alert severity="info" sx={{ borderRadius: 2 }}>
-              <Typography variant="caption" display="block">
-                {t.has('Changing password invalidates other sessions')
-                  ? t('Changing password invalidates other sessions')
-                  : 'For security, changing your password revokes existing refresh tokens across other devices.'}
-              </Typography>
+      <DialogContent dividers sx={{ pt: 2, flex: '1 1 auto', overflowY: 'auto', minHeight: 0 }}>
+        <Stack spacing={2.5}>
+          {errorMessage && (
+            <Alert severity="error" sx={{ borderRadius: 2 }}>
+              {errorMessage}
             </Alert>
+          )}
 
-            <TextField
-              label={t.has('Current Password') ? t('Current Password') : 'Current Password'}
-              type={showCurrent ? 'text' : 'password'}
-              fullWidth
-              required
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              disabled={isLoading}
-              slotProps={{
-                input: {
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton onClick={() => setShowCurrent(!showCurrent)} edge="end" size="small">
-                        {showCurrent ? <IconEyeOff size={18} /> : <IconEye size={18} />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                },
-              }}
-            />
+          {validationError && (
+            <Alert severity="warning" sx={{ borderRadius: 2 }}>
+              {validationError}
+            </Alert>
+          )}
 
-            <TextField
-              label={t.has('New Password') ? t('New Password') : 'New Password'}
-              type={showNew ? 'text' : 'password'}
-              fullWidth
-              required
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              disabled={isLoading}
-              slotProps={{
-                input: {
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton onClick={() => setShowNew(!showNew)} edge="end" size="small">
-                        {showNew ? <IconEyeOff size={18} /> : <IconEye size={18} />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                },
-              }}
-            />
+          <Alert severity="info" sx={{ borderRadius: 2 }}>
+            <Typography variant="caption" display="block">
+              {t.has('Changing password invalidates other sessions')
+                ? t('Changing password invalidates other sessions')
+                : 'For security, changing your password revokes existing refresh tokens across other devices.'}
+            </Typography>
+          </Alert>
 
-            <TextField
-              label={t.has('Confirm New Password') ? t('Confirm New Password') : 'Confirm New Password'}
-              type={showConfirm ? 'text' : 'password'}
-              fullWidth
-              required
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              disabled={isLoading}
-              slotProps={{
-                input: {
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton onClick={() => setShowConfirm(!showConfirm)} edge="end" size="small">
-                        {showConfirm ? <IconEyeOff size={18} /> : <IconEye size={18} />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                },
-              }}
-            />
-          </Stack>
-        </DialogContent>
-
-        <DialogActions sx={{ px: 3, py: 2 }}>
-          <Button onClick={onClose} disabled={isLoading} color="inherit">
-            {t.has('Cancel') ? t('Cancel') : 'Cancel'}
-          </Button>
-          <Button
-            type="submit"
-            variant="contained"
-            color="primary"
+          <TextField
+            label={
+              <span>
+                {t.has('Current Password') ? t('Current Password') : 'Current Password'}
+                <span style={{ color: 'var(--mui-palette-error-main, #d32f2f)' }}> *</span>
+              </span>
+            }
+            type={showCurrent ? 'text' : 'password'}
+            fullWidth
+            required
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
             disabled={isLoading}
-            startIcon={isLoading ? <CircularProgress size={18} color="inherit" /> : <IconCheck size={18} />}
-          >
-            {isLoading
-              ? t.has('Updating') ? t('Updating') : 'Updating...'
-              : t.has('Update Password') ? t('Update Password') : 'Update Password'}
-          </Button>
-        </DialogActions>
-      </form>
+            slotProps={{
+              input: {
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton onClick={() => setShowCurrent(!showCurrent)} edge="end" size="small">
+                      {showCurrent ? <IconEyeOff size={18} /> : <IconEye size={18} />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              },
+            }}
+          />
+
+          <TextField
+            label={
+              <span>
+                {t.has('New Password') ? t('New Password') : 'New Password'}
+                <span style={{ color: 'var(--mui-palette-error-main, #d32f2f)' }}> *</span>
+              </span>
+            }
+            type={showNew ? 'text' : 'password'}
+            fullWidth
+            required
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            disabled={isLoading}
+            slotProps={{
+              input: {
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton onClick={() => setShowNew(!showNew)} edge="end" size="small">
+                      {showNew ? <IconEyeOff size={18} /> : <IconEye size={18} />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              },
+            }}
+          />
+
+          <TextField
+            label={
+              <span>
+                {t.has('Confirm New Password') ? t('Confirm New Password') : 'Confirm New Password'}
+                <span style={{ color: 'var(--mui-palette-error-main, #d32f2f)' }}> *</span>
+              </span>
+            }
+            type={showConfirm ? 'text' : 'password'}
+            fullWidth
+            required
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            disabled={isLoading}
+            slotProps={{
+              input: {
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton onClick={() => setShowConfirm(!showConfirm)} edge="end" size="small">
+                      {showConfirm ? <IconEyeOff size={18} /> : <IconEye size={18} />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              },
+            }}
+          />
+        </Stack>
+      </DialogContent>
+
+      <DialogActions sx={{ px: 3, py: 2, gap: 1.5, flex: '0 0 auto', borderTop: 1, borderColor: 'divider' }}>
+        <Button onClick={onClose} disabled={isLoading} variant="outlined" color="inherit">
+          {t.has('Cancel') ? t('Cancel') : 'Cancel'}
+        </Button>
+        <Button
+          type="submit"
+          variant="contained"
+          color="primary"
+          disabled={isLoading}
+          startIcon={isLoading ? <CircularProgress size={18} color="inherit" /> : <IconCheck size={18} />}
+        >
+          {isLoading
+            ? t.has('Updating') ? t('Updating') : 'Updating...'
+            : t.has('Update Password') ? t('Update Password') : 'Update Password'}
+        </Button>
+      </DialogActions>
     </Dialog>
   );
 }

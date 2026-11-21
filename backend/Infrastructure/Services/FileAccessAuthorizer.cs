@@ -11,8 +11,41 @@ public sealed class FileAccessAuthorizer(
         bool isWrite,
         CancellationToken cancellationToken = default)
     {
-        // Fail-closed for any unconfigured, future, or unsupported category (LeaveRequests, OtherDocuments).
-        // In Phase 2, only FileCategory.Employees is implemented.
+        if (category == FileCategory.LeaveRequests)
+        {
+            var leaveOwner = await dbContext.Employees
+                .AsNoTracking()
+                .FirstOrDefaultAsync(e => e.Id == ownerId, cancellationToken);
+
+            if (leaveOwner == null)
+            {
+                return false;
+            }
+
+            if (currentUser.IsSuperAdmin || currentUser.IsAdmin)
+            {
+                return true;
+            }
+
+            // Self-ownership: employee can upload and read their own leave attachments
+            if (!string.IsNullOrEmpty(currentUser.UserId) && leaveOwner.UserId == currentUser.UserId)
+            {
+                return true;
+            }
+
+            // Read-only for supervisors reviewing team members
+            if (!isWrite && currentUser.IsSupervisor)
+            {
+                var currentSupervisor = await dbContext.Employees
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(e => e.UserId == currentUser.UserId, cancellationToken);
+
+                return currentSupervisor != null && leaveOwner.SupervisorId == currentSupervisor.Id;
+            }
+
+            return false;
+        }
+
         if (category != FileCategory.Employees)
         {
             return false;

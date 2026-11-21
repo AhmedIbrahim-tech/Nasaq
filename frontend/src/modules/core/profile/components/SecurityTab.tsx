@@ -311,7 +311,7 @@ export function SecurityTab({
                   <Typography variant="body2" color="text.secondary">
                     {t('Session Type')}
                   </Typography>
-                  <Chip label="JWT Bearer" size="small" variant="outlined" sx={{ fontWeight: 600 }} />
+                  <Chip label={t('Active')} size="small" color="success" variant="outlined" sx={{ fontWeight: 600 }} />
                 </Box>
 
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

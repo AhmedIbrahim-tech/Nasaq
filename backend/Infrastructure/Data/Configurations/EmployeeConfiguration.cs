@@ -20,6 +20,12 @@ public class EmployeeConfiguration : IEntityTypeConfiguration<Employee>
             .IsRequired()
             .HasMaxLength(100);
 
+        builder.Property(e => e.FirstNameAr)
+            .HasMaxLength(100);
+
+        builder.Property(e => e.LastNameAr)
+            .HasMaxLength(100);
+
         builder.Property(e => e.Email)
             .IsRequired()
             .HasMaxLength(256);
@@ -30,8 +36,22 @@ public class EmployeeConfiguration : IEntityTypeConfiguration<Employee>
         builder.Property(e => e.Department)
             .HasMaxLength(100);
 
+        builder.Property(e => e.DepartmentAr)
+            .HasMaxLength(100);
+
         builder.Property(e => e.JobTitle)
             .HasMaxLength(100);
+
+        builder.Property(e => e.JobTitleAr)
+            .HasMaxLength(100);
+
+        builder.Ignore(e => e.FirstNameEn);
+        builder.Ignore(e => e.LastNameEn);
+        builder.Ignore(e => e.FullNameAr);
+        builder.Ignore(e => e.FullNameEn);
+
+        builder.HasIndex(e => e.FirstNameAr);
+        builder.HasIndex(e => e.LastNameAr);
 
         builder.Property(e => e.HireDate)
             .IsRequired();
@@ -62,6 +82,7 @@ public class EmployeeConfiguration : IEntityTypeConfiguration<Employee>
         builder.HasIndex(e => e.Department);
         builder.HasIndex(e => e.IsActive);
         builder.HasIndex(e => e.SupervisorId);
+        builder.HasIndex(e => e.WorkLocationId);
 
         builder.HasOne(e => e.User)
             .WithMany()
@@ -72,6 +93,12 @@ public class EmployeeConfiguration : IEntityTypeConfiguration<Employee>
         builder.HasOne(e => e.Supervisor)
             .WithMany(s => s.SupervisedEmployees)
             .HasForeignKey(e => e.SupervisorId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Restrict prevents accidental deletion of work locations with assigned employees
+        builder.HasOne(e => e.WorkLocation)
+            .WithMany(w => w.Employees)
+            .HasForeignKey(e => e.WorkLocationId)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.Property(e => e.ProfilePhoto)

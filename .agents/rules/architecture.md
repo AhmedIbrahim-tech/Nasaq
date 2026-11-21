@@ -33,8 +33,8 @@ Frontend:  [App Router (src/app)] ──► [Feature Modules (src/modules)]
 - **Dependencies:** **Zero external dependencies**. Never reference `Application`, `Infrastructure`, `API`, or third-party ORMs (e.g., EF Core).
 - **Core Elements:**
   - `Domain.Identity`: `ApplicationUser`, `ApplicationRole`, `RefreshToken`
-  - `Domain.Entities`: `Employee`, `StoredFile`, `AppNotification`
-  - `Domain.Enums`: `FileCategory`, `NotificationCategory`
+  - `Domain.Entities`: `Employee`, `WorkLocation`, `WorkShift`, `WorkSchedule`, `WorkScheduleDay`, `EmployeeScheduleAssignment`, `AttendanceRecord`, `PointRule`, `PointTransaction`, `LeaveType`, `LeaveRequest`, `LeaveApprovalHistory`, `StoredFile`, `AppNotification`
+  - `Domain.Enums`: `FileCategory`, `NotificationCategory`, `AttendanceStatus`, `VerificationStatus`, `ArrivalClassification`, `PointCategory`, `PointEventType`, `PointTransactionStatus`, `LeaveRequestStatus`, `LeaveApprovalAction`
   - `Domain.Authorization`: `Permissions`, `RoleNames`, `PolicyNames`
   - `Domain.Common`: `GenericBaseResponse<T>`, `IAuditableEntity`, `ICreationAuditable`, `IModificationAuditable`
   - `Domain.Repositories`: `IGenericRepository<T>`, `IUnitOfWork`
@@ -44,9 +44,15 @@ Frontend:  [App Router (src/app)] ──► [Feature Modules (src/modules)]
 - **Dependencies:** References **`Domain` only**. Does NOT reference `Infrastructure` or `API`.
 - **Architectural Policy on `IFormFile`:** NASAQ explicitly permits `IFormFile` within Application Commands, Queries, and Handlers to avoid unnecessary stream wrapper abstractions and to maintain clean, high-performance file handling.
 - **Core Elements:**
-  - `Application.Abstractions`: `IApplicationDbContext`, `IUnitOfWork`, `IAuthService`, `ITokenService`, `ICurrentUser`, `ICurrentLanguage`, `IFileService`, `IFileValidationService`, `IFileAccessAuthorizer`, `INotificationService`, `INotificationRealtimePublisher`
+  - `Application.Abstractions`: `IApplicationDbContext`, `IUnitOfWork`, `IAuthService`, `ITokenService`, `ICurrentUser`, `ICurrentLanguage`, `IFileService`, `IFileValidationService`, `IFileAccessAuthorizer`, `INotificationService`, `INotificationRealtimePublisher`, `IGeofenceService`, `IShiftResolutionService`, `IPointCalculationEngine`, `ILeaveService`
   - `Application.Common.Behaviors`: `ValidationBehavior<TRequest, TResponse>`
-  - `Application.Features.Employees`: Commands (`CreateEmployeeCommand`, `UpdateEmployeeCommand`, `ToggleEmployeeStatusCommand`), Queries (`GetEmployeesQuery`, `GetEmployeeByIdQuery`, `GetCurrentEmployeeProfileQuery`, `GetSupervisorsQuery`).
+  - `Application.Features.Leaves`: Commands (`CreateLeaveTypeCommand`, `UpdateLeaveTypeCommand`, `ToggleLeaveTypeStatusCommand`, `SubmitLeaveRequestCommand`, `CancelLeaveRequestCommand`, `ApproveLeaveRequestCommand`, `RejectLeaveRequestCommand`), Queries (`GetLeaveTypesQuery`, `GetLeaveTypeByIdQuery`, `GetMyLeaveRequestsQuery`, `GetLeaveRequestsQuery`, `GetLeaveRequestByIdQuery`, `GetLeaveSummaryQuery`).
+  - `Application.Features.Employees`: Commands (`CreateEmployeeCommand`, `UpdateEmployeeCommand`, `ToggleEmployeeStatusCommand`, `DeleteEmployeeCommand`, `BulkDeleteEmployeesCommand`), Queries (`GetEmployeesQuery`, `GetEmployeeByIdQuery`, `GetCurrentEmployeeProfileQuery`, `GetSupervisorsQuery`, `GetEmployeesSummaryQuery`).
+  - `Application.Features.Locations`: Commands (`CreateLocationCommand`, `UpdateLocationCommand`, `ToggleLocationStatusCommand`, `DeleteLocationCommand`), Queries (`GetLocationsQuery`, `GetLocationByIdQuery`).
+  - `Application.Features.Schedules`: Commands (`CreateScheduleCommand`, `UpdateScheduleCommand`, `ToggleScheduleStatusCommand`, `DeleteScheduleCommand`, `AssignScheduleCommand`), Queries (`GetSchedulesQuery`, `GetScheduleByIdQuery`, `GetAssignmentsQuery`).
+  - `Application.Features.Shifts`: Commands (`CreateShiftCommand`, `UpdateShiftCommand`, `ToggleShiftStatusCommand`, `DeleteShiftCommand`), Queries (`GetShiftsQuery`, `GetShiftByIdQuery`).
+  - `Application.Features.Attendance`: Commands (`CheckInCommand`, `CheckOutCommand`), Queries (`GetCurrentAttendanceStatusQuery`, `GetMyAttendanceHistoryQuery`, `GetAttendanceRecordsQuery`, `GetAttendanceRecordByIdQuery`).
+  - `Application.Features.Points`: Commands (`CreatePointRuleCommand`, `UpdatePointRuleCommand`, `TogglePointRuleStatusCommand`, `ReversePointTransactionCommand`), Queries (`GetPointRulesQuery`, `GetPointRuleByIdQuery`, `GetMyPointsSummaryQuery`, `GetMyPointTransactionsQuery`, `GetPointTransactionsQuery`).
   - `Application.Features.Files`: Commands (`UploadFilesCommand`), Queries (`GetFilesByOwnerQuery`, `GetFileMetadataQuery`, `DownloadFileQuery`).
   - `Application.Features.Auth`: Commands (`LoginCommand`, `RefreshTokenCommand`, `LogoutCommand`, `FirstLoginChangePasswordCommand`, `UpdateProfileCommand`, `ChangePasswordCommand`), Queries (`GetCurrentUserQuery`).
   - `Application.Features.Notifications`: Commands and Queries for notification management.
@@ -56,9 +62,9 @@ Frontend:  [App Router (src/app)] ──► [Feature Modules (src/modules)]
 - **Responsibility:** External concerns, database persistence (EF Core), identity service implementation, file storage, email senders, and background processing.
 - **Dependencies:** References **`Application` and `Domain`**.
 - **Core Elements:**
-  - `Infrastructure.Data`: `ApplicationDbContext`, entity configurations (`EmployeeConfiguration`, `StoredFileConfiguration`, `AppNotificationConfiguration`), `DbInitializer`, and EF Core Migrations.
+  - `Infrastructure.Data`: `ApplicationDbContext`, entity configurations (`EmployeeConfiguration`, `WorkLocationConfiguration`, `WorkShiftConfiguration`, `WorkScheduleConfiguration`, `WorkScheduleDayConfiguration`, `EmployeeScheduleAssignmentConfiguration`, `AttendanceRecordConfiguration`, `PointRuleConfiguration`, `PointTransactionConfiguration`, `LeaveTypeConfiguration`, `LeaveRequestConfiguration`, `LeaveApprovalHistoryConfiguration`, `StoredFileConfiguration`, `AppNotificationConfiguration`), `DbInitializer`, and EF Core Migrations.
   - `Infrastructure.Authentication`: `JwtTokenService`, `CustomUserIdProvider`.
-  - `Infrastructure.Services`: `AuthService`, `CurrentUser`, `CurrentLanguage`, `RefreshTokenService`, `FileService`, `FileValidationService`, `FileAccessAuthorizer`, `NotificationService`, `TemporaryPasswordService`.
+  - `Infrastructure.Services`: `AuthService`, `CurrentUser`, `CurrentLanguage`, `RefreshTokenService`, `FileService`, `FileValidationService`, `FileAccessAuthorizer`, `NotificationService`, `TemporaryPasswordService`, `GeofenceService`, `ShiftResolutionService`, `PointCalculationEngine`, `LeaveService`.
   - `Infrastructure.Repositories`: `GenericRepository<T>`, `UnitOfWork`.
 
 ### 2.4 API Layer (`backend/API/`)
@@ -66,7 +72,7 @@ Frontend:  [App Router (src/app)] ──► [Feature Modules (src/modules)]
 - **Dependencies:** References **`Application` and `Infrastructure`**.
 - **Core Elements:**
   - `API.Controllers.Base`: `ApiControllerBase` (provides `_mediator` and `ActionResult<T>()`).
-  - `API.Controllers`: `EmployeesController`, `FilesController`, `AuthController`, `NotificationsController`.
+  - `API.Controllers`: `AuthController`, `EmployeesController`, `LocationsController`, `SchedulesController`, `ShiftsController`, `AttendanceController`, `PointsController`, `LeavesController`, `FilesController`, `NotificationsController`.
   - `API.Routing`: Centralized type-safe route strings in `Router.cs`.
   - `API.ErrorHandling`: `GlobalExceptionHandler` returning RFC 7807 responses.
   - `API.Program`: Minimal hosting setup and middleware configuration.
@@ -78,13 +84,14 @@ Frontend:  [App Router (src/app)] ──► [Feature Modules (src/modules)]
 ### 3.1 App Router (`frontend/src/app/`)
 - Contains routing and layout definitions using Next.js 16 route groups:
   - `(auth)/`: Authentication pages (`login/page.tsx`).
-  - `(Dashboard)/`: Protected dashboard views (`employees/page.tsx`, `notifications/page.tsx`, `profile/page.tsx`).
+  - `(Dashboard)/`: Protected dashboard views (`employees/page.tsx`, `notifications/page.tsx`, `profile/page.tsx`, `leaves/page.tsx`, `points/page.tsx`, `attendance/page.tsx`, `schedules/page.tsx`, `locations/page.tsx`).
   - `(system)/`: Error handling (`error/page.tsx`, `maintenance/page.tsx`).
   - `layout.tsx`, `page.tsx`, `not-found.tsx`.
 - **Rule:** Page components in `src/app/` must remain lightweight coordinators. They import and render views from `src/modules/` or `src/shared/`.
 
 ### 3.2 Feature Modules (`frontend/src/modules/`)
 - Organized as vertical slices by business capability:
+  - `modules/leaves/`: Components, dialogs, services, Redux slice (`leaves.slice.ts`), types, and views (`LeavesView.tsx`).
   - `modules/employees/`: Components, dialogs, services, Redux slice, types, and views.
   - `modules/auth/`: Components, context, hooks, services, Redux slice (`auth.slice.ts`), thunks, types, validation, and views.
   - `modules/core/notifications/`: Notification center components, hooks, services, Redux slice, types, and views.

@@ -36,12 +36,16 @@ public static class Router
         public const string Prefix = Rule + "employees";
 
         public const string List = Prefix;
+        public const string Summary = Prefix + "/summary";
         public const string Create = Prefix;
         public const string Supervisors = Prefix + "/supervisors";
         public const string MyProfile = Prefix + "/me";
+        public const string MyProfilePhoto = Prefix + "/me/photo";
         public const string GetById = Prefix + "/" + SingleRoute;
         public const string Update = Prefix + "/" + SingleRoute;
         public const string ToggleStatus = Prefix + "/" + SingleRoute + "/status";
+        public const string Delete = Prefix + "/" + SingleRoute;
+        public const string BulkDelete = Prefix + "/bulk-delete";
     }
 
     public static class Files
@@ -52,6 +56,118 @@ public static class Router
         public const string Upload = Prefix + "/upload";
         public const string GetById = Prefix + "/" + SingleRoute;
         public const string Download = Prefix + "/" + SingleRoute + "/download";
+    }
+
+    public static class Locations
+    {
+        public const string Prefix = Rule + "locations";
+
+        public const string List = Prefix;
+        public const string Summary = Prefix + "/summary";
+        public const string Create = Prefix;
+        public const string GetById = Prefix + "/" + SingleRoute;
+        public const string Update = Prefix + "/" + SingleRoute;
+        public const string ToggleStatus = Prefix + "/" + SingleRoute + "/status";
+        public const string Delete = Prefix + "/" + SingleRoute;
+        public const string BulkDelete = Prefix + "/bulk-delete";
+    }
+
+    public static class Shifts
+    {
+        public const string Prefix = Rule + "shifts";
+
+        public const string List = Prefix;
+        public const string Summary = Prefix + "/summary";
+        public const string Create = Prefix;
+        public const string GetById = Prefix + "/" + SingleRoute;
+        public const string Update = Prefix + "/" + SingleRoute;
+        public const string ToggleStatus = Prefix + "/" + SingleRoute + "/status";
+        public const string Delete = Prefix + "/" + SingleRoute;
+    }
+
+    public static class Schedules
+    {
+        public const string Prefix = Rule + "schedules";
+
+        public const string List = Prefix;
+        public const string Summary = Prefix + "/summary";
+        public const string Create = Prefix;
+        public const string GetById = Prefix + "/" + SingleRoute;
+        public const string Update = Prefix + "/" + SingleRoute;
+        public const string ToggleStatus = Prefix + "/" + SingleRoute + "/status";
+        public const string Delete = Prefix + "/" + SingleRoute;
+
+        public const string Assignments = Prefix + "/assignments";
+        public const string AssignmentById = Prefix + "/assignments/" + SingleRoute;
+    }
+
+    public static class Attendance
+    {
+        public const string Prefix = Rule + "attendance";
+
+        public const string CheckIn = Prefix + "/check-in";
+        public const string CheckOut = Prefix + "/check-out";
+        public const string Status = Prefix + "/status";
+        public const string MyHistory = Prefix + "/my-history";
+        public const string List = Prefix;
+        public const string GetById = Prefix + "/" + SingleRoute;
+    }
+
+    public static class Points
+    {
+        public const string Prefix = Rule + "points";
+
+        public const string MySummary = Prefix + "/me/summary";
+        public const string MyTransactions = Prefix + "/me/transactions";
+        public const string Transactions = Prefix + "/transactions";
+        public const string Rules = Prefix + "/rules";
+        public const string RuleById = Prefix + "/rules/" + SingleRoute;
+        public const string RuleToggleStatus = Prefix + "/rules/" + SingleRoute + "/status";
+        public const string Evaluate = Prefix + "/evaluate";
+        public const string Reverse = Prefix + "/transactions/" + SingleRoute + "/reverse";
+    }
+
+    public static class Leaves
+    {
+        public const string Prefix = Rule + "leaves";
+
+        public const string Types = Prefix + "/types";
+        public const string TypeById = Prefix + "/types/" + SingleRoute;
+        public const string TypeToggleStatus = Prefix + "/types/" + SingleRoute + "/status";
+
+        public const string Requests = Prefix + "/requests";
+        public const string MyRequests = Prefix + "/requests/my";
+        public const string RequestById = Prefix + "/requests/" + SingleRoute;
+        public const string CancelRequest = Prefix + "/requests/" + SingleRoute + "/cancel";
+
+        public const string Approvals = Prefix + "/approvals";
+        public const string Approve = Prefix + "/approvals/" + SingleRoute + "/approve";
+        public const string Reject = Prefix + "/approvals/" + SingleRoute + "/reject";
+
+        public const string Summary = Prefix + "/summary";
+    }
+
+    public static class AdminOperations
+    {
+        public const string Prefix = Rule + "admin-operations";
+
+        public const string Summary = Prefix + "/summary";
+        public const string DailyAttendance = Prefix + "/attendance/daily";
+        public const string GpsExceptions = Prefix + "/attendance/gps-exceptions";
+        public const string ApproveGps = Prefix + "/attendance/" + SingleRoute + "/approve";
+        public const string RejectGps = Prefix + "/attendance/" + SingleRoute + "/reject";
+        public const string IncompleteAttendance = Prefix + "/attendance/incomplete";
+        public const string CorrectIncomplete = Prefix + "/attendance/" + SingleRoute + "/correct";
+        public const string ManualPointAdjustment = Prefix + "/points/adjust";
+    }
+
+    public static class Reports
+    {
+        public const string Prefix = Rule + "reports";
+
+        public const string Catalog = Prefix + "/catalog";
+        public const string Execute = Prefix + "/execute";
+        public const string Export = Prefix + "/export";
     }
 
     public static class Hubs

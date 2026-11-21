@@ -57,8 +57,10 @@ api.interceptors.response.use(
     const isLoginEndpoint = url.includes("/auth/login");
     const isFirstLoginEndpoint = url.includes("/auth/first-login-change-password");
     const isLogoutEndpoint = url.includes("/auth/logout");
+    // Auxiliary file/photo downloads must never terminate the user session on failure
+    const isFileDownloadEndpoint = url.includes("/files/") && url.includes("/download");
 
-    if (isLoginEndpoint || isFirstLoginEndpoint || isLogoutEndpoint) {
+    if (isLoginEndpoint || isFirstLoginEndpoint || isLogoutEndpoint || isFileDownloadEndpoint) {
       return Promise.reject(error);
     }
 

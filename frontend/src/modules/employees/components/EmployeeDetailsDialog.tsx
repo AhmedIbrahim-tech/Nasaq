@@ -12,6 +12,10 @@ import Box from "@mui/material/Box";
 import Chip from "@mui/material/Chip";
 import Divider from "@mui/material/Divider";
 import Stack from "@mui/material/Stack";
+import { useTheme } from "@mui/material/styles";
+import DialogCloseButton from "@/shared/components/buttons/DialogCloseButton";
+import { formatDateOnly, formatDateTime } from "@/shared/utils/i18nFormatters";
+import { ProfilePhotoAvatar } from "@/shared/components/avatar";
 import {
   IconMail,
   IconPhone,
@@ -21,6 +25,7 @@ import {
   IconClock,
   IconUser,
   IconUserCheck,
+  IconMapPin,
   IconEdit,
 } from "@tabler/icons-react";
 import { useTranslations } from "next-intl";
@@ -42,6 +47,8 @@ export const EmployeeDetailsDialog: React.FC<EmployeeDetailsDialogProps> = ({
   onEdit,
 }) => {
   const t = useTranslations();
+  const theme = useTheme();
+  const isRtl = theme.direction === "rtl";
 
   if (!employee) return null;
 
@@ -64,26 +71,37 @@ export const EmployeeDetailsDialog: React.FC<EmployeeDetailsDialogProps> = ({
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ pb: 1 }}>
-        <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={2}>
-          <Box>
-            <Typography variant="h6" fontWeight={700}>
-              {fullName}
-            </Typography>
-            <Typography
-              variant="caption"
-              sx={{
-                fontFamily: "monospace",
-                bgcolor: "action.hover",
-                px: 1,
-                py: 0.25,
-                borderRadius: 0.5,
-              }}
-            >
-              {code}
-            </Typography>
-          </Box>
-          <Stack direction="row" spacing={1}>
+      <DialogTitle component="div" sx={{ pb: 1, flex: "0 0 auto" }}>
+        <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={2} flexWrap="wrap" gap={1}>
+          <Stack direction="row" alignItems="center" spacing={2}>
+            <ProfilePhotoAvatar
+              photoId={employee.profilePhoto}
+              name={fullName}
+              size={52}
+              colorScheme="soft"
+              sx={{ border: (theme) => `1px solid ${theme.palette.divider}` }}
+            />
+            <Box>
+              <Typography component="div" variant="h6" fontWeight={700}>
+                {fullName}
+              </Typography>
+              <Typography
+                variant="caption"
+                sx={{
+                  fontFamily: "monospace",
+                  bgcolor: "action.hover",
+                  px: 1,
+                  py: 0.25,
+                  borderRadius: 0.5,
+                  direction: "ltr",
+                  display: "inline-block",
+                }}
+              >
+                {code}
+              </Typography>
+            </Box>
+          </Stack>
+          <Stack direction="row" spacing={1} alignItems="center">
             <Chip
               size="small"
               label={isActive ? t("Active") : t("Inactive")}
@@ -98,11 +116,12 @@ export const EmployeeDetailsDialog: React.FC<EmployeeDetailsDialogProps> = ({
                 variant="outlined"
               />
             )}
+            <DialogCloseButton onClose={onClose} size="small" />
           </Stack>
         </Stack>
       </DialogTitle>
 
-      <DialogContent dividers sx={{ p: 3 }}>
+      <DialogContent dividers sx={{ p: 3, flex: "1 1 auto", overflowY: "auto" }}>
         <Stack spacing={2.5}>
           {/* Section 1: Employment */}
           <Box>
@@ -146,7 +165,7 @@ export const EmployeeDetailsDialog: React.FC<EmployeeDetailsDialogProps> = ({
                       {t("HireDate")}
                     </Typography>
                     <Typography variant="body2" fontWeight={500}>
-                      {hireDate ? new Date(hireDate).toLocaleDateString() : "-"}
+                      {hireDate ? formatDateOnly(hireDate, isRtl) : "-"}
                     </Typography>
                   </Box>
                 </Stack>
@@ -161,6 +180,20 @@ export const EmployeeDetailsDialog: React.FC<EmployeeDetailsDialogProps> = ({
                     </Typography>
                     <Typography variant="body2" fontWeight={500}>
                       {supervisorName ? `${supervisorName} (${supervisorCode})` : t("NoSupervisorAssigned")}
+                    </Typography>
+                  </Box>
+                </Stack>
+              </Grid>
+
+              <Grid size={{ xs: 12 }}>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <IconMapPin size={18} color="#666" />
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">
+                      {t("WorkLocation")}
+                    </Typography>
+                    <Typography variant="body2" fontWeight={500}>
+                      {employee.workLocationName || t("NoLocationAssigned")}
                     </Typography>
                   </Box>
                 </Stack>
@@ -221,8 +254,8 @@ export const EmployeeDetailsDialog: React.FC<EmployeeDetailsDialogProps> = ({
                     <Typography variant="caption" color="text.secondary">
                       {t("CreatedUtc")}
                     </Typography>
-                    <Typography variant="caption" display="block">
-                      {createdUtc ? new Date(createdUtc).toLocaleString() : "-"}
+                    <Typography variant="caption" display="block" sx={{ direction: "ltr", unicodeBidi: "isolate" }}>
+                      {createdUtc ? formatDateTime(createdUtc, isRtl) : "-"}
                     </Typography>
                     {createdBy && (
                       <Typography variant="caption" color="text.secondary">
@@ -240,8 +273,8 @@ export const EmployeeDetailsDialog: React.FC<EmployeeDetailsDialogProps> = ({
                     <Typography variant="caption" color="text.secondary">
                       {t("UpdatedUtc")}
                     </Typography>
-                    <Typography variant="caption" display="block">
-                      {updatedUtc ? new Date(updatedUtc).toLocaleString() : "-"}
+                    <Typography variant="caption" display="block" sx={{ direction: "ltr", unicodeBidi: "isolate" }}>
+                      {updatedUtc ? formatDateTime(updatedUtc, isRtl) : "-"}
                     </Typography>
                     {updatedBy && (
                       <Typography variant="caption" color="text.secondary">
@@ -256,11 +289,15 @@ export const EmployeeDetailsDialog: React.FC<EmployeeDetailsDialogProps> = ({
         </Stack>
       </DialogContent>
 
-      <DialogActions sx={{ px: 3, py: 2 }}>
+      <DialogActions sx={{ px: 3, py: 2, gap: 1.5, flex: "0 0 auto" }}>
+        <Button onClick={onClose} variant="outlined" color="error">
+          {t("Close")}
+        </Button>
         {canManage && (
           <Button
             startIcon={<IconEdit size={18} />}
-            variant="outlined"
+            variant="contained"
+            color="primary"
             onClick={() => {
               onClose();
               onEdit();
@@ -269,9 +306,6 @@ export const EmployeeDetailsDialog: React.FC<EmployeeDetailsDialogProps> = ({
             {t("Edit")}
           </Button>
         )}
-        <Button onClick={onClose} variant="contained" color="inherit">
-          {t("Close")}
-        </Button>
       </DialogActions>
     </Dialog>
   );

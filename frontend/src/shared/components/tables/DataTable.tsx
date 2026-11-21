@@ -549,7 +549,7 @@ export function DataTable<T>({
             sx={{
               position: 'absolute',
               top: 16,
-              right: 16,
+              insetInlineEnd: 16,
               color: 'text.secondary',
               borderRadius: '8px',
               bgcolor: (theme) =>
@@ -564,7 +564,7 @@ export function DataTable<T>({
             <IconX size={18} />
           </IconButton>
 
-          <DialogTitle sx={{ p: 0, pb: 2.5 }}>
+          <DialogTitle component="div" sx={{ p: 0, pb: 2.5 }}>
             <Stack direction="row" spacing={2} alignItems="center">
               <Box
                 sx={{
@@ -585,7 +585,7 @@ export function DataTable<T>({
                 <IconTrash size={26} stroke={1.8} />
               </Box>
               <Box sx={{ minWidth: 0, flexGrow: 1 }}>
-                <Typography variant="h5" fontWeight={700}>
+                <Typography component="div" variant="h5" fontWeight={700}>
                   {selection.bulkDeleteTitle ||
                     (t.has('DeleteSelectedRecords')
                       ? t('DeleteSelectedRecords')

@@ -88,6 +88,10 @@ public static class DependencyInjection
         services.AddScoped<IFileService, FileService>();
         services.AddScoped<IFileValidationService, FileValidationService>();
         services.AddScoped<IFileAccessAuthorizer, FileAccessAuthorizer>();
+        services.AddScoped<IGeofenceService, GeofenceService>();
+        services.AddScoped<IShiftResolutionService, ShiftResolutionService>();
+        services.AddScoped<IPointCalculationEngine, PointCalculationEngine>();
+        services.AddScoped<ILeaveService, LeaveService>();
         services.AddScoped<DbInitializer>();
 
         return services;

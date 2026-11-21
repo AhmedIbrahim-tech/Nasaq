@@ -66,11 +66,11 @@ export const NotificationDetailsDialog: React.FC<NotificationDetailsDialogProps>
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ pb: 1 }}>
+      <DialogTitle component="div" sx={{ pb: 1 }}>
         <Stack direction="row" spacing={2} alignItems="center">
           <NotificationBadgeIcon category={notification.category} size={24} avatarSize={44} />
           <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography variant="h6" fontWeight={700} noWrap>
+            <Typography component="div" variant="h6" fontWeight={700} noWrap>
               {notification.title}
             </Typography>
             <Typography variant="caption" color="text.secondary">

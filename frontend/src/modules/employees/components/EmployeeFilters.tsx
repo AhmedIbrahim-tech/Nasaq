@@ -71,10 +71,15 @@ export const EmployeeFilters: React.FC<EmployeeFiltersProps> = ({
               fullWidth
               size="small"
               label={t("FilterByDepartment")}
-              value={department}
-              onChange={(e) => onDepartmentChange(e.target.value)}
+              value={department || "all"}
+              onChange={(e) => onDepartmentChange(e.target.value === "all" ? "" : e.target.value)}
+              SelectProps={{
+                displayEmpty: true,
+                renderValue: (selected: any) =>
+                  !selected || selected === "all" ? t("AllDepartments") : selected,
+              }}
             >
-              <MenuItem value="">{t("AllDepartments")}</MenuItem>
+              <MenuItem value="all">{t("AllDepartments")}</MenuItem>
               {departments.map((dept) => (
                 <MenuItem key={dept} value={dept}>
                   {dept}
@@ -97,6 +102,15 @@ export const EmployeeFilters: React.FC<EmployeeFiltersProps> = ({
                 else if (val === "inactive") onIsActiveChange(false);
                 else onIsActiveChange(undefined);
               }}
+              SelectProps={{
+                displayEmpty: true,
+                renderValue: (selected: any) =>
+                  !selected || selected === "all"
+                    ? t("AllEmployees")
+                    : selected === "active"
+                    ? t("ActiveOnly")
+                    : t("InactiveOnly"),
+              }}
             >
               <MenuItem value="all">{t("AllEmployees")}</MenuItem>
               <MenuItem value="active">{t("ActiveOnly")}</MenuItem>
@@ -104,17 +118,17 @@ export const EmployeeFilters: React.FC<EmployeeFiltersProps> = ({
             </TextField>
           </Grid>
 
-          {/* Reset Action */}
-          <Grid size={{ xs: 12, sm: 6, md: 2 }}>
+          {/* Reset Action (Icon Button matching toolbar standard) */}
+          <Grid size={{ xs: 12, sm: 6, md: 1 }}>
             <Button
               fullWidth
               variant="outlined"
               color="inherit"
-              startIcon={<IconRotateDot size={18} />}
+              aria-label={t("ResetFilters")}
               onClick={onReset}
-              sx={{ height: 40 }}
+              sx={{ height: 40, minWidth: 40, px: 1 }}
             >
-              {t("Reset")}
+              <IconRotateDot size={20} />
             </Button>
           </Grid>
         </Grid>

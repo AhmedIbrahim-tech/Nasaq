@@ -15,6 +15,8 @@ import config from '@/theme/config';
 import Scrollbar from "@/shared/components/custom-scroll/Scrollbar";
 import { Profile } from "./SidebarProfile/Profile";
 
+import DialogCloseButton from '@/shared/components/buttons/DialogCloseButton';
+
 const Sidebar = () => {
   const lgDown = useMediaQuery((theme: any) => theme.breakpoints.down("lg"));
   const {
@@ -65,10 +67,10 @@ const Sidebar = () => {
                   boxSizing: "border-box",
                   left: isRtl ? 'auto !important' : '0 !important',
                   right: isRtl ? '0 !important' : 'auto !important',
-                  bgcolor: isDark ? '#14181f' : '#ffffff',
+                  bgcolor: 'background.paper',
                   backgroundImage: 'none',
-                  borderRight: isRtl ? 'none' : `1px solid ${isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.07)'}`,
-                  borderLeft: isRtl ? `1px solid ${isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.07)'}` : 'none',
+                  borderRight: isRtl ? 'none' : `1px solid ${theme.palette.divider}`,
+                  borderLeft: isRtl ? `1px solid ${theme.palette.divider}` : 'none',
                   boxShadow: 'none',
                 },
               }
@@ -91,7 +93,7 @@ const Sidebar = () => {
                   height: config.topbarHeight,
                   display: 'flex',
                   alignItems: 'center',
-                  borderBottom: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)'}`,
+                  borderBottom: `1px solid ${theme.palette.divider}`,
                 }}
               >
                 <Logo />
@@ -108,7 +110,7 @@ const Sidebar = () => {
               <Box
                 sx={{
                   flexShrink: 0,
-                  borderTop: `1px solid ${isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)'}`,
+                  borderTop: `1px solid ${theme.palette.divider}`,
                 }}
               >
                 <Profile />
@@ -129,7 +131,7 @@ const Sidebar = () => {
               sx: {
                 width: { xs: 'min(290px, 86vw)', sm: SidebarWidth },
                 maxWidth: '86vw',
-                bgcolor: isDark ? '#14181f' : '#ffffff',
+                bgcolor: 'background.paper',
                 backgroundImage: 'none',
                 border: "0 !important",
                 boxShadow: isDark
@@ -155,24 +157,10 @@ const Sidebar = () => {
             }}
           >
             <Logo />
-            <IconButton
-              aria-label="close-mobile-sidebar"
-              onClick={() => setIsMobileSidebar(false)}
+            <DialogCloseButton
+              onClose={() => setIsMobileSidebar(false)}
               size="small"
-              sx={{
-                width: 32,
-                height: 32,
-                borderRadius: '8px',
-                color: 'text.secondary',
-                bgcolor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)',
-                '&:hover': {
-                  bgcolor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)',
-                  color: 'text.primary',
-                },
-              }}
-            >
-              <IconX size={18} stroke={2} />
-            </IconButton>
+            />
           </Box>
 
           {/* Scrollable Navigation for Mobile */}

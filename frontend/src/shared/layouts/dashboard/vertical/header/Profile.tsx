@@ -9,37 +9,35 @@ import Divider from '@mui/material/Divider';
 import IconButton from '@mui/material/IconButton';
 import Menu from '@mui/material/Menu';
 import Typography from '@mui/material/Typography';
-import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
 import Tooltip from '@mui/material/Tooltip';
 import CircularProgress from '@mui/material/CircularProgress';
+import { useTheme, alpha } from '@mui/material/styles';
 import {
   IconMail,
-  IconShield,
   IconLogout,
+  IconUser,
 } from '@tabler/icons-react';
 import { useLogout } from '@/modules/auth/hooks/useLogout';
 import { useAppSelector } from '@/store/hooks';
 import { useTranslations } from 'next-intl';
+import { formatUserRole } from '@/shared/utils/format.utils';
+import { ProfilePhotoAvatar } from '@/shared/components/avatar';
 
 const Profile = () => {
   const t = useTranslations();
+  const theme = useTheme();
+  const isRtl = theme.direction === 'rtl';
   const { logout, isLoggingOut } = useLogout();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   const user = useAppSelector((state) => state.auth.user);
   const roles = useAppSelector((state) => state.auth.roles) || [];
 
-  const displayName = user?.fullName || user?.email?.split('@')[0] || 'User';
+  const displayName = user?.fullName || user?.email?.split('@')[0] || t('User');
   const displayEmail = user?.email || '—';
   const rawRole = roles.length > 0 ? roles[0] : 'User';
-  const displayRole =
-    rawRole === 'PlatformSuperAdmin'
-      ? (t.has('Platform Admin') ? t('Platform Admin') : 'Platform Admin')
-      : rawRole === 'TenantAdmin'
-      ? (t.has('Tenant Admin') ? t('Tenant Admin') : 'Tenant Admin')
-      : (t.has(rawRole) ? t(rawRole) : rawRole);
-  const initial = displayName.charAt(0).toUpperCase();
+  const displayRole = formatUserRole(rawRole, t);
 
   const handleOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -49,63 +47,32 @@ const Profile = () => {
     setAnchorEl(null);
   };
 
-  const menuItems = [
-    {
-      href: '/profile',
-      title: t.has('My Profile') ? t('My Profile') : 'My Profile',
-      subtitle: t.has('Account Settings') ? t('Account Settings') : 'Account Settings',
-      icon: '/images/svgs/icon-account.svg',
-      isLink: true,
-      isPlaceholder: false,
-    },
-    {
-      href: '#inbox',
-      title: t.has('My Inbox') ? t('My Inbox') : 'My Inbox',
-      subtitle: t.has('Messages & Emails') ? t('Messages & Emails') : 'Messages & Emails',
-      icon: '/images/svgs/icon-inbox.svg',
-      isLink: true,
-      isPlaceholder: true,
-    },
-    {
-      href: '#tasks',
-      title: t.has('My Tasks') ? t('My Tasks') : 'My Tasks',
-      subtitle: t.has('To-do and Daily Tasks') ? t('To-do and Daily Tasks') : 'To-do and Daily Tasks',
-      icon: '/images/svgs/icon-tasks.svg',
-      isLink: true,
-      isPlaceholder: true,
-    },
-  ];
-
   return (
     <Box>
-      <IconButton
-        id="header-user-profile-button"
-        size="large"
-        aria-label={t.has('User Profile') ? t('User Profile') : 'User Profile'}
-        color="inherit"
-        aria-controls="profile-menu"
-        aria-haspopup="true"
-        sx={{
-          ...(Boolean(anchorEl) && {
-            color: 'primary.main',
-          }),
-        }}
-        onClick={handleOpen}
-      >
-        <Avatar
-          alt={displayName}
+      <Tooltip title={displayName} arrow enterDelay={400}>
+        <IconButton
+          id="header-user-profile-button"
+          size="medium"
+          aria-label={t.has('User Profile') ? t('User Profile') : 'User Profile'}
+          color="inherit"
+          aria-controls="profile-menu"
+          aria-haspopup="true"
           sx={{
-            width: 35,
-            height: 35,
-            bgcolor: 'primary.main',
-            color: 'primary.contrastText',
-            fontWeight: 600,
-            fontSize: '0.9rem',
+            p: 0.5,
+            border: '1px solid',
+            borderColor: Boolean(anchorEl) ? 'primary.main' : 'divider',
+            borderRadius: '50%',
+            transition: 'all 0.2s ease',
           }}
+          onClick={handleOpen}
         >
-          {initial}
-        </Avatar>
-      </IconButton>
+          <ProfilePhotoAvatar
+            photoId={user?.profilePhoto}
+            name={displayName}
+            size={34}
+          />
+        </IconButton>
+      </Tooltip>
 
       <Menu
         id="profile-menu"
@@ -113,163 +80,138 @@ const Profile = () => {
         keepMounted
         open={Boolean(anchorEl)}
         onClose={handleClose}
-        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-        sx={{
-          '& .MuiMenu-paper': {
-            width: { xs: 'calc(100vw - 32px)', sm: '420px', md: '440px' },
-            maxWidth: '440px',
-            p: { xs: 2.5, sm: 3.5 },
-            borderRadius: 3,
-            boxShadow: (theme) => theme.shadows[9],
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: isRtl ? 'left' : 'right',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: isRtl ? 'left' : 'right',
+        }}
+        slotProps={{
+          paper: {
+            sx: {
+              width: { xs: 'calc(100vw - 32px)', sm: '360px' },
+              maxWidth: '380px',
+              p: 3,
+              borderRadius: '16px',
+              border: `1px solid ${theme.palette.divider}`,
+              boxShadow: (theme) =>
+                theme.palette.mode === 'dark'
+                  ? '0 12px 36px rgba(0,0,0,0.6)'
+                  : '0 12px 36px rgba(0,0,0,0.12)',
+            },
           },
         }}
       >
-        <Typography variant="h5" fontWeight={600}>
-          {t.has('User Profile') ? t('User Profile') : 'User Profile'}
+        <Typography variant="h5" fontWeight={700}>
+          {isRtl ? 'ملف المستخدم' : 'User Profile'}
         </Typography>
 
-        <Stack direction="row" py={3} spacing={2} alignItems="center">
-          <Avatar
-            alt={displayName}
+        <Stack direction="row" py={2.5} spacing={2} alignItems="center">
+          <ProfilePhotoAvatar
+            photoId={user?.profilePhoto}
+            name={displayName}
+            size={76}
             sx={{
-              width: 90,
-              height: 90,
-              bgcolor: 'primary.main',
-              color: 'primary.contrastText',
-              fontSize: '2rem',
-              fontWeight: 700,
-              flexShrink: 0,
-              border: (theme) => `2px solid ${theme.palette.divider}`,
+              border: `2px solid ${theme.palette.divider}`,
+              boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.25)}`,
             }}
-          >
-            {initial}
-          </Avatar>
+          />
+
           <Box sx={{ minWidth: 0, flex: 1, overflow: 'hidden' }}>
             <Tooltip title={displayName} placement="top" arrow enterDelay={300}>
               <Typography
-                variant="subtitle2"
-                color="textPrimary"
-                fontWeight={600}
+                variant="subtitle1"
+                fontWeight={700}
                 noWrap
-                sx={{ cursor: 'default' }}
+                sx={{ cursor: 'default', color: 'text.primary', lineHeight: 1.25 }}
               >
                 {displayName}
               </Typography>
             </Tooltip>
-            <Typography variant="subtitle2" color="textSecondary" noWrap sx={{ mt: 0.25 }}>
+            <Typography variant="body2" color="text.secondary" noWrap sx={{ mt: 0.35 }}>
               {user?.jobTitle || displayRole}
             </Typography>
             <Typography
-              variant="subtitle2"
-              color="textSecondary"
+              variant="caption"
+              color="text.secondary"
               display="flex"
               alignItems="center"
-              gap={0.75}
+              gap={0.5}
               sx={{ mt: 0.5, minWidth: 0 }}
               noWrap
             >
-              <IconMail size={15} style={{ flexShrink: 0 }} />
+              <IconMail size={14} style={{ flexShrink: 0 }} />
               <Box
                 component="span"
-                sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', direction: 'ltr' }}
               >
                 {displayEmail}
               </Box>
             </Typography>
-            {user?.jobTitle && (
-              <Box sx={{ mt: 0.75 }}>
-                <Chip
-                  icon={<IconShield size={12} />}
-                  label={displayRole}
-                  size="small"
-                  color="primary"
-                  variant="outlined"
-                  sx={{ fontWeight: 600, fontSize: '0.72rem', height: 20 }}
-                />
-              </Box>
-            )}
           </Box>
         </Stack>
 
-        <Divider />
+        <Divider sx={{ my: 1 }} />
 
-        {menuItems.map((item) => (
-          <Box key={item.title}>
+        {/* Real Functional Actions */}
+        <Box sx={{ my: 1 }}>
+          {/* Action 1: My Profile */}
+          <Box
+            component={Link}
+            href="/profile"
+            onClick={handleClose}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 2,
+              p: 1.25,
+              borderRadius: '10px',
+              textDecoration: 'none',
+              color: 'inherit',
+              transition: 'background-color 0.15s ease',
+              '&:hover': {
+                bgcolor: 'action.hover',
+                '& .action-title': { color: 'primary.main' },
+              },
+            }}
+          >
             <Box
-              className="hover-text-primary"
               sx={{
-                py: 1.5,
-                px: 1,
-                borderRadius: 2,
-                cursor: 'pointer',
-                transition: 'background-color 0.15s ease',
-                '&:hover': {
-                  bgcolor: 'action.hover',
-                },
-              }}
-              onClick={(e) => {
-                if (item.isPlaceholder) {
-                  e.preventDefault();
-                }
-                handleClose();
+                width: 44,
+                height: 44,
+                borderRadius: '10px',
+                bgcolor: 'primary.light',
+                color: 'primary.main',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
               }}
             >
-              <Link
-                href={item.href}
-                style={{ textDecoration: 'none', color: 'inherit' }}
-                onClick={(e) => {
-                  if (item.isPlaceholder) {
-                    e.preventDefault();
-                  }
-                }}
+              <IconUser size={22} stroke={1.75} />
+            </Box>
+            <Box sx={{ minWidth: 0 }}>
+              <Typography
+                className="action-title"
+                variant="subtitle2"
+                fontWeight={600}
+                noWrap
+                sx={{ transition: 'color 0.15s ease' }}
               >
-                <Stack direction="row" spacing={2} alignItems="center">
-                  <Box
-                    width="45px"
-                    height="45px"
-                    bgcolor="primary.light"
-                    display="flex"
-                    alignItems="center"
-                    justifyContent="center"
-                    flexShrink="0"
-                    borderRadius="8px"
-                  >
-                    <Avatar
-                      src={item.icon}
-                      alt={item.title}
-                      sx={{
-                        width: 24,
-                        height: 24,
-                        borderRadius: 0,
-                      }}
-                    />
-                  </Box>
-                  <Box sx={{ minWidth: 0, flex: 1 }}>
-                    <Typography
-                      variant="subtitle2"
-                      fontWeight={600}
-                      color="textPrimary"
-                      className="text-hover"
-                      noWrap
-                    >
-                      {item.title}
-                    </Typography>
-                    <Typography
-                      color="textSecondary"
-                      variant="subtitle2"
-                      fontSize="12px"
-                      noWrap
-                    >
-                      {item.subtitle}
-                    </Typography>
-                  </Box>
-                </Stack>
-              </Link>
+                {isRtl ? 'ملفي الشخصي' : 'My Profile'}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" noWrap display="block">
+                {isRtl ? 'إعدادات الحساب والبيانات الشخصية' : 'Account settings & personal info'}
+              </Typography>
             </Box>
           </Box>
-        ))}
+        </Box>
 
+        <Divider sx={{ my: 1 }} />
+
+        {/* Action 3: Logout Button */}
         <Box mt={2}>
           <Button
             variant="outlined"
@@ -285,14 +227,15 @@ const Profile = () => {
               )
             }
             sx={{
-              borderRadius: 2,
-              py: 1.25,
+              borderRadius: '8px',
+              py: 1,
               fontWeight: 600,
+              textTransform: 'none',
             }}
           >
             {isLoggingOut
-              ? (t.has('Logging out') ? t('Logging out') : 'Logging out...')
-              : (t.has('Logout') ? t('Logout') : 'Logout')}
+              ? (isRtl ? 'جارٍ تسجيل الخروج...' : 'Logging out...')
+              : (isRtl ? 'تسجيل الخروج' : 'Logout')}
           </Button>
         </Box>
       </Menu>

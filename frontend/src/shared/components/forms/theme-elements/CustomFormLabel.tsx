@@ -19,6 +19,10 @@ const CustomFormLabel = styled((props: any) => (
   '&:first-of-type': {
     marginTop: 0,
   },
+  '& .asterisk, & span.asterisk': {
+    color: `${theme.palette.error.main} !important`,
+    marginInlineStart: '4px',
+  },
 }));
 
 export default CustomFormLabel;

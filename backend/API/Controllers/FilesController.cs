@@ -10,7 +10,7 @@ namespace API.Controllers;
 public sealed class FilesController : ApiControllerBase
 {
     [HttpPost(Router.Files.Upload)]
-    [Consumes("multipart/form-data")]
+    [Consumes(MultipartFormData)]
     public async Task<IActionResult> Upload(
         [FromForm] UploadFilesCommand command,
         CancellationToken cancellationToken = default) =>

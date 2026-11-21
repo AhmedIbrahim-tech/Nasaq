@@ -13,6 +13,8 @@ import createWebStorage from "redux-persist/lib/storage/createWebStorage";
 import authReducer from "@/modules/auth/slices/auth.slice";
 import notificationsReducer from "@/modules/core/notifications/slices/notifications.slice";
 import employeesReducer from "@/modules/employees/slices/employee.slice";
+import locationsReducer from "@/modules/locations/slices/locations.slice";
+import leavesReducer from "@/modules/leaves/slices/leaves.slice";
 
 // SSR-safe storage with cross-tab overwrite protection for Next.js
 const createSafeStorage = () => {
@@ -99,6 +101,8 @@ const appReducer = combineReducers({
   auth: persistReducer(authPersistConfig, authReducer),
   notifications: notificationsReducer,
   employees: employeesReducer,
+  locations: locationsReducer,
+  leaves: leavesReducer,
 });
 
 /**
@@ -120,6 +124,8 @@ const rootReducer = (
       auth: authState as any,
       notifications: undefined as any,
       employees: undefined as any,
+      locations: undefined as any,
+      leaves: undefined as any,
     };
   }
   return appReducer(state, action);

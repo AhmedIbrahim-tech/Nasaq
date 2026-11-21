@@ -15,6 +15,8 @@ export interface Employee {
   supervisorId?: string | null;
   supervisorName?: string | null;
   supervisorCode?: string | null;
+  workLocationId?: string | null;
+  workLocationName?: string | null;
   profilePhoto?: string | null;
   created_Utc: string;
   created_By?: string | null;
@@ -46,6 +48,7 @@ export interface CreateEmployeeRequest {
   password?: string;
   userId?: string;
   supervisorId?: string | null;
+  workLocationId?: string | null;
   photo?: File | null;
 }
 
@@ -60,6 +63,7 @@ export interface UpdateEmployeeRequest {
   userRole?: string;
   userId?: string;
   supervisorId?: string | null;
+  workLocationId?: string | null;
   photo?: File | null;
   removeProfilePhoto?: boolean;
 }
@@ -85,4 +89,13 @@ export interface PaginatedEmployeesResponse {
   pageSize: number;
   hasPreviousPage: boolean;
   hasNextPage: boolean;
+}
+
+export interface EmployeesSummary {
+  totalEmployees: number;
+  activeEmployees: number;
+  inactiveEmployees: number;
+  assignedLocationCount: number;
+  unassignedLocationCount: number;
+  supervisorCount: number;
 }

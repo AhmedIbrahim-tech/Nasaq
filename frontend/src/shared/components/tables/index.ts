@@ -6,4 +6,5 @@ export * from './DataTableToolbar';
 export * from './DataTableStates';
 export * from './DataTableKpiCards';
 export * from './DataTableTabs';
+export * from './modernize';
 export { default } from './DataTable';

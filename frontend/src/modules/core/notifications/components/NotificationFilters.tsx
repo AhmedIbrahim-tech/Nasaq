@@ -15,7 +15,11 @@ import {
   IconChecks,
   IconRefresh,
   IconFilter,
+  IconRotateDot,
 } from "@tabler/icons-react";
+import IconButton from "@mui/material/IconButton";
+import Tooltip from "@mui/material/Tooltip";
+import { alpha, useTheme } from "@mui/material/styles";
 import { useTranslations } from "next-intl";
 
 interface NotificationFiltersProps {
@@ -28,6 +32,8 @@ interface NotificationFiltersProps {
   onSetSearch: (query: string) => void;
   onMarkAllAsRead: () => Promise<void>;
   onRefresh: () => void;
+  onReset?: () => void;
+  hasActiveFilters?: boolean;
 }
 
 const CATEGORIES = [
@@ -52,8 +58,11 @@ export const NotificationFilters: React.FC<NotificationFiltersProps> = ({
   onSetSearch,
   onMarkAllAsRead,
   onRefresh,
+  onReset,
+  hasActiveFilters = false,
 }) => {
   const t = useTranslations();
+  const theme = useTheme();
   const [localSearch, setLocalSearch] = useState(searchQuery);
 
   useEffect(() => {
@@ -102,6 +111,14 @@ export const NotificationFilters: React.FC<NotificationFiltersProps> = ({
               const val = e.target.value;
               onSetCategory(val === "ALL" ? null : val);
             }}
+            SelectProps={{
+              displayEmpty: true,
+              renderValue: (selected: any) => {
+                if (!selected || selected === "ALL") return t("CategoryAll");
+                const found = CATEGORIES.find((c) => c.value === selected);
+                return found ? t(found.labelKey) : selected;
+              },
+            }}
             sx={{ minWidth: 160 }}
           >
             <MenuItem value="ALL">{t("CategoryAll")}</MenuItem>
@@ -143,6 +160,37 @@ export const NotificationFilters: React.FC<NotificationFiltersProps> = ({
             >
               {t("MarkAllAsRead")}
             </Button>
+          )}
+
+          {onReset && (
+            <Tooltip title={t("ResetFilters")}>
+              <span>
+                <IconButton
+                  onClick={onReset}
+                  disabled={!hasActiveFilters}
+                  size="small"
+                  aria-label={t("ResetFilters")}
+                  sx={{
+                    width: 38,
+                    height: 38,
+                    borderRadius: "8px",
+                    border: `1px solid ${theme.palette.divider}`,
+                    color: hasActiveFilters ? "warning.main" : "text.disabled",
+                    bgcolor: hasActiveFilters ? alpha(theme.palette.warning.main, 0.08) : "transparent",
+                    transition: "all 0.2s ease-in-out",
+                    "&:hover": {
+                      borderColor: "warning.main",
+                      bgcolor: alpha(theme.palette.warning.main, 0.16),
+                    },
+                    "&.Mui-disabled": {
+                      opacity: 0.4,
+                    },
+                  }}
+                >
+                  <IconRotateDot size={18} />
+                </IconButton>
+              </span>
+            </Tooltip>
           )}
 
           <Button

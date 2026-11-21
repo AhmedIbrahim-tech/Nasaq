@@ -51,7 +51,6 @@ export default function NavItem({ item, level = 1, pathDirect, hideMenu, onClick
   const theme = useTheme();
   const t = useTranslations();
   const isRtl = theme.direction === 'rtl';
-  const isDark = theme.palette.mode === 'dark';
 
   const isSelected = item?.href === '/'
     ? pathDirect === '/'
@@ -61,9 +60,9 @@ export default function NavItem({ item, level = 1, pathDirect, hideMenu, onClick
 
   const itemIcon =
     level > 1 ? (
-      Icon ? <Icon stroke={1.5} size={14} /> : null
+      Icon ? <Icon stroke={1.5} size={15} /> : null
     ) : (
-      Icon ? <Icon stroke={1.6} size={19} /> : null
+      Icon ? <Icon stroke={1.75} size={20} /> : null
     );
 
   const localizedTitle = item?.title
@@ -83,7 +82,7 @@ export default function NavItem({ item, level = 1, pathDirect, hideMenu, onClick
             title={localizedTitle}
             placement={isRtl ? 'left' : 'right'}
             arrow
-            enterDelay={0}
+            enterDelay={100}
             leaveDelay={100}
           >
             <ListItemButton
@@ -96,39 +95,19 @@ export default function NavItem({ item, level = 1, pathDirect, hideMenu, onClick
                 height: 40,
                 minHeight: 40,
                 maxHeight: 40,
-                margin: '0 auto 4px auto',
+                margin: '0 auto 6px auto',
                 padding: 0,
-                borderRadius: '8px',
+                borderRadius: `${isBorderRadius || 8}px`,
                 display: 'flex',
                 justifyContent: 'center',
                 alignItems: 'center',
-                transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
-                bgcolor: isSelected
-                  ? isDark
-                    ? 'rgba(93, 135, 255, 0.16)'
-                    : 'rgba(93, 135, 255, 0.1)'
-                  : 'transparent',
-                color: isSelected
-                  ? theme.palette.primary.main
-                  : isDark
-                  ? '#94a3b8'
-                  : '#475569',
-                border: isSelected
-                  ? `1px solid ${alpha(theme.palette.primary.main, 0.25)}`
-                  : '1px solid transparent',
+                transition: 'all 0.2s ease',
+                bgcolor: isSelected ? 'primary.main' : 'transparent',
+                color: isSelected ? 'common.white' : 'text.secondary',
+                boxShadow: 'none',
                 '&:hover': {
-                  bgcolor: isSelected
-                    ? isDark
-                      ? 'rgba(93, 135, 255, 0.22)'
-                      : 'rgba(93, 135, 255, 0.15)'
-                    : isDark
-                    ? 'rgba(255, 255, 255, 0.06)'
-                    : 'rgba(15, 23, 42, 0.04)',
-                  color: isDark ? '#f8fafc' : '#0f172a',
-                },
-                '&:focus-visible': {
-                  outline: `2px solid ${theme.palette.primary.main}`,
-                  outlineOffset: '2px',
+                  bgcolor: isSelected ? 'primary.main' : 'primary.light',
+                  color: isSelected ? 'common.white' : 'primary.main',
                 },
               }}
             >
@@ -137,7 +116,7 @@ export default function NavItem({ item, level = 1, pathDirect, hideMenu, onClick
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: 'inherit',
+                  color: isSelected ? 'white !important' : 'inherit',
                 }}
               >
                 {itemIcon}
@@ -149,9 +128,9 @@ export default function NavItem({ item, level = 1, pathDirect, hideMenu, onClick
     );
   }
 
-  // Expanded Sidebar & Mobile Drawer styling
+  // Expanded Sidebar & Mobile Drawer styling (Authentic Modernize Design)
   const indentPaddingStart =
-    level > 2 ? `${level * 16}px` : level > 1 ? '32px' : '10px';
+    level > 2 ? `${level * 16}px` : level > 1 ? '32px' : '14px';
 
   return (
     <List component="li" disablePadding key={item?.id || item?.title}>
@@ -162,78 +141,44 @@ export default function NavItem({ item, level = 1, pathDirect, hideMenu, onClick
           aria-current={isSelected ? "page" : undefined}
           onClick={lgDown ? onClick : undefined}
           sx={{
-            position: 'relative',
             whiteSpace: 'nowrap',
-            minHeight: lgDown ? 42 : 38,
-            maxHeight: lgDown ? 44 : 38,
-            mb: '3px',
-            paddingBlock: '6px',
+            minHeight: 42,
+            mb: '2px',
+            paddingBlock: '8px',
             paddingInlineStart: indentPaddingStart,
-            paddingInlineEnd: '10px',
+            paddingInlineEnd: '12px',
             borderRadius: `${isBorderRadius || 8}px`,
-            transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
-            bgcolor: isSelected
-              ? isDark
-                ? 'rgba(93, 135, 255, 0.14)'
-                : 'rgba(93, 135, 255, 0.08)'
-              : 'transparent',
-            color: isSelected
-              ? theme.palette.primary.main
-              : isDark
-              ? '#94a3b8'
-              : '#475569',
-            fontWeight: isSelected ? 600 : 500,
+            transition: 'all 0.15s ease-in-out',
+            bgcolor: isSelected ? 'primary.main' : 'transparent',
+            color: isSelected ? 'common.white' : 'text.secondary',
+            boxShadow: 'none',
             '&:hover': {
-              bgcolor: isSelected
-                ? isDark
-                  ? 'rgba(93, 135, 255, 0.2)'
-                  : 'rgba(93, 135, 255, 0.12)'
-                : isDark
-                ? 'rgba(255, 255, 255, 0.05)'
-                : 'rgba(15, 23, 42, 0.04)',
-              color: isSelected
-                ? theme.palette.primary.main
-                : isDark
-                ? '#f8fafc'
-                : '#0f172a',
+              bgcolor: isSelected ? 'primary.main' : 'primary.light',
+              color: isSelected ? 'common.white' : 'primary.main',
               '& .MuiListItemIcon-root': {
-                color: isSelected
-                  ? theme.palette.primary.main
-                  : isDark
-                  ? '#f8fafc'
-                  : '#0f172a',
+                color: isSelected ? 'white !important' : 'primary.main',
               },
             },
-            '&:focus-visible': {
-              outline: `2px solid ${theme.palette.primary.main}`,
-              outlineOffset: '2px',
+            '&.Mui-selected': {
+              bgcolor: 'primary.main',
+              color: 'common.white',
+              '&:hover': {
+                bgcolor: 'primary.main',
+                color: 'common.white',
+              },
+              '& .MuiListItemIcon-root': {
+                color: 'white !important',
+              },
             },
           }}
         >
-          {/* Active Linear-style indicator pill on start edge */}
-          {isSelected && (
-            <Box
-              sx={{
-                position: 'absolute',
-                insetInlineStart: '2px',
-                top: '9px',
-                bottom: '9px',
-                width: '3px',
-                borderRadius: '4px',
-                bgcolor: 'primary.main',
-              }}
-            />
-          )}
-
           {itemIcon && (
             <ListItemIcon
               sx={{
-                minWidth: level > 1 ? '20px' : '26px',
-                marginInlineEnd: '10px',
-                p: 0,
-                color: isSelected
-                  ? theme.palette.primary.main
-                  : 'inherit',
+                minWidth: level > 1 ? '24px' : '36px',
+                marginInlineEnd: '8px',
+                p: '3px 0',
+                color: isSelected ? 'white !important' : 'inherit',
                 justifyContent: 'center',
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -250,11 +195,11 @@ export default function NavItem({ item, level = 1, pathDirect, hideMenu, onClick
               m: 0,
             }}
             primaryTypographyProps={{
-              fontSize: level > 1 ? '0.78125rem' : '0.8125rem',
+              fontSize: '0.875rem',
               fontWeight: isSelected ? 600 : 500,
-              lineHeight: isRtl ? 1.4 : 1.25,
-              letterSpacing: level > 1 ? '-0.01em' : 'normal',
+              lineHeight: isRtl ? 1.4 : 1.3,
               textAlign: 'start',
+              color: isSelected ? 'white !important' : 'inherit',
               noWrap: true,
             }}
           >
@@ -264,9 +209,9 @@ export default function NavItem({ item, level = 1, pathDirect, hideMenu, onClick
                 variant="caption"
                 display="block"
                 sx={{
-                  fontSize: '0.6875rem',
+                  fontSize: '0.72rem',
                   lineHeight: 1.1,
-                  color: isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)',
+                  color: isSelected ? 'rgba(255,255,255,0.7)' : 'text.secondary',
                   mt: 0.25,
                   textAlign: 'start',
                 }}

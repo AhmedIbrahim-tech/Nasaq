@@ -86,8 +86,7 @@ export function NotificationToast({
           borderRadius: 2.5,
           backgroundColor: config.bgColor,
           border: `1px solid ${config.borderColor}40`,
-          borderLeft: isRtl ? undefined : `4px solid ${config.borderColor}`,
-          borderRight: isRtl ? `4px solid ${config.borderColor}` : undefined,
+          borderInlineStart: `4px solid ${config.borderColor}`,
           backdropFilter: 'blur(8px)',
           boxShadow: theme.shadows[8],
           transition: 'transform 0.2s ease, box-shadow 0.2s ease',
@@ -97,7 +96,7 @@ export function NotificationToast({
           },
         }}
       >
-        <Stack direction="row" spacing={1.5} alignItems="flex-start">
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, width: '100%' }}>
           {/* Leading Icon Badge */}
           <Box
             sx={{
@@ -110,6 +109,7 @@ export function NotificationToast({
               borderRadius: '50%',
               bgcolor: config.iconBg,
               boxShadow: '0 2px 6px rgba(0,0,0,0.06)',
+              flexShrink: 0,
             }}
           >
             {config.icon}
@@ -125,7 +125,7 @@ export function NotificationToast({
                   color: config.titleColor,
                   lineHeight: 1.3,
                   mb: 0.5,
-                  textAlign: isRtl ? 'right' : 'left',
+                  textAlign: 'start',
                 }}
               >
                 {notification.title}
@@ -139,7 +139,7 @@ export function NotificationToast({
                 fontWeight: 500,
                 lineHeight: 1.45,
                 wordBreak: 'break-word',
-                textAlign: isRtl ? 'right' : 'left',
+                textAlign: 'start',
               }}
             >
               {notification.message}
@@ -176,20 +176,20 @@ export function NotificationToast({
             onClick={() => onDismiss(notification.id)}
             sx={{
               p: 0.5,
-              mt: -0.5,
-              mr: isRtl ? undefined : -0.5,
-              ml: isRtl ? -0.5 : undefined,
               color: theme.palette.text.secondary,
               opacity: 0.7,
+              flexShrink: 0,
+              borderRadius: '6px',
+              transition: 'all 0.2s ease-in-out',
               '&:hover': {
                 opacity: 1,
-                backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                backgroundColor: 'action.hover',
               },
             }}
           >
             <IconX size={16} />
           </IconButton>
-        </Stack>
+        </Box>
       </Paper>
     </Slide>
   );

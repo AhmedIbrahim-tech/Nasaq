@@ -14,6 +14,8 @@ import { IconSearch, IconX } from '@tabler/icons-react';
 import Menuitems from '../sidebar/MenuItems';
 import Link from 'next/link';
 
+import DialogCloseButton from '@/shared/components/buttons/DialogCloseButton';
+
 interface menuType {
   title: string;
   id: string;
@@ -73,9 +75,7 @@ const Search = () => {
                 htmlInput: { 'aria-label': 'Search here' }
               }}
             />
-            <IconButton size="small" onClick={handleDrawerClose2}>
-              <IconX size="18" />
-            </IconButton>
+            <DialogCloseButton size="small" onClose={handleDrawerClose2} />
           </Stack>
         </DialogContent>
         <Divider />

@@ -24,6 +24,7 @@ public sealed class UpdateEmployeeHandler(
         var employee = await dbContext.Employees
             .Include(e => e.User)
             .Include(e => e.Supervisor)
+            .Include(e => e.WorkLocation)
             .FirstOrDefaultAsync(e => e.Id == request.Id, cancellationToken);
 
         if (employee == null)
@@ -165,6 +166,33 @@ public sealed class UpdateEmployeeHandler(
             }
         }
 
+        string? workLocationName = employee.WorkLocation?.Name;
+        if (request.WorkLocationId != employee.WorkLocationId)
+        {
+            if (request.WorkLocationId.HasValue)
+            {
+                var location = await dbContext.WorkLocations
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(w => w.Id == request.WorkLocationId.Value, cancellationToken);
+
+                if (location == null)
+                {
+                    return GenericBaseResponse<EmployeeDto>.NotFound("The selected work location was not found.");
+                }
+
+                if (!location.IsActive)
+                {
+                    return GenericBaseResponse<EmployeeDto>.Fail("Cannot assign an inactive work location to an employee.");
+                }
+
+                workLocationName = location.Name;
+            }
+            else
+            {
+                workLocationName = null;
+            }
+        }
+
         string? assignedRole = null;
         string? newCommittedPath = null;
         string? oldPhysicalPathToDelete = null;
@@ -281,6 +309,7 @@ public sealed class UpdateEmployeeHandler(
             }
 
             employee.SupervisorId = request.SupervisorId;
+            employee.WorkLocationId = request.WorkLocationId;
 
             if (request.RemoveProfilePhoto)
             {
@@ -319,13 +348,67 @@ public sealed class UpdateEmployeeHandler(
                 employee.ProfilePhoto = newStoredFile.Id;
             }
 
-            employee.FirstName = request.FirstName.Trim();
-            employee.LastName = request.LastName.Trim();
+            if (!string.IsNullOrWhiteSpace(request.FirstNameEn))
+            {
+                employee.FirstName = request.FirstNameEn.Trim();
+            }
+            else if (!string.IsNullOrWhiteSpace(request.FirstName))
+            {
+                employee.FirstName = request.FirstName.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(request.LastNameEn))
+            {
+                employee.LastName = request.LastNameEn.Trim();
+            }
+            else if (!string.IsNullOrWhiteSpace(request.LastName))
+            {
+                employee.LastName = request.LastName.Trim();
+            }
+
+            if (request.FirstNameAr != null)
+            {
+                employee.FirstNameAr = string.IsNullOrWhiteSpace(request.FirstNameAr) ? null : request.FirstNameAr.Trim();
+            }
+
+            if (request.LastNameAr != null)
+            {
+                employee.LastNameAr = string.IsNullOrWhiteSpace(request.LastNameAr) ? null : request.LastNameAr.Trim();
+            }
+
             employee.Email = normalizedEmail;
             employee.PhoneNumber = request.PhoneNumber?.Trim();
-            employee.Department = request.Department?.Trim();
-            employee.JobTitle = request.JobTitle?.Trim();
+
+            if (request.Department != null)
+            {
+                employee.Department = string.IsNullOrWhiteSpace(request.Department) ? null : request.Department.Trim();
+            }
+            if (request.DepartmentAr != null)
+            {
+                employee.DepartmentAr = string.IsNullOrWhiteSpace(request.DepartmentAr) ? null : request.DepartmentAr.Trim();
+            }
+
+            if (request.JobTitle != null)
+            {
+                employee.JobTitle = string.IsNullOrWhiteSpace(request.JobTitle) ? null : request.JobTitle.Trim();
+            }
+            if (request.JobTitleAr != null)
+            {
+                employee.JobTitleAr = string.IsNullOrWhiteSpace(request.JobTitleAr) ? null : request.JobTitleAr.Trim();
+            }
+
             employee.HireDate = request.HireDate;
+
+            if (linkedUser != null)
+            {
+                linkedUser.FullName = employee.FullName;
+                linkedUser.FullNameAr = employee.FullNameAr;
+                linkedUser.JobTitle = employee.JobTitle;
+                linkedUser.JobTitleAr = employee.JobTitleAr;
+                linkedUser.Department = employee.Department;
+                linkedUser.DepartmentAr = employee.DepartmentAr;
+                await userManager.UpdateAsync(linkedUser);
+            }
 
             await dbContext.SaveChangesAsync(cancellationToken);
 
@@ -351,11 +434,17 @@ public sealed class UpdateEmployeeHandler(
                 EmployeeCode = employee.EmployeeCode,
                 FirstName = employee.FirstName,
                 LastName = employee.LastName,
+                FirstNameAr = employee.FirstNameAr,
+                LastNameAr = employee.LastNameAr,
                 FullName = employee.FullName,
+                FullNameAr = employee.FullNameAr,
+                FullNameEn = employee.FullNameEn,
                 Email = employee.Email,
                 PhoneNumber = employee.PhoneNumber,
                 Department = employee.Department,
+                DepartmentAr = employee.DepartmentAr,
                 JobTitle = employee.JobTitle,
+                JobTitleAr = employee.JobTitleAr,
                 HireDate = employee.HireDate,
                 IsActive = employee.IsActive,
                 UserId = employee.UserId,
@@ -363,6 +452,8 @@ public sealed class UpdateEmployeeHandler(
                 SupervisorId = employee.SupervisorId,
                 SupervisorName = supervisorName,
                 SupervisorCode = supervisorCode,
+                WorkLocationId = employee.WorkLocationId,
+                WorkLocationName = workLocationName,
                 ProfilePhoto = employee.ProfilePhoto,
                 Created_Utc = employee.Created_Utc,
                 Created_By = employee.Created_By,

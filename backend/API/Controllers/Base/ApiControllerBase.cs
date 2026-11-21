@@ -3,6 +3,9 @@ namespace API.Controllers.Base;
 [ApiController]
 public abstract class ApiControllerBase : ControllerBase
 {
+
+   public const string MultipartFormData = "multipart/form-data";
+
     private IMediator? _mediatorInstance;
 
     protected IMediator _mediator =>

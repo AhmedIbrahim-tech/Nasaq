@@ -11,10 +11,29 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
     public DbSet<AppNotification> AppNotifications => Set<AppNotification>();
     public DbSet<Employee> Employees => Set<Employee>();
     public DbSet<StoredFile> StoredFiles => Set<StoredFile>();
+    public DbSet<WorkLocation> WorkLocations => Set<WorkLocation>();
+    public DbSet<WorkShift> WorkShifts => Set<WorkShift>();
+    public DbSet<WorkSchedule> WorkSchedules => Set<WorkSchedule>();
+    public DbSet<WorkScheduleDay> WorkScheduleDays => Set<WorkScheduleDay>();
+    public DbSet<EmployeeScheduleAssignment> EmployeeScheduleAssignments => Set<EmployeeScheduleAssignment>();
+    public DbSet<AttendanceRecord> AttendanceRecords => Set<AttendanceRecord>();
+    public DbSet<PointRule> PointRules => Set<PointRule>();
+    public DbSet<PointTransaction> PointTransactions => Set<PointTransaction>();
+    public DbSet<LeaveType> LeaveTypes => Set<LeaveType>();
+    public DbSet<LeaveRequest> LeaveRequests => Set<LeaveRequest>();
+    public DbSet<LeaveApprovalHistory> LeaveApprovalHistories => Set<LeaveApprovalHistory>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<ApplicationUser>(b =>
+        {
+            b.Ignore(u => u.FullNameEn);
+            b.Property(u => u.FullNameAr).HasMaxLength(256);
+            b.Property(u => u.JobTitleAr).HasMaxLength(100);
+            b.Property(u => u.DepartmentAr).HasMaxLength(100);
+        });
 
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
 

@@ -143,7 +143,7 @@ export function ConfirmActionDialog({
         sx={{
           position: 'absolute',
           top: 16,
-          ...(theme.direction === 'rtl' ? { left: 16, right: 'auto' } : { right: 16, left: 'auto' }),
+          insetInlineEnd: 16,
           width: 36,
           height: 36,
           color: theme.palette.error.main,
@@ -178,7 +178,8 @@ export function ConfirmActionDialog({
           display: 'flex',
           alignItems: 'center',
           gap: 2.25,
-          ...(theme.direction === 'rtl' ? { pl: 8, pr: 3 } : { pr: 8, pl: 3 }),
+          paddingInlineEnd: '64px',
+          paddingInlineStart: '24px',
         }}
       >
         <Box
@@ -329,24 +330,22 @@ export function ConfirmActionDialog({
           onClick={onClose}
           disabled={isLoading}
           variant="outlined"
-          color="error"
+          color="inherit"
           sx={{
-            fontWeight: 700,
+            fontWeight: 600,
             borderRadius: '8px',
             textTransform: 'none',
             fontSize: '0.9rem',
-            px: 3,
+            px: 2.5,
             py: 1,
-            minWidth: 110,
+            minWidth: 100,
             height: 42,
-            color: theme.palette.error.main,
-            bgcolor: alpha(theme.palette.error.main, 0.04),
-            borderColor: alpha(theme.palette.error.main, 0.35),
-            transition: 'all 0.2s ease-in-out',
+            borderColor: theme.palette.divider,
+            color: 'text.primary',
+            transition: 'all 0.15s ease-in-out',
             '&:hover': {
-              bgcolor: alpha(theme.palette.error.main, 0.1),
-              borderColor: theme.palette.error.main,
-              color: theme.palette.error.dark || theme.palette.error.main,
+              bgcolor: 'action.hover',
+              borderColor: 'text.secondary',
             },
           }}
         >

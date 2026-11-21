@@ -23,12 +23,16 @@ public sealed class UnitOfWork(ApplicationDbContext context, ILogger<UnitOfWork>
 
     private IGenericRepository<AppNotification>? _appNotifications;
     private IGenericRepository<Employee>? _employees;
+    private IGenericRepository<WorkLocation>? _workLocations;
 
     public IGenericRepository<AppNotification> AppNotifications =>
         _appNotifications ??= new GenericRepository<AppNotification>(_context);
 
     public IGenericRepository<Employee> Employees =>
         _employees ??= new GenericRepository<Employee>(_context);
+
+    public IGenericRepository<WorkLocation> WorkLocations =>
+        _workLocations ??= new GenericRepository<WorkLocation>(_context);
 
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default) =>
         await _context.SaveChangesAsync(cancellationToken);
