@@ -12,4 +12,8 @@ public record GetLeaveRequestsQuery(
     DateOnly? FromDate = null,
     DateOnly? ToDate = null,
     int PageNumber = 1,
-    int PageSize = 20) : IRequest<GenericBaseResponse<PaginationResult<LeaveRequestDto>>>;
+    int PageSize = 20,
+    int? Page = null) : IRequest<GenericBaseResponse<PaginationResult<LeaveRequestDto>>>
+{
+    public int ResolvedPageNumber => Page ?? PageNumber;
+}

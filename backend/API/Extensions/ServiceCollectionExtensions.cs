@@ -46,6 +46,10 @@ public static class ServiceCollectionExtensions
             {
                 options.Filters.Add<API.Filters.FluentValidationFilter>();
             })
+            .AddJsonOptions(options =>
+            {
+                options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+            })
             .ConfigureApiBehaviorOptions(options =>
             {
                 options.InvalidModelStateResponseFactory = context =>

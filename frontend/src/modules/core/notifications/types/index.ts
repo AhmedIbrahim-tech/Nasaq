@@ -3,11 +3,11 @@ export type NotificationCategory =
   | 'Success'
   | 'Warning'
   | 'Error'
-  | 'Sale'
-  | 'Purchase'
-  | 'Expense'
-  | 'BankOperation'
-  | 'TreasuryOperation'
+  | 'Attendance'
+  | 'Leaves'
+  | 'Points'
+  | 'Schedules'
+  | 'System'
   | (string & {});
 
 export interface NotificationItem {

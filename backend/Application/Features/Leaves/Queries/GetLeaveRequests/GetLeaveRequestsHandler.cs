@@ -46,6 +46,21 @@ public class GetLeaveRequestsHandler : IRequestHandler<GetLeaveRequestsQuery, Ge
                 query = query.Where(r => false);
             }
         }
+        else if (!_currentUser.IsAdmin && !_currentUser.IsSuperAdmin && !_currentUser.IsSupervisor)
+        {
+            var currentEmployee = await _context.Employees
+                .AsNoTracking()
+                .FirstOrDefaultAsync(e => e.UserId == _currentUser.UserId, cancellationToken);
+
+            if (currentEmployee != null)
+            {
+                query = query.Where(r => r.EmployeeId == currentEmployee.Id);
+            }
+            else
+            {
+                query = query.Where(r => false);
+            }
+        }
 
         if (request.EmployeeId.HasValue)
         {
@@ -73,7 +88,7 @@ public class GetLeaveRequestsHandler : IRequestHandler<GetLeaveRequestsQuery, Ge
         }
 
         var totalCount = await query.CountAsync(cancellationToken);
-        var pageNumber = Math.Max(1, request.PageNumber);
+        var pageNumber = Math.Max(1, request.ResolvedPageNumber);
         var pageSize = Math.Clamp(request.PageSize, 1, 100);
 
         var canReview = _currentUser.IsAdmin || _currentUser.IsSuperAdmin || _currentUser.IsSupervisor;

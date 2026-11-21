@@ -9,6 +9,7 @@ import {
   ModernizeDataTable,
   ModernizeColumnDef,
 } from "@/shared/components/tables/modernize/ModernizeDataTable";
+import { formatDateOnly } from "@/shared/utils/i18nFormatters";
 import type { ReportColumn } from "../types";
 
 interface ReportDataTableProps {
@@ -45,6 +46,7 @@ export const ReportDataTable: React.FC<ReportDataTableProps> = ({
       case "Paid":
       case "Green":
       case "OnTime":
+      case "Standard":
         return "success";
       case "PendingReview":
       case "Pending":
@@ -69,9 +71,44 @@ export const ReportDataTable: React.FC<ReportDataTableProps> = ({
     }
   };
 
+  const getBadgeLabel = (val: string) => {
+    if (t.has(val)) return t(val);
+    switch (val) {
+      case "Verified":
+        return isAr ? "معتمد" : "Verified";
+      case "Completed":
+        return isAr ? "مكتمل" : "Completed";
+      case "PendingReview":
+        return isAr ? "قيد المراجعة" : "Pending Review";
+      case "Standard":
+        return isAr ? "اعتيادي" : "Standard";
+      case "OnTime":
+        return isAr ? "في الموعد" : "On Time";
+      case "Late":
+        return isAr ? "متأخر" : "Late";
+      case "AfterCutoff":
+        return isAr ? "بعد المهلة" : "After Cutoff";
+      case "MissingCheckOut":
+        return isAr ? "انصراف مفقود" : "Missing Check-Out";
+      case "Excused":
+      case "Excused (Leave)":
+        return isAr ? "معفى (إجازة)" : "Excused (Leave)";
+      case "ApprovedLeave":
+        return isAr ? "إجازة معتمدة" : "Approved Leave";
+      case "Green":
+        return isAr ? "أخضر" : "Green";
+      case "Red":
+        return isAr ? "أحمر" : "Red";
+      case "Black":
+        return isAr ? "أسود" : "Black";
+      default:
+        return val;
+    }
+  };
+
   const tableColumns: ModernizeColumnDef<Record<string, any>>[] = columns.map((col) => ({
     id: col.key,
-    header: isAr ? col.labelAr : col.labelEn,
+    header: isAr && col.labelAr ? col.labelAr : col.labelEn,
     align: col.align || "left",
     cell: (row) => {
       const val = row[col.key];
@@ -80,27 +117,111 @@ export const ReportDataTable: React.FC<ReportDataTableProps> = ({
         return <Typography variant="caption" color="text.disabled">—</Typography>;
       }
 
+      // Status & Classification Badges
       if (col.type === "badge") {
-        const color = getBadgeColor(String(val));
+        const strVal = String(val);
+        const color = getBadgeColor(strVal);
+        const label = getBadgeLabel(strVal);
         return (
           <Chip
             size="small"
-            label={t.has(String(val)) ? t(String(val)) : String(val)}
+            label={label}
             color={color as any}
             variant={color === "default" ? "outlined" : "filled"}
+            sx={{ fontWeight: 600, fontSize: "0.75rem", height: 24 }}
           />
         );
       }
 
-      if (col.type === "number") {
+      // Monospace Employee Code Pill
+      if (col.key === "employeeCode") {
         return (
-          <Typography variant="body2" fontWeight={600}>
-            {typeof val === "number" ? val.toLocaleString() : val}
+          <Typography
+            variant="body2"
+            fontWeight={600}
+            sx={{
+              fontFamily: "monospace",
+              bgcolor: "action.hover",
+              px: 1,
+              py: 0.25,
+              borderRadius: 1,
+              display: "inline-block",
+              direction: "ltr",
+              fontSize: "0.825rem",
+            }}
+          >
+            {String(val)}
           </Typography>
         );
       }
 
-      return <Typography variant="body2">{String(val)}</Typography>;
+      // Prominent Employee Name
+      if (col.key === "employeeName") {
+        return (
+          <Typography variant="subtitle2" fontWeight={700}>
+            {String(val)}
+          </Typography>
+        );
+      }
+
+      // Direction-safe Timestamp Columns (checkInTime, checkOutTime, scheduledTime)
+      if (col.key === "checkInTime" || col.key === "checkOutTime" || col.key === "scheduledTime") {
+        return (
+          <Typography
+            variant="body2"
+            sx={{
+              direction: "ltr",
+              unicodeBidi: "isolate",
+              display: "inline-block",
+              fontFamily: "monospace",
+              fontSize: "0.825rem",
+            }}
+          >
+            {String(val)}
+          </Typography>
+        );
+      }
+
+      // Date Columns
+      if (col.type === "date") {
+        return (
+          <Typography
+            variant="body2"
+            sx={{
+              direction: "ltr",
+              unicodeBidi: "isolate",
+              display: "inline-block",
+              fontFamily: "monospace",
+            }}
+          >
+            {formatDateOnly(String(val), isAr)}
+          </Typography>
+        );
+      }
+
+      // Numeric Columns
+      if (col.type === "number") {
+        return (
+          <Typography variant="body2" fontWeight={600} sx={{ textAlign: "right", fontFamily: "monospace" }}>
+            {typeof val === "number" ? val.toLocaleString(isAr ? "ar-SA-u-nu-latn" : "en-US") : val}
+          </Typography>
+        );
+      }
+
+      // Currency Columns
+      if (col.type === "currency") {
+        return (
+          <Typography variant="body2" fontWeight={600} sx={{ textAlign: "right" }}>
+            {Number(val).toLocaleString(isAr ? "ar-SA-u-nu-latn" : "en-US")} {isAr ? "ر.س" : "SAR"}
+          </Typography>
+        );
+      }
+
+      return (
+        <Typography variant="body2" sx={{ fontSize: "0.875rem" }}>
+          {String(val)}
+        </Typography>
+      );
     },
   }));
 
@@ -111,7 +232,7 @@ export const ReportDataTable: React.FC<ReportDataTableProps> = ({
       : rows;
 
   return (
-    <Box>
+    <Box sx={{ width: "100%", overflowX: "auto" }}>
       <ModernizeDataTable
         data={paginatedRows}
         columns={tableColumns}

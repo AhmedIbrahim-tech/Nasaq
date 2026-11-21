@@ -3,11 +3,11 @@
 import React from "react";
 import Avatar from "@mui/material/Avatar";
 import {
-  IconShoppingCart,
-  IconReceipt2,
-  IconCash,
-  IconBuildingBank,
-  IconWallet,
+  IconClockCheck,
+  IconCalendarTime,
+  IconAward,
+  IconCalendar,
+  IconShield,
   IconInfoCircle,
   IconCircleCheck,
   IconAlertTriangle,
@@ -28,20 +28,7 @@ export const NotificationBadgeIcon: React.FC<NotificationBadgeIconProps> = ({
   avatarSize = 40,
 }) => {
   switch (category) {
-    case "Sale":
-      return (
-        <Avatar
-          sx={{
-            width: avatarSize,
-            height: avatarSize,
-            bgcolor: "primary.light",
-            color: "primary.main",
-          }}
-        >
-          <IconShoppingCart size={size} stroke={1.8} />
-        </Avatar>
-      );
-    case "Purchase":
+    case "Attendance":
       return (
         <Avatar
           sx={{
@@ -51,10 +38,23 @@ export const NotificationBadgeIcon: React.FC<NotificationBadgeIconProps> = ({
             color: "info.main",
           }}
         >
-          <IconReceipt2 size={size} stroke={1.8} />
+          <IconClockCheck size={size} stroke={1.8} />
         </Avatar>
       );
-    case "Expense":
+    case "Leaves":
+      return (
+        <Avatar
+          sx={{
+            width: avatarSize,
+            height: avatarSize,
+            bgcolor: "primary.light",
+            color: "primary.main",
+          }}
+        >
+          <IconCalendarTime size={size} stroke={1.8} />
+        </Avatar>
+      );
+    case "Points":
       return (
         <Avatar
           sx={{
@@ -64,10 +64,10 @@ export const NotificationBadgeIcon: React.FC<NotificationBadgeIconProps> = ({
             color: "warning.main",
           }}
         >
-          <IconCash size={size} stroke={1.8} />
+          <IconAward size={size} stroke={1.8} />
         </Avatar>
       );
-    case "BankOperation":
+    case "Schedules":
       return (
         <Avatar
           sx={{
@@ -77,20 +77,20 @@ export const NotificationBadgeIcon: React.FC<NotificationBadgeIconProps> = ({
             color: "secondary.main",
           }}
         >
-          <IconBuildingBank size={size} stroke={1.8} />
+          <IconCalendar size={size} stroke={1.8} />
         </Avatar>
       );
-    case "TreasuryOperation":
+    case "System":
       return (
         <Avatar
           sx={{
             width: avatarSize,
             height: avatarSize,
-            bgcolor: "success.light",
-            color: "success.main",
+            bgcolor: "error.light",
+            color: "error.main",
           }}
         >
-          <IconWallet size={size} stroke={1.8} />
+          <IconShield size={size} stroke={1.8} />
         </Avatar>
       );
     case "Success":

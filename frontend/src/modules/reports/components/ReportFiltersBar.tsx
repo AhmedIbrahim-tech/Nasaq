@@ -1,19 +1,37 @@
 "use client";
 
 import React from "react";
-import Box from "@mui/material/Box";
 import Grid from "@mui/material/Grid";
 import TextField from "@mui/material/TextField";
 import MenuItem from "@mui/material/MenuItem";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import type { ReportFilterRequest } from "../types";
+
+export interface FilterLocationOption {
+  id: string;
+  name: string;
+  nameAr?: string;
+}
+
+export interface FilterShiftOption {
+  id: string;
+  name: string;
+  nameAr?: string;
+}
+
+export interface FilterEmployeeOption {
+  id: string;
+  fullName: string;
+  fullNameAr?: string;
+  code: string;
+}
 
 interface ReportFiltersBarProps {
   supportedFilters: string[];
   filters: ReportFilterRequest;
-  locations: { id: string; name: string }[];
-  shifts: { id: string; name: string }[];
-  employees: { id: string; fullName: string; code: string }[];
+  locations: FilterLocationOption[];
+  shifts: FilterShiftOption[];
+  employees: FilterEmployeeOption[];
   departments: string[];
   onFilterChange: (newFilters: Partial<ReportFilterRequest>) => void;
 }
@@ -28,6 +46,8 @@ export const ReportFiltersBar: React.FC<ReportFiltersBarProps> = ({
   onFilterChange,
 }) => {
   const t = useTranslations();
+  const locale = useLocale();
+  const isAr = locale.startsWith("ar");
 
   const hasDate = supportedFilters.includes("Date");
   const hasDateRange = supportedFilters.includes("DateRange");
@@ -102,16 +122,17 @@ export const ReportFiltersBar: React.FC<ReportFiltersBarProps> = ({
             }
             SelectProps={{
               displayEmpty: true,
-              renderValue: (selected: any) =>
-                !selected || selected === "all"
-                  ? t("AllLocations")
-                  : locations.find((l) => l.id === selected)?.name || selected,
+              renderValue: (selected: any) => {
+                if (!selected || selected === "all") return t("AllLocations");
+                const found = locations.find((l) => l.id === selected);
+                return found ? (isAr && found.nameAr ? found.nameAr : found.name) : selected;
+              },
             }}
           >
             <MenuItem value="all">{t("AllLocations")}</MenuItem>
             {locations.map((loc) => (
               <MenuItem key={loc.id} value={loc.id}>
-                {loc.name}
+                {isAr && loc.nameAr ? loc.nameAr : loc.name}
               </MenuItem>
             ))}
           </TextField>
@@ -135,16 +156,17 @@ export const ReportFiltersBar: React.FC<ReportFiltersBarProps> = ({
             }
             SelectProps={{
               displayEmpty: true,
-              renderValue: (selected: any) =>
-                !selected || selected === "all"
-                  ? t("AllShifts")
-                  : shifts.find((s) => s.id === selected)?.name || selected,
+              renderValue: (selected: any) => {
+                if (!selected || selected === "all") return t("AllShifts");
+                const found = shifts.find((s) => s.id === selected);
+                return found ? (isAr && found.nameAr ? found.nameAr : found.name) : selected;
+              },
             }}
           >
             <MenuItem value="all">{t("AllShifts")}</MenuItem>
             {shifts.map((s) => (
               <MenuItem key={s.id} value={s.id}>
-                {s.name}
+                {isAr && s.nameAr ? s.nameAr : s.name}
               </MenuItem>
             ))}
           </TextField>
@@ -168,18 +190,24 @@ export const ReportFiltersBar: React.FC<ReportFiltersBarProps> = ({
             }
             SelectProps={{
               displayEmpty: true,
-              renderValue: (selected: any) =>
-                !selected || selected === "all"
-                  ? t("AllEmployees")
-                  : employees.find((emp) => emp.id === selected)?.fullName || selected,
+              renderValue: (selected: any) => {
+                if (!selected || selected === "all") return t("AllEmployees");
+                const found = employees.find((emp) => emp.id === selected);
+                if (!found) return selected;
+                const name = isAr && found.fullNameAr ? found.fullNameAr : found.fullName;
+                return `${name} (${found.code})`;
+              },
             }}
           >
             <MenuItem value="all">{t("AllEmployees")}</MenuItem>
-            {employees.map((emp) => (
-              <MenuItem key={emp.id} value={emp.id}>
-                {emp.fullName} ({emp.code})
-              </MenuItem>
-            ))}
+            {employees.map((emp) => {
+              const name = isAr && emp.fullNameAr ? emp.fullNameAr : emp.fullName;
+              return (
+                <MenuItem key={emp.id} value={emp.id}>
+                  {name} ({emp.code})
+                </MenuItem>
+              );
+            })}
           </TextField>
         </Grid>
       )}
@@ -233,7 +261,7 @@ export const ReportFiltersBar: React.FC<ReportFiltersBarProps> = ({
             SelectProps={{
               displayEmpty: true,
               renderValue: (selected: any) =>
-                !selected || selected === "all" ? t("AllStatuses") : selected,
+                !selected || selected === "all" ? t("AllStatuses") : t.has(selected) ? t(selected) : selected,
             }}
           >
             <MenuItem value="all">{t("AllStatuses")}</MenuItem>

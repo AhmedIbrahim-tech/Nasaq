@@ -25,6 +25,13 @@ public sealed class DbInitializer(
         await SeedLocationsAsync();
         await SeedLeaveTypesAsync();
 
+        // Seed safe development fixtures for MOD-04, MOD-06, MOD-07, MOD-09
+        var shouldSeedDev = configuration?.GetValue<bool>("Database:SeedDevFixtures", true) ?? true;
+        if (shouldSeedDev)
+        {
+            await DevDataSeeder.SeedDevFixturesAsync(dbContext, logger);
+        }
+
         logger.LogInformation("NASAQ database initialization & data seeding completed successfully.");
     }
 

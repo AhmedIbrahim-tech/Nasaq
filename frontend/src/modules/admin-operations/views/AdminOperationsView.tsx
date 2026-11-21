@@ -265,8 +265,9 @@ export const AdminOperationsView: React.FC = () => {
 
       // Refresh counters
       loadSummary();
-    } catch {
-      notify.error(t("ErrorUpdatingRecord"));
+    } catch (err: any) {
+      const msg = err.response?.data?.message || err.response?.data?.detail || err.message || t("ErrorUpdatingRecord");
+      notify.error(msg);
     } finally {
       setActionLoading(false);
     }
@@ -279,8 +280,10 @@ export const AdminOperationsView: React.FC = () => {
       await adminOperationsService.manualPointAdjustment(data);
       notify.success(t("PointAdjustmentSuccess"));
       setAdjustPointsDialogOpen(false);
-    } catch {
-      notify.error(t("ErrorUpdatingRecord"));
+      loadSummary();
+    } catch (err: any) {
+      const msg = err.response?.data?.message || err.response?.data?.detail || err.message || t("ErrorUpdatingRecord");
+      notify.error(msg);
     } finally {
       setActionLoading(false);
     }
@@ -320,8 +323,13 @@ export const AdminOperationsView: React.FC = () => {
               borderBottom: `1px solid ${theme.palette.divider}`,
               "& .MuiTab-root": {
                 py: 2,
+                px: 2,
                 fontWeight: 600,
                 minHeight: 52,
+                display: "inline-flex",
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 1,
               },
             }}
           >

@@ -199,29 +199,7 @@ export const LeaveRequestFormDialog: React.FC<LeaveRequestFormDialogProps> = ({
                   renderValue: (selectedId: any) => {
                     const selected = leaveTypes.find((lt) => lt.id === selectedId);
                     if (!selected) return "";
-                    return (
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                        <Typography variant="body2" fontWeight={600}>
-                          {isAr && selected.nameAr ? selected.nameAr : selected.name}
-                        </Typography>
-                        <Chip
-                          label={selected.isPaid ? t("PaidLeave") : t("Unpaid")}
-                          size="small"
-                          color={selected.isPaid ? "success" : "default"}
-                          variant="filled"
-                          sx={{ height: 22, fontSize: "0.75rem", fontWeight: 600, px: 0.5 }}
-                        />
-                        {selected.requiresAttachment && (
-                          <Chip
-                            label={t("RequiresAttachment")}
-                            size="small"
-                            color="warning"
-                            variant="outlined"
-                            sx={{ height: 20, fontSize: "0.7rem", fontWeight: 500 }}
-                          />
-                        )}
-                      </Box>
-                    );
+                    return isAr && selected.nameAr ? selected.nameAr : selected.name;
                   },
                 }}
               >
@@ -253,6 +231,26 @@ export const LeaveRequestFormDialog: React.FC<LeaveRequestFormDialogProps> = ({
                   </MenuItem>
                 ))}
               </TextField>
+              {selectedType && (
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 1, px: 0.5 }}>
+                  <Chip
+                    label={selectedType.isPaid ? t("PaidLeave") : t("Unpaid")}
+                    size="small"
+                    color={selectedType.isPaid ? "success" : "default"}
+                    variant="filled"
+                    sx={{ height: 22, fontSize: "0.75rem", fontWeight: 600, px: 0.5 }}
+                  />
+                  {selectedType.requiresAttachment && (
+                    <Chip
+                      label={t("RequiresAttachment")}
+                      size="small"
+                      color="warning"
+                      variant="outlined"
+                      sx={{ height: 20, fontSize: "0.7rem", fontWeight: 500 }}
+                    />
+                  )}
+                </Box>
+              )}
             </Grid>
 
             {/* Start Date */}

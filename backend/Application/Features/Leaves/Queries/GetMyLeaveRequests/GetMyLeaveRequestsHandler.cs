@@ -46,7 +46,7 @@ public class GetMyLeaveRequestsHandler : IRequestHandler<GetMyLeaveRequestsQuery
         }
 
         var totalCount = await query.CountAsync(cancellationToken);
-        var pageNumber = Math.Max(1, request.PageNumber);
+        var pageNumber = Math.Max(1, request.ResolvedPageNumber);
         var pageSize = Math.Clamp(request.PageSize, 1, 100);
 
         var items = await query

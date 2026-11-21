@@ -566,8 +566,13 @@ export const LeavesView: React.FC = () => {
             borderColor: "divider",
             "& .MuiTab-root": {
               py: 2,
+              px: 2,
               fontWeight: 600,
               minHeight: 52,
+              display: "inline-flex",
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 1,
             },
           }}
         >
@@ -599,7 +604,19 @@ export const LeavesView: React.FC = () => {
             <Tab
               icon={<IconSettings size={20} />}
               iconPosition="start"
-              label={t("LeaveTypes")}
+              label={
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <span>{t("LeaveTypes")}</span>
+                  {leaveTypes.length > 0 && (
+                    <Chip
+                      label={leaveTypes.length}
+                      size="small"
+                      color={activeTab === 2 ? "primary" : "default"}
+                      sx={{ height: 20, fontSize: "0.7rem", fontWeight: 700 }}
+                    />
+                  )}
+                </Stack>
+              }
             />
           )}
         </Tabs>

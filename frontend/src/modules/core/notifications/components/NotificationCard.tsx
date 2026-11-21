@@ -43,12 +43,7 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
       if (!notification.isRead) {
         onMarkRead(notification.id);
       }
-      let url = notification.actionUrl;
-      if (url.startsWith('/BankAccounts')) url = '/treasury/bank-accounts';
-      else if (url.startsWith('/Treasury')) url = '/treasury';
-      else if (url.startsWith('/Sales')) url = '/sales';
-      else if (url.startsWith('/Purchases')) url = '/purchases';
-      router.push(url);
+      router.push(notification.actionUrl);
     }
   };
 

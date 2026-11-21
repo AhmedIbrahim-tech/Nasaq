@@ -10,6 +10,7 @@ import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import Alert from "@mui/material/Alert";
+import Chip from "@mui/material/Chip";
 import Breadcrumb from "@/shared/layouts/dashboard/shared/breadcrumb/Breadcrumb";
 import PageContainer from "@/shared/components/container/PageContainer";
 import {
@@ -226,28 +227,69 @@ export const PointsView: React.FC = () => {
             borderColor: "divider",
             "& .MuiTab-root": {
               py: 2,
+              px: 2,
               fontWeight: 600,
               minHeight: 52,
+              display: "inline-flex",
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 1,
             },
           }}
         >
           <Tab
-            icon={<IconAward size={18} />}
+            icon={<IconAward size={20} />}
             iconPosition="start"
-            label={t("MyPointsLedger")}
+            label={
+              <Stack direction="row" spacing={1} alignItems="center">
+                <span>{t("MyPointsLedger")}</span>
+                {myTotalCount > 0 && (
+                  <Chip
+                    size="small"
+                    label={myTotalCount}
+                    color={activeTab === 0 ? "primary" : "default"}
+                    sx={{ height: 20, fontSize: "0.75rem", fontWeight: 700 }}
+                  />
+                )}
+              </Stack>
+            }
           />
           {isPrivileged && (
             <Tab
-              icon={<IconListDetails size={18} />}
+              icon={<IconListDetails size={20} />}
               iconPosition="start"
-              label={t("AllPointTransactions")}
+              label={
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <span>{t("AllPointTransactions")}</span>
+                  {orgTotalCount > 0 && (
+                    <Chip
+                      size="small"
+                      label={orgTotalCount}
+                      color={activeTab === 1 ? "primary" : "default"}
+                      sx={{ height: 20, fontSize: "0.75rem", fontWeight: 700 }}
+                    />
+                  )}
+                </Stack>
+              }
             />
           )}
           {isAdmin && (
             <Tab
-              icon={<IconAdjustments size={18} />}
+              icon={<IconAdjustments size={20} />}
               iconPosition="start"
-              label={t("ConfiguredPointRules")}
+              label={
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <span>{t("ConfiguredPointRules")}</span>
+                  {rulesTotalCount > 0 && (
+                    <Chip
+                      size="small"
+                      label={rulesTotalCount}
+                      color={activeTab === 2 ? "primary" : "default"}
+                      sx={{ height: 20, fontSize: "0.75rem", fontWeight: 700 }}
+                    />
+                  )}
+                </Stack>
+              }
             />
           )}
         </Tabs>

@@ -337,4 +337,38 @@ public class AdminOperationsTests : IClassFixture<TestFixture>, IAsyncLifetime
         Assert.NotNull(opsResult.Data);
         Assert.NotNull(opsResult.Data.Data);
     }
+
+    [Fact]
+    public void CorrectIncompleteAttendance_Validator_RejectsFutureTime()
+    {
+        // Arrange
+        var validator = new CorrectIncompleteAttendanceValidator();
+        var futureTime = DateTime.UtcNow.AddHours(2);
+        var command = new CorrectIncompleteAttendanceCommand(Guid.NewGuid(), futureTime, "Forgot to check out");
+
+        // Act
+        var result = validator.Validate(command);
+
+        // Assert
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors, e => e.PropertyName == nameof(CorrectIncompleteAttendanceCommand.ManualCheckOutTimeUtc) && e.ErrorMessage.Contains("future"));
+    }
+
+    [Fact]
+    public void ManualPointAdjustment_Validator_AcceptsConciseReason_And_RejectsTooShort()
+    {
+        // Arrange
+        var validator = new ManualPointAdjustmentValidator();
+        var validCommand = new ManualPointAdjustmentCommand(Guid.NewGuid(), PointCategory.Green, 5, "مكافأة");
+        var shortCommand = new ManualPointAdjustmentCommand(Guid.NewGuid(), PointCategory.Green, 5, "ab");
+
+        // Act
+        var validResult = validator.Validate(validCommand);
+        var shortResult = validator.Validate(shortCommand);
+
+        // Assert
+        Assert.True(validResult.IsValid);
+        Assert.False(shortResult.IsValid);
+        Assert.Contains(shortResult.Errors, e => e.PropertyName == nameof(ManualPointAdjustmentCommand.Reason) && e.ErrorMessage.Contains("3 characters"));
+    }
 }

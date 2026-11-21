@@ -89,11 +89,10 @@ export const ManualPointAdjustmentDialog: React.FC<ManualPointAdjustmentDialogPr
           <TextField
             select
             fullWidth
-            required
             size="small"
             label={
               <span>
-                {t("Employee")} <span style={{ color: "red" }}>*</span>
+                {t("Employee")} <span style={{ color: "var(--mui-palette-error-main, #d32f2f)" }}>*</span>
               </span>
             }
             value={employeeId}
@@ -139,12 +138,11 @@ export const ManualPointAdjustmentDialog: React.FC<ManualPointAdjustmentDialogPr
           {/* Points Amount */}
           <TextField
             fullWidth
-            required
             type="number"
             size="small"
             label={
               <span>
-                {t("PointsAmount")} <span style={{ color: "red" }}>*</span>
+                {t("PointsAmount")} <span style={{ color: "var(--mui-palette-error-main, #d32f2f)" }}>*</span>
               </span>
             }
             value={points}
@@ -157,13 +155,12 @@ export const ManualPointAdjustmentDialog: React.FC<ManualPointAdjustmentDialogPr
           {/* Mandatory Reason */}
           <TextField
             fullWidth
-            required
             multiline
             rows={3}
             size="small"
             label={
               <span>
-                {t("AdjustmentReason")} <span style={{ color: "red" }}>*</span>
+                {t("AdjustmentReason")} <span style={{ color: "var(--mui-palette-error-main, #d32f2f)" }}>*</span>
               </span>
             }
             placeholder={t("ReasonPlaceholder")}

@@ -40,13 +40,19 @@ export const CorrectIncompleteDialog: React.FC<CorrectIncompleteDialogProps> = (
   const [reason, setReason] = useState("");
   const [touched, setTouched] = useState(false);
 
+  const toLocalDatetimeInput = (d: Date) => {
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
   useEffect(() => {
     if (record) {
-      // Default checkout time to checkin time + 8 hours or current local time
       const checkInDate = new Date(record.checkInTimeUtc);
-      const defaultOut = new Date(checkInDate.getTime() + 8 * 60 * 60 * 1000);
-      const iso = defaultOut.toISOString().slice(0, 16);
-      setCheckOutTime(iso);
+      const now = new Date();
+      // Default to 8 hours after checkin or current time, capped at now
+      const targetTime = checkInDate.getTime() + 8 * 60 * 60 * 1000;
+      const defaultOut = new Date(targetTime < now.getTime() ? targetTime : now.getTime());
+      setCheckOutTime(toLocalDatetimeInput(defaultOut));
       setReason("");
       setTouched(false);
     }
@@ -57,8 +63,9 @@ export const CorrectIncompleteDialog: React.FC<CorrectIncompleteDialogProps> = (
   const checkInDate = new Date(record.checkInTimeUtc);
   const selectedOutDate = checkOutTime ? new Date(checkOutTime) : null;
   const isTimeValid = selectedOutDate != null && selectedOutDate.getTime() > checkInDate.getTime();
+  const isTimeNotInFuture = selectedOutDate != null && selectedOutDate.getTime() <= Date.now() + 5 * 60 * 1000;
   const isReasonValid = reason.trim().length >= 3;
-  const isValid = isTimeValid && isReasonValid;
+  const isValid = isTimeValid && isTimeNotInFuture && isReasonValid;
 
   const durationMinutes =
     selectedOutDate && isTimeValid
@@ -126,20 +133,21 @@ export const CorrectIncompleteDialog: React.FC<CorrectIncompleteDialogProps> = (
           {/* Manual Checkout Time */}
           <TextField
             fullWidth
-            required
             type="datetime-local"
             size="small"
             label={
               <span>
-                {t("ManualCheckOutTime")} <span style={{ color: "red" }}>*</span>
+                {t("ManualCheckOutTime")} <span style={{ color: "var(--mui-palette-error-main, #d32f2f)" }}>*</span>
               </span>
             }
             value={checkOutTime}
             onChange={(e) => setCheckOutTime(e.target.value)}
-            error={touched && !isTimeValid}
+            error={touched && (!isTimeValid || !isTimeNotInFuture)}
             helperText={
               touched && !isTimeValid
-                ? t("InvalidDateRange")
+                ? t("CheckOutBeforeCheckIn")
+                : touched && !isTimeNotInFuture
+                ? t("CheckOutCannotBeInFuture")
                 : durationMinutes > 0
                 ? `${durationHours}h (${durationMinutes} min)`
                 : undefined
@@ -151,23 +159,22 @@ export const CorrectIncompleteDialog: React.FC<CorrectIncompleteDialogProps> = (
           {/* Mandatory Reason */}
           <TextField
             fullWidth
-            required
             multiline
             rows={3}
             size="small"
             label={
               <span>
-                {t("CorrectionReason")} <span style={{ color: "red" }}>*</span>
+                {t("CorrectionReason")} <span style={{ color: "var(--mui-palette-error-main, #d32f2f)" }}>*</span>
               </span>
             }
-            placeholder={t("ReasonPlaceholder")}
+            placeholder={t("CorrectionReasonPlaceholder") || t("ReasonPlaceholder")}
             value={reason}
             onChange={(e) => {
               setReason(e.target.value);
               if (!touched) setTouched(true);
             }}
             error={touched && !isReasonValid}
-            helperText={touched && !isReasonValid ? t("ReasonPlaceholder") : undefined}
+            helperText={touched && !isReasonValid ? t("CorrectionReasonPlaceholder") : undefined}
             disabled={loading}
           />
         </Stack>

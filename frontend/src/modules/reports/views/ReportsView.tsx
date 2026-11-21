@@ -9,7 +9,7 @@ import Alert from "@mui/material/Alert";
 import TextField from "@mui/material/TextField";
 import MenuItem from "@mui/material/MenuItem";
 import Divider from "@mui/material/Divider";
-import { useTheme } from "@mui/material/styles";
+import { alpha, useTheme } from "@mui/material/styles";
 import { useLocale, useTranslations } from "next-intl";
 import PageContainer from "@/shared/components/container/PageContainer";
 import Breadcrumb from "@/shared/layouts/dashboard/shared/breadcrumb/Breadcrumb";
@@ -21,7 +21,7 @@ import { employeeService } from "@/modules/employees/services/employee.service";
 import { reportsService } from "../services/reports.service";
 import { ReportKpisSummary } from "../components/ReportKpisSummary";
 import { ReportExportMenu } from "../components/ReportExportMenu";
-import { ReportFiltersBar } from "../components/ReportFiltersBar";
+import { ReportFiltersBar, FilterLocationOption, FilterShiftOption, FilterEmployeeOption } from "../components/ReportFiltersBar";
 import { ReportDataTable } from "../components/ReportDataTable";
 import type {
   ReportCatalogItem,
@@ -53,10 +53,10 @@ export const ReportsView: React.FC = () => {
   });
   const [showFilters, setShowFilters] = useState(false);
 
-  // Lookups for filters
-  const [locations, setLocations] = useState<{ id: string; name: string }[]>([]);
-  const [shifts, setShifts] = useState<{ id: string; name: string }[]>([]);
-  const [employees, setEmployees] = useState<{ id: string; fullName: string; code: string }[]>([]);
+  // Lookups for filters (with bilingual support)
+  const [locations, setLocations] = useState<FilterLocationOption[]>([]);
+  const [shifts, setShifts] = useState<FilterShiftOption[]>([]);
+  const [employees, setEmployees] = useState<FilterEmployeeOption[]>([]);
   const [departments, setDepartments] = useState<string[]>([]);
 
   // 1. Fetch Catalog
@@ -79,7 +79,7 @@ export const ReportsView: React.FC = () => {
     fetchCatalog();
   }, [t, selectedReportId]);
 
-  // 2. Fetch Supporting Lookups
+  // 2. Fetch Supporting Lookups with Bilingual Names
   useEffect(() => {
     const fetchLookups = async () => {
       try {
@@ -94,21 +94,38 @@ export const ReportsView: React.FC = () => {
         const empsItems = (empsRes as any)?.data || (empsRes as any)?.items || [];
 
         if (locsItems.length > 0) {
-          setLocations(locsItems.map((l: any) => ({ id: l.id, name: l.name })));
+          setLocations(
+            locsItems.map((l: any) => ({
+              id: l.id,
+              name: l.name,
+              nameAr: l.nameAr,
+            }))
+          );
         }
         if (shiftsItems.length > 0) {
-          setShifts(shiftsItems.map((s: any) => ({ id: s.id, name: s.name })));
+          setShifts(
+            shiftsItems.map((s: any) => ({
+              id: s.id,
+              name: s.name,
+              nameAr: s.nameAr,
+            }))
+          );
         }
         if (empsItems.length > 0) {
           setEmployees(
             empsItems.map((e: any) => ({
               id: e.id,
               fullName: `${e.firstName || ""} ${e.lastName || ""}`.trim(),
+              fullNameAr: e.fullNameAr || (e.firstNameAr ? `${e.firstNameAr} ${e.lastNameAr || ""}`.trim() : undefined),
               code: e.employeeCode || "",
             }))
           );
           const depts = Array.from(
-            new Set(empsItems.map((e: any) => e.department).filter(Boolean))
+            new Set(
+              empsItems
+                .map((e: any) => (isAr && e.departmentAr ? e.departmentAr : e.department))
+                .filter(Boolean)
+            )
           ) as string[];
           setDepartments(depts);
         }
@@ -118,7 +135,7 @@ export const ReportsView: React.FC = () => {
     };
 
     fetchLookups();
-  }, []);
+  }, [isAr]);
 
   // 3. Execute Active Report
   const loadReport = useCallback(async () => {
@@ -213,129 +230,213 @@ export const ReportsView: React.FC = () => {
     <PageContainer title={t("ReportingCenter")}>
       <Breadcrumb title={t("ReportingCenter")} items={breadcrumbItems} />
 
-      <Stack spacing={3}>
-        {/* Main Reporting Center Card */}
-        <Card
-          elevation={0}
-          sx={{
-            borderRadius: "12px",
-            border: `1px solid ${theme.palette.divider}`,
-            p: { xs: 2, sm: 3 },
-          }}
-        >
-          <Stack spacing={2.5}>
-            {/* Header: Report Selector + Export Actions */}
-            <Box
-              display="flex"
-              alignItems="center"
-              justifyContent="space-between"
-              flexWrap="wrap"
-              gap={2}
-            >
-              <Box minWidth={{ xs: "100%", sm: 320 }} maxWidth={{ sm: 420 }}>
-                <TextField
-                  select
-                  fullWidth
-                  size="small"
-                  label={t("SelectReport")}
-                  value={selectedReportId}
-                  onChange={(e) => handleSelectReport(e.target.value)}
-                  disabled={catalogLoading}
-                  SelectProps={{
-                    MenuProps: {
-                      PaperProps: {
-                        sx: {
-                          maxHeight: 320,
-                          maxWidth: { xs: "90vw", sm: 420 },
-                        },
+      {/* Main Modernize Card Container */}
+      <Card
+        elevation={0}
+        sx={{
+          borderRadius: "12px",
+          border: `1px solid ${theme.palette.divider}`,
+          overflow: "hidden",
+        }}
+      >
+        <Stack spacing={3} p={{ xs: 2, sm: 2.5, md: 3 }}>
+          {/* Section 1: Report Selector + Export Action Controls */}
+          <Box
+            display="flex"
+            alignItems="center"
+            justifyContent="space-between"
+            flexWrap="wrap"
+            gap={2}
+          >
+            {/* Report Selector Dropdown */}
+            <Box sx={{ minWidth: { xs: "100%", sm: 320, md: 360 }, maxWidth: { sm: 460 } }}>
+              <TextField
+                select
+                fullWidth
+                size="small"
+                label={t("SelectReport")}
+                value={selectedReportId}
+                onChange={(e) => handleSelectReport(e.target.value)}
+                disabled={catalogLoading}
+                SelectProps={{
+                  displayEmpty: true,
+                  renderValue: (val: any) => {
+                    const found = catalog.find((c) => c.id === val);
+                    if (!found) return <span style={{ opacity: 0.6 }}>{t("SelectReport")}</span>;
+                    return (
+                      <Typography
+                        variant="body2"
+                        fontWeight={600}
+                        noWrap
+                        sx={{
+                          textAlign: isAr ? "right" : "left",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
+                      >
+                        {isAr ? found.nameAr : found.nameEn}
+                      </Typography>
+                    );
+                  },
+                  MenuProps: {
+                    anchorOrigin: {
+                      vertical: "bottom",
+                      horizontal: isAr ? "right" : "left",
+                    },
+                    transformOrigin: {
+                      vertical: "top",
+                      horizontal: isAr ? "right" : "left",
+                    },
+                    PaperProps: {
+                      sx: {
+                        width: { xs: "92vw", sm: 440, md: 480 },
+                        maxWidth: "96vw",
+                        maxHeight: 400,
+                        borderRadius: "10px",
+                        border: `1px solid ${theme.palette.divider}`,
+                        boxShadow:
+                          theme.palette.mode === "dark"
+                            ? "0 10px 30px rgba(0,0,0,0.6)"
+                            : "0 10px 30px rgba(0,0,0,0.1)",
+                        overflowX: "hidden",
+                        overflowY: "auto",
+                        p: 0.5,
                       },
                     },
-                    renderValue: (val: any) => {
-                      const found = catalog.find((c) => c.id === val);
-                      return found ? (isAr ? found.nameAr : found.nameEn) : val;
-                    },
-                  }}
-                >
-                  {catalog.map((rep) => (
-                    <MenuItem key={rep.id} value={rep.id}>
-                      <Box>
-                        <Typography variant="body2" fontWeight={600}>
+                  },
+                }}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: "8px",
+                    height: 40,
+                  },
+                }}
+              >
+                {catalog.map((rep) => {
+                  const isSelected = rep.id === selectedReportId;
+                  return (
+                    <MenuItem
+                      key={rep.id}
+                      value={rep.id}
+                      sx={{
+                        py: 1.25,
+                        px: 1.75,
+                        my: 0.25,
+                        borderRadius: "8px",
+                        whiteSpace: "normal",
+                        alignItems: "flex-start",
+                        bgcolor: isSelected
+                          ? alpha(theme.palette.primary.main, 0.08)
+                          : "transparent",
+                        "&:hover": {
+                          bgcolor: isSelected
+                            ? alpha(theme.palette.primary.main, 0.14)
+                            : theme.palette.action.hover,
+                        },
+                        "&.Mui-selected": {
+                          bgcolor: alpha(theme.palette.primary.main, 0.08),
+                          "&:hover": {
+                            bgcolor: alpha(theme.palette.primary.main, 0.14),
+                          },
+                        },
+                      }}
+                    >
+                      <Box sx={{ width: "100%", textAlign: isAr ? "right" : "left" }}>
+                        <Typography
+                          variant="subtitle2"
+                          fontWeight={700}
+                          color={isSelected ? "primary.main" : "text.primary"}
+                          sx={{ mb: 0.35, fontSize: "0.875rem", lineHeight: 1.3 }}
+                        >
                           {isAr ? rep.nameAr : rep.nameEn}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{
+                            display: "-webkit-box",
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: "vertical",
+                            overflow: "hidden",
+                            lineHeight: 1.45,
+                            fontSize: "0.775rem",
+                            wordBreak: "break-word",
+                          }}
+                        >
                           {isAr ? rep.descriptionAr : rep.descriptionEn}
                         </Typography>
                       </Box>
                     </MenuItem>
-                  ))}
-                </TextField>
-              </Box>
-
-              <ReportExportMenu
-                onExport={handleExport}
-                disabled={reportLoading || !reportResult || reportResult.rows.length === 0}
-              />
+                  );
+                })}
+              </TextField>
             </Box>
 
-            {/* Compliance Notice for Disciplinary Summary (DEC-011 and DEC-012) */}
-            {selectedReportId === "disciplinary-summary" && (
-              <Alert severity="info" sx={{ borderRadius: "8px" }}>
-                {t("FinancialDeductionsPendingNotice")}
-              </Alert>
-            )}
-
-            {/* Top KPI Metrics Summary Cards */}
-            <ReportKpisSummary
-              kpis={reportResult?.summaryKpis || []}
-              loading={reportLoading}
+            {/* Standard Export Dropdown Menu */}
+            <ReportExportMenu
+              onExport={handleExport}
+              disabled={reportLoading || !reportResult || reportResult.rows.length === 0}
             />
+          </Box>
 
-            <Divider />
+          {/* Compliance Notice for Disciplinary Summary (DEC-011 and DEC-012) */}
+          {selectedReportId === "disciplinary-summary" && (
+            <Alert severity="info" sx={{ borderRadius: "8px" }}>
+              {t("FinancialDeductionsPendingNotice")}
+            </Alert>
+          )}
 
-            {/* Toolbar: Search Always First, Filters Toggle, Reset Filters Icon, Refresh */}
-            <ModernizeTableToolbar
-              title={
-                activeReport
-                  ? isAr
-                    ? activeReport.nameAr
-                    : activeReport.nameEn
-                  : t("ReportingCenter")
-              }
-              search={filters.searchTerm || ""}
-              onSearchChange={(search) => handleFilterChange({ searchTerm: search, pageNumber: 1 })}
-              showFilters={showFilters}
-              onToggleFilters={() => setShowFilters((prev) => !prev)}
-              onRefresh={loadReport}
-              isRefreshing={reportLoading}
-              onResetFilters={handleResetFilters}
-              hasActiveFilters={hasActiveFilters}
-              filterContent={
-                <ReportFiltersBar
-                  supportedFilters={supportedFilters}
-                  filters={filters}
-                  locations={locations}
-                  shifts={shifts}
-                  employees={employees}
-                  departments={departments}
-                  onFilterChange={handleFilterChange}
-                />
-              }
-            />
+          {/* Section 2: Top KPI Summary Cards in ONE Balanced Row */}
+          <ReportKpisSummary
+            kpis={reportResult?.summaryKpis || []}
+            loading={reportLoading}
+          />
 
-            {/* Dynamic Report Data Table */}
-            <ReportDataTable
-              columns={reportResult?.columns || []}
-              rows={reportResult?.rows || []}
-              totalRecords={reportResult?.totalRecords || 0}
-              loading={reportLoading}
-              page={filters.pageNumber || 1}
-              pageSize={filters.pageSize || 20}
-              onPageChange={(page) => handleFilterChange({ pageNumber: page })}
-              onPageSizeChange={(pageSize) => handleFilterChange({ pageSize, pageNumber: 1 })}
-            />
-          </Stack>
-        </Card>
-      </Stack>
+          <Divider />
+
+          {/* Section 3: Modernize Table Toolbar with Search First, Filter Toggle, Reset, Refresh */}
+          <ModernizeTableToolbar
+            title={
+              activeReport
+                ? isAr
+                  ? activeReport.nameAr
+                  : activeReport.nameEn
+                : t("ReportingCenter")
+            }
+            search={filters.searchTerm || ""}
+            onSearchChange={(search) => handleFilterChange({ searchTerm: search, pageNumber: 1 })}
+            showFilters={showFilters}
+            onToggleFilters={() => setShowFilters((prev) => !prev)}
+            onRefresh={loadReport}
+            isRefreshing={reportLoading}
+            onResetFilters={handleResetFilters}
+            hasActiveFilters={hasActiveFilters}
+            filterContent={
+              <ReportFiltersBar
+                supportedFilters={supportedFilters}
+                filters={filters}
+                locations={locations}
+                shifts={shifts}
+                employees={employees}
+                departments={departments}
+                onFilterChange={handleFilterChange}
+              />
+            }
+          />
+
+          {/* Section 4: Dynamic Report Data Table */}
+          <ReportDataTable
+            columns={reportResult?.columns || []}
+            rows={reportResult?.rows || []}
+            totalRecords={reportResult?.totalRecords || 0}
+            loading={reportLoading}
+            page={filters.pageNumber || 1}
+            pageSize={filters.pageSize || 20}
+            onPageChange={(page) => handleFilterChange({ pageNumber: page })}
+            onPageSizeChange={(pageSize) => handleFilterChange({ pageSize, pageNumber: 1 })}
+          />
+        </Stack>
+      </Card>
     </PageContainer>
   );
 };

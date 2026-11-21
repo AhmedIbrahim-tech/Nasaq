@@ -45,13 +45,7 @@ export const NotificationDetailsDialog: React.FC<NotificationDetailsDialogProps>
         onMarkRead(notification.id);
       }
       onClose();
-      // Normalize legacy routes to Next.js routes
-      let url = notification.actionUrl;
-      if (url.startsWith('/BankAccounts')) url = '/treasury/bank-accounts';
-      else if (url.startsWith('/Treasury')) url = '/treasury';
-      else if (url.startsWith('/Sales')) url = '/sales';
-      else if (url.startsWith('/Purchases')) url = '/purchases';
-      router.push(url);
+      router.push(notification.actionUrl);
     }
   };
 

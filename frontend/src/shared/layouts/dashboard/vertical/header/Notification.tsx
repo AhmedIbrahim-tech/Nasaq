@@ -54,12 +54,7 @@ const Notifications: React.FC = () => {
     }
     handleClose2();
     if (item.actionUrl) {
-      let url = item.actionUrl;
-      if (url.startsWith('/BankAccounts')) url = '/treasury/bank-accounts';
-      else if (url.startsWith('/Treasury')) url = '/treasury';
-      else if (url.startsWith('/Sales')) url = '/sales';
-      else if (url.startsWith('/Purchases')) url = '/purchases';
-      router.push(url);
+      router.push(item.actionUrl);
     }
   };
 

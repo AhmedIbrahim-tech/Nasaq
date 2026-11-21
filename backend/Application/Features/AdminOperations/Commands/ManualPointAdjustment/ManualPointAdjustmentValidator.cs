@@ -14,7 +14,7 @@ public class ManualPointAdjustmentValidator : AbstractValidator<ManualPointAdjus
 
         RuleFor(x => x.Reason)
             .NotEmpty().WithMessage("Written adjustment reason is mandatory.")
-            .MinimumLength(5).WithMessage("Reason must be at least 5 characters.");
+            .MinimumLength(3).WithMessage("Reason must be at least 3 characters.");
 
         RuleFor(x => x.Category)
             .IsInEnum().WithMessage("Invalid point category.");

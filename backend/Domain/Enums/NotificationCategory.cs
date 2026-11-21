@@ -9,10 +9,10 @@ public enum NotificationCategory
     Success = 2,
     Warning = 3,
     Error = 4,
-    Sale = 5,
-    Purchase = 6,
-    Expense = 7,
-    BankOperation = 8,
-    TreasuryOperation = 9
+    Attendance = 5,
+    Leaves = 6,
+    Points = 7,
+    Schedules = 8,
+    System = 9
 }
 

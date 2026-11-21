@@ -820,25 +820,60 @@ export const SchedulesView: React.FC = () => {
             borderColor: "divider",
             "& .MuiTab-root": {
               py: 2,
+              px: 2,
               fontWeight: 600,
               minHeight: 52,
+              display: "inline-flex",
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 1,
             },
           }}
         >
           <Tab
             icon={<IconCalendarTime size={20} />}
             iconPosition="start"
-            label={`${t("WorkSchedules")} (${schedules.length})`}
+            label={
+              <Stack direction="row" spacing={1} alignItems="center">
+                <span>{t("WorkSchedules")}</span>
+                <Chip
+                  size="small"
+                  label={schedules.length}
+                  color={activeTab === 0 ? "primary" : "default"}
+                  sx={{ height: 20, fontSize: "0.75rem", fontWeight: 700 }}
+                />
+              </Stack>
+            }
           />
           <Tab
             icon={<IconClock size={20} />}
             iconPosition="start"
-            label={`${t("WorkShifts")} (${shifts.length})`}
+            label={
+              <Stack direction="row" spacing={1} alignItems="center">
+                <span>{t("WorkShifts")}</span>
+                <Chip
+                  size="small"
+                  label={shifts.length}
+                  color={activeTab === 1 ? "primary" : "default"}
+                  sx={{ height: 20, fontSize: "0.75rem", fontWeight: 700 }}
+                />
+              </Stack>
+            }
           />
           <Tab
             icon={<IconUserCheck size={20} />}
             iconPosition="start"
-            label={`${t("EmployeeAssignments")} (${assignments.length})`}
+            label={
+              <Stack direction="row" spacing={1} alignItems="center">
+                <span>{t("EmployeeAssignments")}</span>
+                <Chip
+                  size="small"
+                  label={assignments.length}
+                  color={activeTab === 2 ? "primary" : "default"}
+                  sx={{ height: 20, fontSize: "0.75rem", fontWeight: 700 }}
+                />
+              </Stack>
+            }
           />
         </Tabs>
 

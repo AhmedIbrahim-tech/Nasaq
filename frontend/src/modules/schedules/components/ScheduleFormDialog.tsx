@@ -241,8 +241,8 @@ export const ScheduleFormDialog: React.FC<ScheduleFormDialogProps> = ({
         <DialogCloseButton onClose={onClose} disabled={isSubmitting} />
       </DialogTitle>
 
-      <DialogContent dividers sx={{ p: 3, flex: "1 1 auto", overflowY: "auto", minHeight: 0 }}>
-          <Grid container spacing={2.5}>
+      <DialogContent dividers sx={{ p: 3, flex: "1 1 auto", overflowY: "auto", overflowX: "hidden", minHeight: 0 }}>
+          <Grid container spacing={2.5} sx={{ width: "100%", m: 0, "& > .MuiGrid-root": { pt: 2.5, pl: { xs: 0, sm: 2.5 } } }}>
             {/* Schedule Name */}
             <Grid size={{ xs: 12, sm: 8 }}>
               <TextField
@@ -305,13 +305,13 @@ export const ScheduleFormDialog: React.FC<ScheduleFormDialogProps> = ({
                 </Typography>
               )}
 
-              <TableContainer component={Paper} variant="outlined">
-                <Table size="small">
+              <TableContainer component={Paper} variant="outlined" sx={{ width: "100%", overflowX: "hidden" }}>
+                <Table size="small" sx={{ tableLayout: "fixed", width: "100%" }}>
                   <TableHead>
                     <TableRow>
-                      <TableCell width="25%">{t("Day")}</TableCell>
-                      <TableCell width="25%">{t("WorkingDayStatus")}</TableCell>
-                      <TableCell width="50%">{t("AssignedShift")}</TableCell>
+                      <TableCell sx={{ width: "22%", fontWeight: 700 }}>{t("Day")}</TableCell>
+                      <TableCell sx={{ width: "28%", fontWeight: 700 }}>{t("WorkingDayStatus")}</TableCell>
+                      <TableCell sx={{ width: "50%", fontWeight: 700 }}>{t("AssignedShift")}</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -321,7 +321,9 @@ export const ScheduleFormDialog: React.FC<ScheduleFormDialogProps> = ({
 
                       return (
                         <TableRow key={day} hover>
-                          <TableCell sx={{ fontWeight: 600 }}>{t(key)}</TableCell>
+                          <TableCell sx={{ fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {t(key)}
+                          </TableCell>
                           <TableCell>
                             <FormControlLabel
                               control={
@@ -338,6 +340,7 @@ export const ScheduleFormDialog: React.FC<ScheduleFormDialogProps> = ({
                                   label={dayConfig.isWorkingDay ? t("WorkDay") : t("DayOff")}
                                   color={dayConfig.isWorkingDay ? "success" : "default"}
                                   variant="outlined"
+                                  sx={{ fontSize: "0.75rem", height: 22 }}
                                 />
                               }
                             />
@@ -345,11 +348,19 @@ export const ScheduleFormDialog: React.FC<ScheduleFormDialogProps> = ({
                           <TableCell>
                             {dayConfig.isWorkingDay ? (
                               <Stack direction="row" spacing={1} alignItems="center">
-                                <FormControl size="small" fullWidth>
+                                <FormControl size="small" fullWidth sx={{ minWidth: 0 }}>
                                   <Select
                                     value={dayConfig.workShiftId}
                                     onChange={(e) => handleDayShiftChange(day, e.target.value)}
                                     displayEmpty
+                                    sx={{
+                                      "& .MuiSelect-select": {
+                                        overflow: "hidden",
+                                        textOverflow: "ellipsis",
+                                        whiteSpace: "nowrap",
+                                        fontSize: "0.85rem",
+                                      },
+                                    }}
                                   >
                                     {shifts.map((s) => (
                                       <MenuItem key={s.id} value={s.id}>
@@ -365,6 +376,7 @@ export const ScheduleFormDialog: React.FC<ScheduleFormDialogProps> = ({
                                     label={`${selectedShift.durationHours}h`}
                                     color="primary"
                                     variant="filled"
+                                    sx={{ flexShrink: 0, height: 22, fontSize: "0.75rem" }}
                                   />
                                 )}
                               </Stack>

@@ -1,22 +1,22 @@
 "use client";
 
-import React from "react";
-import Box from "@mui/material/Box";
-import Card from "@mui/material/Card";
-import CardContent from "@mui/material/CardContent";
-import Grid from "@mui/material/Grid";
-import Typography from "@mui/material/Typography";
-import Skeleton from "@mui/material/Skeleton";
-import Avatar from "@mui/material/Avatar";
-import { alpha, useTheme } from "@mui/material/styles";
+import React, { useMemo } from "react";
+import { useTheme } from "@mui/material/styles";
 import {
-  IconChartBar,
+  IconUsers,
   IconChecklist,
   IconClock,
   IconAlertTriangle,
+  IconClockCheck,
+  IconCalendarCheck,
   IconAward,
+  IconChartBar,
 } from "@tabler/icons-react";
 import { useLocale } from "next-intl";
+import {
+  ModernizeStatsCards,
+  ModernizeStatCardItem,
+} from "@/shared/components/tables/modernize/ModernizeStatsCards";
 import type { ReportSummaryKpi } from "../types";
 
 interface ReportKpisSummaryProps {
@@ -29,78 +29,136 @@ export const ReportKpisSummary: React.FC<ReportKpisSummaryProps> = ({ kpis, load
   const locale = useLocale();
   const isAr = locale.startsWith("ar");
 
-  if (!loading && (!kpis || kpis.length === 0)) {
+  const getKpiStyle = (key: string, idx: number) => {
+    switch (key.toLowerCase()) {
+      case "total_records":
+      case "total_attendance":
+      case "total_employees":
+      case "total_workforce":
+      case "total_requests":
+      case "active_employees":
+        return {
+          bgcolor: "primary.light",
+          color: "primary.main",
+          icon: <IconUsers size={22} color={theme.palette.primary.main} />,
+        };
+      case "verified_records":
+      case "total_shifts":
+      case "active_count":
+      case "active_staff":
+      case "approved_days":
+      case "total_green":
+      case "on_time":
+        return {
+          bgcolor: "success.light",
+          color: "success.main",
+          icon: <IconChecklist size={22} color={theme.palette.success.main} />,
+        };
+      case "pending_review":
+      case "pending_requests":
+      case "late_count":
+      case "total_late":
+      case "warning":
+        return {
+          bgcolor: "warning.light",
+          color: "warning.main",
+          icon: <IconClock size={22} color={theme.palette.warning.main} />,
+        };
+      case "incomplete":
+      case "missing_checkout":
+      case "black_card_count":
+      case "total_black":
+      case "rejected_requests":
+      case "employees_flagged":
+      case "critical":
+        return {
+          bgcolor: "error.light",
+          color: "error.main",
+          icon: <IconAlertTriangle size={22} color={theme.palette.error.main} />,
+        };
+      case "total_hours":
+      case "total_hours_logged":
+      case "avg_net_points":
+      case "net_balance":
+        return {
+          bgcolor: "info.light",
+          color: "info.main",
+          icon: <IconClockCheck size={22} color={theme.palette.info.main} />,
+        };
+      case "approved_leaves":
+        return {
+          bgcolor: "secondary.light",
+          color: "secondary.main",
+          icon: <IconCalendarCheck size={22} color={theme.palette.secondary.main} />,
+        };
+      default: {
+        const cycle = [
+          {
+            bgcolor: "primary.light",
+            color: "primary.main",
+            icon: <IconChartBar size={22} color={theme.palette.primary.main} />,
+          },
+          {
+            bgcolor: "success.light",
+            color: "success.main",
+            icon: <IconChecklist size={22} color={theme.palette.success.main} />,
+          },
+          {
+            bgcolor: "warning.light",
+            color: "warning.main",
+            icon: <IconClock size={22} color={theme.palette.warning.main} />,
+          },
+          {
+            bgcolor: "error.light",
+            color: "error.main",
+            icon: <IconAlertTriangle size={22} color={theme.palette.error.main} />,
+          },
+          {
+            bgcolor: "info.light",
+            color: "info.main",
+            icon: <IconAward size={22} color={theme.palette.info.main} />,
+          },
+        ];
+        return cycle[idx % cycle.length];
+      }
+    }
+  };
+
+  const statItems: ModernizeStatCardItem[] = useMemo(() => {
+    if (!kpis || kpis.length === 0) {
+      if (loading) {
+        return Array.from({ length: 5 }).map((_, i) => ({
+          value: 0,
+          label: "",
+          icon: <IconChartBar size={22} />,
+          bgcolor: "primary.light",
+          color: "primary.main",
+        }));
+      }
+      return [];
+    }
+
+    return kpis.map((kpi, idx) => {
+      const style = getKpiStyle(kpi.key || "", idx);
+      const label = isAr ? kpi.labelAr : kpi.labelEn;
+      const formattedValue =
+        typeof kpi.value === "number"
+          ? kpi.value.toLocaleString(isAr ? "ar-SA-u-nu-latn" : "en-US")
+          : kpi.value;
+
+      return {
+        value: formattedValue,
+        label,
+        icon: style.icon,
+        bgcolor: style.bgcolor,
+        color: style.color,
+      };
+    });
+  }, [kpis, loading, isAr, theme]);
+
+  if (!loading && statItems.length === 0) {
     return null;
   }
 
-  const icons = [
-    { icon: <IconChartBar size={22} />, color: theme.palette.primary.main },
-    { icon: <IconChecklist size={22} />, color: theme.palette.success.main },
-    { icon: <IconClock size={22} />, color: theme.palette.warning.main },
-    { icon: <IconAlertTriangle size={22} />, color: theme.palette.error.main },
-    { icon: <IconAward size={22} />, color: theme.palette.secondary.main },
-  ];
-
-  return (
-    <Grid container spacing={2}>
-      {loading
-        ? Array.from({ length: 4 }).map((_, idx) => (
-            <Grid key={idx} size={{ xs: 12, sm: 6, md: 3 }}>
-              <Card elevation={0} sx={{ border: `1px solid ${theme.palette.divider}`, borderRadius: "10px", p: 1 }}>
-                <CardContent sx={{ p: 1.5, "&:last-child": { pb: 1.5 } }}>
-                  <Skeleton variant="text" width="60%" height={24} />
-                  <Skeleton variant="text" width="40%" height={36} />
-                </CardContent>
-              </Card>
-            </Grid>
-          ))
-        : kpis.map((kpi, idx) => {
-            const iconObj = icons[idx % icons.length];
-            const label = isAr ? kpi.labelAr : kpi.labelEn;
-            const displayValue = kpi.value.toLocaleString();
-
-            return (
-              <Grid key={kpi.key || idx} size={{ xs: 12, sm: 6, md: 3 }}>
-                <Card
-                  elevation={0}
-                  sx={{
-                    borderRadius: "10px",
-                    border: `1px solid ${theme.palette.divider}`,
-                    height: "100%",
-                    transition: "transform 0.2s ease, box-shadow 0.2s ease",
-                    "&:hover": {
-                      transform: "translateY(-2px)",
-                      boxShadow: theme.shadows[2],
-                    },
-                  }}
-                >
-                  <CardContent sx={{ p: 2, "&:last-child": { pb: 2 } }}>
-                    <Box display="flex" alignItems="center" justifyContent="space-between">
-                      <Box>
-                        <Typography variant="caption" color="text.secondary" fontWeight={500} mb={0.5} display="block">
-                          {label}
-                        </Typography>
-                        <Typography variant="h5" fontWeight={700}>
-                          {displayValue}
-                        </Typography>
-                      </Box>
-                      <Avatar
-                        sx={{
-                          bgcolor: alpha(iconObj.color, 0.12),
-                          color: iconObj.color,
-                          width: 42,
-                          height: 42,
-                          borderRadius: "8px",
-                        }}
-                      >
-                        {iconObj.icon}
-                      </Avatar>
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
-            );
-          })}
-    </Grid>
-  );
+  return <ModernizeStatsCards items={statItems} loading={loading} />;
 };

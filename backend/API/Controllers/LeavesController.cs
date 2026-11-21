@@ -65,6 +65,12 @@ public sealed class LeavesController : ApiControllerBase
         ActionResult(await _mediator.Send(new ToggleLeaveTypeStatusCommand(id), cancellationToken));
 
     // --- Leave Requests Endpoints ---
+    [HttpGet(Router.Leaves.Requests)]
+    public async Task<IActionResult> GetRequests(
+        [FromQuery] GetLeaveRequestsQuery query,
+        CancellationToken cancellationToken = default) =>
+        ActionResult(await _mediator.Send(query, cancellationToken));
+
     [HttpGet(Router.Leaves.MyRequests)]
     public async Task<IActionResult> GetMyRequests(
         [FromQuery] GetMyLeaveRequestsQuery query,

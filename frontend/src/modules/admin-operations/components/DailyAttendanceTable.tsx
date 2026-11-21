@@ -20,7 +20,7 @@ import {
   IconMapPin,
   IconClock,
   IconFileDescription,
-  IconDeviceLaptop,
+  IconCurrentLocation,
   IconAlertTriangle,
 } from "@tabler/icons-react";
 import { useTranslations } from "next-intl";
@@ -218,76 +218,35 @@ export const DailyAttendanceTable: React.FC<DailyAttendanceTableProps> = ({
   const renderExpandedRow = (record: AttendanceRecord) => (
     <Box
       sx={{
-        p: 2.5,
+        p: 2,
         bgcolor: (theme) =>
           theme.palette.mode === "dark"
             ? alpha(theme.palette.background.default, 0.6)
-            : alpha(theme.palette.primary.light, 0.2),
-        borderRadius: "12px",
+            : alpha(theme.palette.primary.light, 0.15),
+        borderRadius: "10px",
         border: (theme) => `1px solid ${theme.palette.divider}`,
       }}
     >
-      <Stack
-        direction="row"
-        justifyContent="space-between"
-        alignItems="center"
-        sx={{ mb: 2.5 }}
-        flexWrap="wrap"
-        gap={1.5}
-      >
-        <Stack direction="row" spacing={1.5} alignItems="center">
-          <ProfilePhotoAvatar
-            name={isRtl && record.employeeNameAr ? record.employeeNameAr : record.employeeName}
-            size={44}
-            colorScheme="soft"
-            sx={{ border: (theme) => `1px solid ${theme.palette.divider}` }}
-          />
-          <Box>
-            <Typography variant="subtitle2" fontWeight={700} color="primary.main">
-              {isRtl && record.employeeNameAr ? record.employeeNameAr : record.employeeName}
-            </Typography>
-            <Typography
-              variant="caption"
-              sx={{
-                fontFamily: "monospace",
-                bgcolor: "action.hover",
-                px: 1,
-                py: 0.25,
-                borderRadius: "6px",
-                border: (theme) => `1px solid ${theme.palette.divider}`,
-                direction: "ltr",
-                unicodeBidi: "isolate",
-                display: "inline-block",
-                mt: 0.5,
-              }}
-            >
-              {record.employeeCode} {(isRtl && record.departmentAr ? record.departmentAr : record.department) ? `• ${isRtl && record.departmentAr ? record.departmentAr : record.department}` : ""}
-            </Typography>
-          </Box>
-        </Stack>
-        {getStatusChip(record.status)}
-      </Stack>
-
-      <Grid container spacing={2}>
+      <Grid container spacing={1.5}>
         {/* Work Location */}
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Box
             sx={{
-              p: 1.5,
-              borderRadius: "10px",
+              p: 1.25,
+              borderRadius: "8px",
               bgcolor: "background.paper",
               border: (theme) => `1px solid ${theme.palette.divider}`,
               display: "flex",
               alignItems: "center",
-              gap: 1.5,
+              gap: 1.25,
               height: "100%",
             }}
           >
             <Box
               sx={{
-                width: 38,
-                height: 38,
-                borderRadius: "8px",
+                width: 34,
+                height: 34,
+                borderRadius: "6px",
                 bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
                 color: "primary.main",
                 display: "flex",
@@ -296,7 +255,7 @@ export const DailyAttendanceTable: React.FC<DailyAttendanceTableProps> = ({
                 flexShrink: 0,
               }}
             >
-              <IconMapPin size={20} stroke={1.75} />
+              <IconMapPin size={18} stroke={1.75} />
             </Box>
             <Box sx={{ minWidth: 0, flex: 1 }}>
               <Typography variant="caption" color="text.secondary" display="block">
@@ -313,21 +272,21 @@ export const DailyAttendanceTable: React.FC<DailyAttendanceTableProps> = ({
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Box
             sx={{
-              p: 1.5,
-              borderRadius: "10px",
+              p: 1.25,
+              borderRadius: "8px",
               bgcolor: "background.paper",
               border: (theme) => `1px solid ${theme.palette.divider}`,
               display: "flex",
               alignItems: "center",
-              gap: 1.5,
+              gap: 1.25,
               height: "100%",
             }}
           >
             <Box
               sx={{
-                width: 38,
-                height: 38,
-                borderRadius: "8px",
+                width: 34,
+                height: 34,
+                borderRadius: "6px",
                 bgcolor: (theme) => alpha(theme.palette.warning.main, 0.1),
                 color: "warning.main",
                 display: "flex",
@@ -336,7 +295,7 @@ export const DailyAttendanceTable: React.FC<DailyAttendanceTableProps> = ({
                 flexShrink: 0,
               }}
             >
-              <IconClock size={20} stroke={1.75} />
+              <IconClock size={18} stroke={1.75} />
             </Box>
             <Box sx={{ minWidth: 0, flex: 1 }}>
               <Typography variant="caption" color="text.secondary" display="block">
@@ -353,21 +312,21 @@ export const DailyAttendanceTable: React.FC<DailyAttendanceTableProps> = ({
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Box
             sx={{
-              p: 1.5,
-              borderRadius: "10px",
+              p: 1.25,
+              borderRadius: "8px",
               bgcolor: "background.paper",
               border: (theme) => `1px solid ${theme.palette.divider}`,
               display: "flex",
               alignItems: "center",
-              gap: 1.5,
+              gap: 1.25,
               height: "100%",
             }}
           >
             <Box
               sx={{
-                width: 38,
-                height: 38,
-                borderRadius: "8px",
+                width: 34,
+                height: 34,
+                borderRadius: "6px",
                 bgcolor: (theme) => alpha(theme.palette.info.main, 0.1),
                 color: "info.main",
                 display: "flex",
@@ -376,7 +335,7 @@ export const DailyAttendanceTable: React.FC<DailyAttendanceTableProps> = ({
                 flexShrink: 0,
               }}
             >
-              <IconDeviceLaptop size={20} stroke={1.75} />
+              <IconCurrentLocation size={18} stroke={1.75} />
             </Box>
             <Box sx={{ minWidth: 0, flex: 1 }}>
               <Typography variant="caption" color="text.secondary" display="block">
@@ -390,7 +349,7 @@ export const DailyAttendanceTable: React.FC<DailyAttendanceTableProps> = ({
                   unicodeBidi: "isolate",
                   display: "inline-block",
                   fontFamily: "monospace",
-                  fontSize: "0.85rem",
+                  fontSize: "0.8rem",
                 }}
               >
                 {formatCoordinates(record.checkInLatitude, record.checkInLongitude)}
@@ -403,21 +362,21 @@ export const DailyAttendanceTable: React.FC<DailyAttendanceTableProps> = ({
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Box
             sx={{
-              p: 1.5,
-              borderRadius: "10px",
+              p: 1.25,
+              borderRadius: "8px",
               bgcolor: "background.paper",
               border: (theme) => `1px solid ${theme.palette.divider}`,
               display: "flex",
               alignItems: "center",
-              gap: 1.5,
+              gap: 1.25,
               height: "100%",
             }}
           >
             <Box
               sx={{
-                width: 38,
-                height: 38,
-                borderRadius: "8px",
+                width: 34,
+                height: 34,
+                borderRadius: "6px",
                 bgcolor: (theme) => alpha(theme.palette.success.main, 0.1),
                 color: "success.main",
                 display: "flex",
@@ -426,7 +385,7 @@ export const DailyAttendanceTable: React.FC<DailyAttendanceTableProps> = ({
                 flexShrink: 0,
               }}
             >
-              <IconFileDescription size={20} stroke={1.75} />
+              <IconFileDescription size={18} stroke={1.75} />
             </Box>
             <Box sx={{ minWidth: 0, flex: 1 }}>
               <Typography variant="caption" color="text.secondary" display="block">
@@ -444,21 +403,21 @@ export const DailyAttendanceTable: React.FC<DailyAttendanceTableProps> = ({
           <Grid size={{ xs: 12 }}>
             <Box
               sx={{
-                p: 1.75,
-                borderRadius: "10px",
+                p: 1.25,
+                borderRadius: "8px",
                 bgcolor: (theme) => alpha(theme.palette.error.main, 0.08),
-                border: (theme) => `1px solid ${alpha(theme.palette.error.main, 0.25)}`,
+                border: (theme) => `1px solid ${alpha(theme.palette.error.main, 0.2)}`,
                 display: "flex",
                 alignItems: "center",
                 gap: 1.25,
               }}
             >
-              <IconAlertTriangle size={20} color={theme.palette.error.main} style={{ flexShrink: 0 }} />
+              <IconAlertTriangle size={18} color={theme.palette.error.main} style={{ flexShrink: 0 }} />
               <Box>
                 <Typography variant="caption" color="error.main" fontWeight={700} sx={{ display: "block" }}>
                   {t("FailureReason")}:
                 </Typography>
-                <Typography variant="body2" color="error.dark" fontWeight={500}>
+                <Typography variant="body2" color="error.dark" fontWeight={500} sx={{ fontSize: "0.825rem" }}>
                   {formatGeofenceFailureReason(record.checkInFailureReason || record.checkOutFailureReason, isRtl)}
                 </Typography>
               </Box>
