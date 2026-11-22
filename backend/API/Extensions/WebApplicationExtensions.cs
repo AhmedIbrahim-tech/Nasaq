@@ -82,7 +82,7 @@ public static class WebApplicationExtensions
         if (isConfiguredToSeed)
         {
             var initializer = services.GetRequiredService<DbInitializer>();
-            await initializer.SeedAsync();
+            await initializer.SeedAsync(cancellationToken);
         }
     }
 }

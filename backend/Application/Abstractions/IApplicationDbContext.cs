@@ -20,6 +20,10 @@ public interface IApplicationDbContext
     DbSet<LeaveType> LeaveTypes { get; }
     DbSet<LeaveRequest> LeaveRequests { get; }
     DbSet<LeaveApprovalHistory> LeaveApprovalHistories { get; }
+    DbSet<EmployeePersonalLocation> EmployeePersonalLocations { get; }
+    DbSet<EmployeeLocationRequest> EmployeeLocationRequests { get; }
+    DbSet<ForgotPasswordRequest> ForgotPasswordRequests { get; }
+    DbSet<SystemSetting> SystemSettings { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     EntityEntry<TEntity> Entry<TEntity>(TEntity entity) where TEntity : class;

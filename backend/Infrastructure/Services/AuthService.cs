@@ -40,27 +40,13 @@ public sealed class AuthService(
         if (!signIn.Succeeded)
             return Unauthorized<AuthResponse>(InvalidCredentials);
 
-        // Check temporary password & first login requirement
+        // Check temporary password & expiration
         if (user.MustChangePasswordOnNextLogin)
         {
             if (user.TemporaryPasswordExpiresAtUtc.HasValue && user.TemporaryPasswordExpiresAtUtc.Value < DateTime.UtcNow)
             {
                 return Unauthorized<AuthResponse>("The temporary password has expired. Please contact your platform administrator.");
             }
-
-            var setupToken = CreateSetupToken(user);
-            var roles = await userManager.GetRolesAsync(user);
-            var employee = await dbContext.Employees
-                .AsNoTracking()
-                .FirstOrDefaultAsync(e => e.UserId == user.Id, cancellationToken);
-
-            return Success(new AuthResponse
-            {
-                RequiresPasswordChange = true,
-                SetupToken = setupToken,
-                User = AuthMapper.ToUserResponse(user, employee),
-                Roles = roles.ToList()
-            }, "Password change is required before accessing the system.");
         }
 
         return Success(await IssueAsync(user, request.RememberMe, cancellationToken));
@@ -81,9 +67,6 @@ public sealed class AuthService(
             return Unauthorized<AuthResponse>(InvalidCredentials);
 
         if (await userManager.IsLockedOutAsync(user))
-            return Unauthorized<AuthResponse>(InvalidCredentials);
-
-        if (user.MustChangePasswordOnNextLogin)
             return Unauthorized<AuthResponse>(InvalidCredentials);
 
         return Success(await BuildResponseAsync(user, rotated.PlainToken, rotated.ExpiresAtUtc, cancellationToken));
@@ -110,7 +93,21 @@ public sealed class AuthService(
             .AsNoTracking()
             .FirstOrDefaultAsync(e => e.UserId == user.Id, cancellationToken);
 
-        return Success(AuthMapper.ToCurrentUserResponse(user, roles.ToList(), employee));
+        bool hasApprovedLocation = false;
+        bool hasPendingLocationRequest = false;
+
+        if (employee != null)
+        {
+            hasApprovedLocation = await dbContext.EmployeePersonalLocations
+                .AsNoTracking()
+                .AnyAsync(l => l.EmployeeId == employee.Id && l.IsActive && l.IsApproved, cancellationToken);
+
+            hasPendingLocationRequest = await dbContext.EmployeeLocationRequests
+                .AsNoTracking()
+                .AnyAsync(r => r.EmployeeId == employee.Id && r.Status == Domain.Enums.LocationRequestStatus.Pending, cancellationToken);
+        }
+
+        return Success(AuthMapper.ToCurrentUserResponse(user, roles.ToList(), employee, hasApprovedLocation, hasPendingLocationRequest));
     }
 
     public async Task<GenericBaseResponse<CurrentUserResponse>> UpdateProfileAsync(string? userId, UpdateProfileRequest request, CancellationToken cancellationToken = default)
@@ -358,13 +355,27 @@ public sealed class AuthService(
             .AsNoTracking()
             .FirstOrDefaultAsync(e => e.UserId == user.Id, cancellationToken);
 
+        bool hasApprovedLocation = false;
+        bool hasPendingLocationRequest = false;
+
+        if (employee != null)
+        {
+            hasApprovedLocation = await dbContext.EmployeePersonalLocations
+                .AsNoTracking()
+                .AnyAsync(l => l.EmployeeId == employee.Id && l.IsActive && l.IsApproved, cancellationToken);
+
+            hasPendingLocationRequest = await dbContext.EmployeeLocationRequests
+                .AsNoTracking()
+                .AnyAsync(r => r.EmployeeId == employee.Id && r.Status == Domain.Enums.LocationRequestStatus.Pending, cancellationToken);
+        }
+
         return new AuthResponse
         {
             AccessToken = access.AccessToken,
             RefreshToken = refreshToken,
             AccessTokenExpiresAtUtc = access.ExpiresAtUtc,
             RefreshTokenExpiresAtUtc = refreshExpiresAtUtc,
-            User = AuthMapper.ToUserResponse(user, employee),
+            User = AuthMapper.ToUserResponse(user, employee, hasApprovedLocation, hasPendingLocationRequest),
             Roles = roles.ToList()
         };
     }

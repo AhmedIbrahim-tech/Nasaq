@@ -64,58 +64,22 @@ public class CheckInHandler : IRequestHandler<CheckInCommand, GenericBaseRespons
 
         var utcNow = DateTime.UtcNow;
 
-        // 3. Resolve location and validate geofence
-        var location = employee.WorkLocation;
-        if (location == null && employee.WorkLocationId.HasValue)
-        {
-            location = await _context.WorkLocations.FirstOrDefaultAsync(l => l.Id == employee.WorkLocationId.Value, cancellationToken);
-        }
+        // 3. Evaluate geofence compliance via Dual-Location Matrix (Approved Personal Location OR Any Active Company Location)
+        var geofenceEval = await _geofenceService.EvaluateAttendanceCoordinatesAsync(
+            request.Latitude,
+            request.Longitude,
+            request.AccuracyMeters,
+            employee.Id,
+            cancellationToken);
 
-        var checkInStatus = VerificationStatus.Verified;
-        string? failureReason = null;
-        double? measuredDistance = null;
+        var checkInStatus = geofenceEval.Status;
+        var failureReason = geofenceEval.FailureReason;
+        var measuredDistance = geofenceEval.MeasuredDistanceMeters;
 
-        if (location != null && location.IsActive)
-        {
-            var hasCoords = _geofenceService.IsValidCoordinate(request.Latitude, request.Longitude);
-            if (hasCoords)
-            {
-                var isWithin = _geofenceService.IsWithinGeofence(
-                    request.Latitude!.Value,
-                    request.Longitude!.Value,
-                    location.Latitude,
-                    location.Longitude,
-                    location.RadiusMeters,
-                    out var dist);
-
-                measuredDistance = Math.Round(dist, 1);
-
-                if (request.AccuracyMeters.HasValue && request.AccuracyMeters.Value > location.AccuracyThresholdMeters)
-                {
-                    checkInStatus = VerificationStatus.PendingReview;
-                    failureReason = $"low_accuracy: device reported {request.AccuracyMeters.Value}m, threshold is {location.AccuracyThresholdMeters}m";
-                }
-                else if (!isWithin)
-                {
-                    checkInStatus = VerificationStatus.PendingReview;
-                    failureReason = $"outside_geofence: {measuredDistance}m from worksite (radius: {location.RadiusMeters}m)";
-                }
-                else
-                {
-                    checkInStatus = VerificationStatus.Verified;
-                }
-            }
-            else
-            {
-                checkInStatus = VerificationStatus.PendingReview;
-                failureReason = "gps_unavailable: device coordinates were not provided or invalid";
-            }
-        }
-        else
-        {
-            checkInStatus = VerificationStatus.PendingReview;
-            failureReason = location == null ? "unassigned_worksite: employee has no assigned location" : "inactive_worksite: assigned location is currently inactive";
-        }
+        // Resolve recorded WorkLocationId (if matched company site, use that; otherwise fall back to employee assigned branch)
+        var recordedLocationId = geofenceEval.MatchedLocationType == "CompanyLocation" && geofenceEval.MatchedLocationId.HasValue
+            ? geofenceEval.MatchedLocationId
+            : (employee.WorkLocationId ?? employee.WorkLocation?.Id);
 
         // 4. Resolve shift and arrival classification
         var shiftResolution = await _shiftResolutionService.ResolveShiftForCheckInAsync(employee, utcNow, cancellationToken);
@@ -130,7 +94,7 @@ public class CheckInHandler : IRequestHandler<CheckInCommand, GenericBaseRespons
             Id = Guid.NewGuid(),
             EmployeeId = employee.Id,
             Date = shiftResolution.ShiftDate,
-            WorkLocationId = location?.Id,
+            WorkLocationId = recordedLocationId,
             WorkShiftId = shiftResolution.Shift?.Id,
 
             CheckInTimeUtc = utcNow,
@@ -159,7 +123,10 @@ public class CheckInHandler : IRequestHandler<CheckInCommand, GenericBaseRespons
 
         // Re-load references for response
         record.Employee = employee;
-        record.WorkLocation = location;
+        if (recordedLocationId.HasValue)
+        {
+            record.WorkLocation = await _context.WorkLocations.FirstOrDefaultAsync(l => l.Id == recordedLocationId.Value, cancellationToken);
+        }
         record.WorkShift = shiftResolution.Shift;
 
         var dto = AttendanceRecordDto.FromEntity(record);

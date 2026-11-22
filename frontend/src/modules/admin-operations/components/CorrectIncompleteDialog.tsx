@@ -122,9 +122,9 @@ export const CorrectIncompleteDialog: React.FC<CorrectIncompleteDialogProps> = (
                 <IconClock size={18} />
                 <Typography variant="body2" color="text.secondary">
                   {t("OriginalCheckInTime")}:{" "}
-                  <Box component="span" sx={{ direction: "ltr", display: "inline-block" }}>
+                  <Typography component="span" variant="body2" fontWeight={600} color="text.primary">
                     {formatDateTime(record.checkInTimeUtc, isRtl)}
-                  </Box>
+                  </Typography>
                 </Typography>
               </Box>
             </Stack>
@@ -180,8 +180,8 @@ export const CorrectIncompleteDialog: React.FC<CorrectIncompleteDialogProps> = (
         </Stack>
       </DialogContent>
 
-      <DialogActions sx={{ px: 3, py: 2 }}>
-        <Button onClick={handleClose} disabled={loading} color="inherit">
+      <DialogActions sx={{ px: 3, py: 2, gap: 1.5 }}>
+        <Button onClick={handleClose} disabled={loading} color="inherit" sx={{ fontWeight: 600 }}>
           {t("Cancel")}
         </Button>
         <Button
@@ -190,7 +190,7 @@ export const CorrectIncompleteDialog: React.FC<CorrectIncompleteDialogProps> = (
           color="primary"
           disabled={loading || !isValid}
           startIcon={loading ? <CircularProgress size={18} color="inherit" /> : <IconClockCheck size={18} />}
-          sx={{ borderRadius: "8px", px: 2.5 }}
+          sx={{ borderRadius: "8px", px: 2.5, fontWeight: 600 }}
         >
           {t("CorrectIncomplete")}
         </Button>

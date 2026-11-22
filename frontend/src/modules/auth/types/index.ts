@@ -36,6 +36,24 @@ export interface AuthUserResponse {
   department?: string | null;
   profilePhoto?: string | null;
   employeeId?: string | null;
+  mustChangePasswordOnNextLogin?: boolean;
+  hasApprovedPersonalLocation?: boolean;
+  hasPendingLocationRequest?: boolean;
+}
+
+export interface ForgotPasswordRequestDto {
+  id: string;
+  userId: string;
+  employeeId?: string | null;
+  employeeName?: string | null;
+  employeeNameAr?: string | null;
+  employeeCode?: string | null;
+  email: string;
+  status: number;
+  requestedAtUtc: string;
+  reviewedAtUtc?: string | null;
+  reviewedBy?: string | null;
+  rejectionReason?: string | null;
 }
 
 /**
@@ -65,6 +83,9 @@ export interface CurrentUserResponse {
   roles: string[];
   profilePhoto?: string | null;
   employeeId?: string | null;
+  mustChangePasswordOnNextLogin?: boolean;
+  hasApprovedPersonalLocation?: boolean;
+  hasPendingLocationRequest?: boolean;
 }
 
 /**

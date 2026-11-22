@@ -31,7 +31,7 @@ public class IntegratedWorkflowsTests : IDisposable
 
         _dbContext = new ApplicationDbContext(options);
         _unitOfWork = new UnitOfWork(_dbContext, NullLogger<UnitOfWork>.Instance);
-        _geofenceService = new GeofenceService();
+        _geofenceService = new GeofenceService(_dbContext);
         _shiftResolutionService = new ShiftResolutionService(_dbContext);
         _pointEngine = new PointCalculationEngine(_dbContext);
     }

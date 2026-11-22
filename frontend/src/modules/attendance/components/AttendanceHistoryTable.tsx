@@ -95,8 +95,10 @@ export const AttendanceHistoryTable: React.FC<AttendanceHistoryTableProps> = ({
                 <Typography variant="subtitle2" fontWeight={600}>
                   {isRtl && row.employeeNameAr ? row.employeeNameAr : row.employeeName}
                 </Typography>
-                <Typography variant="caption" color="text.secondary" dir="ltr">
-                  {row.employeeCode}
+                <Typography variant="caption" color="text.secondary">
+                  <span style={{ direction: "ltr", unicodeBidi: "isolate", display: "inline-block" }}>
+                    {row.employeeCode}
+                  </span>
                 </Typography>
               </Box>
             ),
@@ -107,7 +109,16 @@ export const AttendanceHistoryTable: React.FC<AttendanceHistoryTableProps> = ({
       id: "date",
       header: t("Date"),
       cell: (row) => (
-        <Typography variant="body2" fontWeight={600} sx={{ direction: "ltr", display: "inline-block" }}>
+        <Typography
+          variant="body2"
+          fontWeight={600}
+          sx={{
+            direction: "ltr",
+            unicodeBidi: "isolate",
+            display: "inline-block",
+            fontFamily: "monospace",
+          }}
+        >
           {formatDateOnly(row.date, isRtl)}
         </Typography>
       ),
@@ -160,7 +171,10 @@ export const AttendanceHistoryTable: React.FC<AttendanceHistoryTableProps> = ({
 
   const renderExpandedRow = (record: AttendanceRecord) => (
     <Box
+      dir={isRtl ? "rtl" : "ltr"}
       sx={{
+        direction: isRtl ? "rtl" : "ltr",
+        textAlign: isRtl ? "right" : "left",
         p: 2.5,
         bgcolor: (theme) =>
           theme.palette.mode === "dark"

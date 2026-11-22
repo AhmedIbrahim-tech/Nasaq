@@ -8,7 +8,9 @@ import Tab from "@mui/material/Tab";
 import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import Badge from "@mui/material/Badge";
+import Chip from "@mui/material/Chip";
 import Typography from "@mui/material/Typography";
+import Divider from "@mui/material/Divider";
 import { useTheme } from "@mui/material/styles";
 import {
   IconCalendarEvent,
@@ -16,6 +18,8 @@ import {
   IconClockExclamation,
   IconAward,
   IconPlus,
+  IconMapPin,
+  IconKey,
 } from "@tabler/icons-react";
 import { useTranslations } from "next-intl";
 import PageContainer from "@/shared/components/container/PageContainer";
@@ -26,10 +30,13 @@ import { locationsService } from "@/modules/locations/services/locations.service
 import { scheduleService } from "@/modules/schedules/services/schedule.service";
 import { employeeService } from "@/modules/employees/services/employee.service";
 import { pointsService } from "@/modules/points/services/points.service";
+import { getPendingPasswordRequests } from "@/modules/auth/services/auth.service";
 import { AdminOperationsStatsCards } from "../components/AdminOperationsStatsCards";
 import { DailyAttendanceTable } from "../components/DailyAttendanceTable";
 import { GpsExceptionQueueTable } from "../components/GpsExceptionQueueTable";
 import { IncompleteAttendanceTable } from "../components/IncompleteAttendanceTable";
+import { LocationRequestsQueueTable } from "../components/LocationRequestsQueueTable";
+import { PasswordRecoveryQueueTable } from "../components/PasswordRecoveryQueueTable";
 import { ApproveGpsDialog } from "../components/ApproveGpsDialog";
 import { RejectGpsDialog } from "../components/RejectGpsDialog";
 import { CorrectIncompleteDialog } from "../components/CorrectIncompleteDialog";
@@ -43,6 +50,8 @@ import type {
   ManualPointAdjustmentRequest,
   PointTransaction,
 } from "../types";
+import type { EmployeeLocationRequest } from "@/modules/locations/types";
+import type { ForgotPasswordRequestDto } from "@/modules/auth/types";
 
 export const AdminOperationsView: React.FC = () => {
   const t = useTranslations();
@@ -81,6 +90,14 @@ export const AdminOperationsView: React.FC = () => {
     page: 1,
     pageSize: 10,
   });
+
+  // Location Requests State
+  const [locationRequests, setLocationRequests] = useState<EmployeeLocationRequest[]>([]);
+  const [locationRequestsLoading, setLocationRequestsLoading] = useState(false);
+
+  // Password Recovery Requests State
+  const [passwordRequests, setPasswordRequests] = useState<ForgotPasswordRequestDto[]>([]);
+  const [passwordRequestsLoading, setPasswordRequestsLoading] = useState(false);
 
   // Supporting Data
   const [locations, setLocations] = useState<{ id: string; name: string }[]>([]);
@@ -150,7 +167,33 @@ export const AdminOperationsView: React.FC = () => {
     }
   }, [incompleteParams, t]);
 
-  // 5. Load Lookup Data
+  // 5. Load Location Requests
+  const loadLocationRequests = useCallback(async () => {
+    try {
+      setLocationRequestsLoading(true);
+      const data = await locationsService.getPendingLocationRequests();
+      setLocationRequests(data);
+    } catch {
+      notify.error(t("ErrorLoadingData"));
+    } finally {
+      setLocationRequestsLoading(false);
+    }
+  }, [t]);
+
+  // 6. Load Password Recovery Requests
+  const loadPasswordRequests = useCallback(async () => {
+    try {
+      setPasswordRequestsLoading(true);
+      const data = await getPendingPasswordRequests();
+      setPasswordRequests(data);
+    } catch {
+      notify.error(t("ErrorLoadingData"));
+    } finally {
+      setPasswordRequestsLoading(false);
+    }
+  }, [t]);
+
+  // 7. Load Lookup Data
   useEffect(() => {
     const fetchLookups = async () => {
       try {
@@ -186,7 +229,9 @@ export const AdminOperationsView: React.FC = () => {
 
     fetchLookups();
     loadSummary();
-  }, [loadSummary]);
+    loadLocationRequests();
+    loadPasswordRequests();
+  }, [loadSummary, loadLocationRequests, loadPasswordRequests]);
 
   // Sync data on tab change or filter change
   useEffect(() => {
@@ -196,8 +241,12 @@ export const AdminOperationsView: React.FC = () => {
       loadGpsExceptions();
     } else if (activeTab === 2) {
       loadIncompleteAttendance();
+    } else if (activeTab === 4) {
+      loadLocationRequests();
+    } else if (activeTab === 5) {
+      loadPasswordRequests();
     }
-  }, [activeTab, loadDailyAttendance, loadGpsExceptions, loadIncompleteAttendance]);
+  }, [activeTab, loadDailyAttendance, loadGpsExceptions, loadIncompleteAttendance, loadLocationRequests, loadPasswordRequests]);
 
   // Action: Approve GPS Exception
   const handleApproveGps = async (id: string, reviewNotes?: string) => {
@@ -266,7 +315,21 @@ export const AdminOperationsView: React.FC = () => {
       // Refresh counters
       loadSummary();
     } catch (err: any) {
-      const msg = err.response?.data?.message || err.response?.data?.detail || err.message || t("ErrorUpdatingRecord");
+      const serverErrors = err.response?.data?.errors;
+      const formattedErrors = Array.isArray(serverErrors)
+        ? serverErrors
+            .map((e: any) =>
+              typeof e === "string" ? e : e?.description || e?.errorMessage || JSON.stringify(e)
+            )
+            .join(", ")
+        : null;
+      const msg =
+        formattedErrors ||
+        err.response?.data?.message ||
+        err.response?.data?.detail ||
+        err.response?.data?.title ||
+        err.message ||
+        t("ErrorUpdatingRecord");
       notify.error(msg);
     } finally {
       setActionLoading(false);
@@ -282,7 +345,21 @@ export const AdminOperationsView: React.FC = () => {
       setAdjustPointsDialogOpen(false);
       loadSummary();
     } catch (err: any) {
-      const msg = err.response?.data?.message || err.response?.data?.detail || err.message || t("ErrorUpdatingRecord");
+      const serverErrors = err.response?.data?.errors;
+      const formattedErrors = Array.isArray(serverErrors)
+        ? serverErrors
+            .map((e: any) =>
+              typeof e === "string" ? e : e?.description || e?.errorMessage || JSON.stringify(e)
+            )
+            .join(", ")
+        : null;
+      const msg =
+        formattedErrors ||
+        err.response?.data?.message ||
+        err.response?.data?.detail ||
+        err.response?.data?.title ||
+        err.message ||
+        t("ErrorUpdatingRecord");
       notify.error(msg);
     } finally {
       setActionLoading(false);
@@ -299,162 +376,223 @@ export const AdminOperationsView: React.FC = () => {
     <PageContainer title={t("AdminOperations")}>
       <Breadcrumb title={t("AdminOperations")} items={breadcrumbItems} />
 
-      <Stack spacing={3}>
-        {/* Top Summary Stats Cards */}
-        <AdminOperationsStatsCards summary={summary} loading={summaryLoading} />
-
-        {/* Main Card with Tabs */}
-        <Card
-          elevation={0}
+      {/* Modernize Card Container */}
+      <Card
+        elevation={0}
+        sx={{
+          borderRadius: "12px",
+          border: `1px solid ${theme.palette.divider}`,
+        }}
+      >
+        {/* Tabs Header */}
+        <Tabs
+          value={activeTab}
+          onChange={(_, val) => setActiveTab(val)}
+          variant="scrollable"
+          scrollButtons="auto"
+          textColor="primary"
+          indicatorColor="primary"
           sx={{
-            borderRadius: "12px",
-            border: `1px solid ${theme.palette.divider}`,
-            overflow: "hidden",
+            px: { xs: 2, sm: 3 },
+            borderBottom: 1,
+            borderColor: "divider",
+            "& .MuiTab-root": {
+              py: 2,
+              px: 2,
+              fontWeight: 600,
+              minHeight: 52,
+              display: "inline-flex",
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 1,
+            },
           }}
         >
-          {/* Tabs Header */}
-          <Tabs
-            value={activeTab}
-            onChange={(_, val) => setActiveTab(val)}
-            variant="scrollable"
-            scrollButtons="auto"
-            sx={{
-              px: { xs: 2, sm: 3 },
-              borderBottom: `1px solid ${theme.palette.divider}`,
-              "& .MuiTab-root": {
-                py: 2,
-                px: 2,
-                fontWeight: 600,
-                minHeight: 52,
-                display: "inline-flex",
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 1,
-              },
-            }}
-          >
-            <Tab
-              icon={<IconCalendarEvent size={18} />}
-              iconPosition="start"
-              label={t("DailyOperations")}
-            />
-            <Tab
-              icon={
-                <Badge
-                  badgeContent={summary?.pendingGpsExceptionsCount || 0}
-                  color="warning"
-                  max={99}
-                >
-                  <IconAlertTriangle size={18} />
-                </Badge>
-              }
-              iconPosition="start"
-              label={t("GpsExceptionsQueue")}
-            />
-            <Tab
-              icon={
-                <Badge
-                  badgeContent={summary?.incompleteAttendanceCount || 0}
-                  color="secondary"
-                  max={99}
-                >
-                  <IconClockExclamation size={18} />
-                </Badge>
-              }
-              iconPosition="start"
-              label={t("IncompleteAttendance")}
-            />
-            <Tab
-              icon={<IconAward size={18} />}
-              iconPosition="start"
-              label={t("ManualPointAdjustments")}
-            />
-          </Tabs>
+          <Tab
+            icon={<IconCalendarEvent size={20} />}
+            iconPosition="start"
+            label={t("DailyOperations")}
+          />
+          <Tab
+            icon={<IconAlertTriangle size={20} />}
+            iconPosition="start"
+            label={
+              <Stack direction="row" spacing={1} alignItems="center">
+                <span>{t("GpsExceptionsQueue")}</span>
+                {(summary?.pendingGpsExceptionsCount || 0) > 0 && (
+                  <Chip
+                    size="small"
+                    label={summary?.pendingGpsExceptionsCount}
+                    color="warning"
+                    sx={{ height: 20, fontSize: "0.75rem", fontWeight: 700 }}
+                  />
+                )}
+              </Stack>
+            }
+          />
+          <Tab
+            icon={<IconClockExclamation size={20} />}
+            iconPosition="start"
+            label={
+              <Stack direction="row" spacing={1} alignItems="center">
+                <span>{t("IncompleteAttendance")}</span>
+                {(summary?.incompleteAttendanceCount || 0) > 0 && (
+                  <Chip
+                    size="small"
+                    label={summary?.incompleteAttendanceCount}
+                    color="secondary"
+                    sx={{ height: 20, fontSize: "0.75rem", fontWeight: 700 }}
+                  />
+                )}
+              </Stack>
+            }
+          />
+          <Tab
+            icon={<IconAward size={20} />}
+            iconPosition="start"
+            label={t("ManualPointAdjustments")}
+          />
+          <Tab
+            icon={<IconMapPin size={20} />}
+            iconPosition="start"
+            label={
+              <Stack direction="row" spacing={1} alignItems="center">
+                <span>{t.has("LocationRequests") ? t("LocationRequests") : "طلبات المواقع"}</span>
+                {locationRequests.length > 0 && (
+                  <Chip
+                    size="small"
+                    label={locationRequests.length}
+                    color="primary"
+                    sx={{ height: 20, fontSize: "0.75rem", fontWeight: 700 }}
+                  />
+                )}
+              </Stack>
+            }
+          />
+          <Tab
+            icon={<IconKey size={20} />}
+            iconPosition="start"
+            label={
+              <Stack direction="row" spacing={1} alignItems="center">
+                <span>{t.has("PasswordRecoveryRequests") ? t("PasswordRecoveryRequests") : "استعادة كلمات المرور"}</span>
+                {passwordRequests.length > 0 && (
+                  <Chip
+                    size="small"
+                    label={passwordRequests.length}
+                    color="error"
+                    sx={{ height: 20, fontSize: "0.75rem", fontWeight: 700 }}
+                  />
+                )}
+              </Stack>
+            }
+          />
+        </Tabs>
+
+        {/* Unified Card Body */}
+        <Stack spacing={3} p={{ xs: 2, sm: 2.5, md: 3 }}>
+          {/* Top Summary Stats Cards */}
+          <AdminOperationsStatsCards summary={summary} loading={summaryLoading} />
+
+          <Divider />
 
           {/* Tab Panels */}
-          <Box sx={{ p: { xs: 2, sm: 3 } }}>
-            {activeTab === 0 && (
-              <DailyAttendanceTable
-                records={dailyRecords}
-                totalCount={dailyTotal}
-                loading={dailyLoading}
-                params={dailyParams}
-                locations={locations}
-                shifts={shifts}
-                onParamsChange={(p) => setDailyParams((prev) => ({ ...prev, ...p }))}
-                onRefresh={loadDailyAttendance}
-                onApproveGps={(rec) => {
-                  setSelectedRecord(rec);
-                  setApproveDialogOpen(true);
-                }}
-                onRejectGps={(rec) => {
-                  setSelectedRecord(rec);
-                  setRejectDialogOpen(true);
-                }}
-                onCorrectIncomplete={(rec) => {
-                  setSelectedRecord(rec);
-                  setCorrectDialogOpen(true);
-                }}
-              />
-            )}
+          {activeTab === 0 && (
+            <DailyAttendanceTable
+              records={dailyRecords}
+              totalCount={dailyTotal}
+              loading={dailyLoading}
+              params={dailyParams}
+              locations={locations}
+              shifts={shifts}
+              onParamsChange={(p) => setDailyParams((prev) => ({ ...prev, ...p }))}
+              onRefresh={loadDailyAttendance}
+              onApproveGps={(rec) => {
+                setSelectedRecord(rec);
+                setApproveDialogOpen(true);
+              }}
+              onRejectGps={(rec) => {
+                setSelectedRecord(rec);
+                setRejectDialogOpen(true);
+              }}
+              onCorrectIncomplete={(rec) => {
+                setSelectedRecord(rec);
+                setCorrectDialogOpen(true);
+              }}
+            />
+          )}
 
-            {activeTab === 1 && (
-              <GpsExceptionQueueTable
-                records={gpsRecords}
-                totalCount={gpsTotal}
-                loading={gpsLoading}
-                params={gpsParams}
-                onParamsChange={(p) => setGpsParams((prev) => ({ ...prev, ...p }))}
-                onRefresh={loadGpsExceptions}
-                onApprove={(rec) => {
-                  setSelectedRecord(rec);
-                  setApproveDialogOpen(true);
-                }}
-                onReject={(rec) => {
-                  setSelectedRecord(rec);
-                  setRejectDialogOpen(true);
-                }}
-              />
-            )}
+          {activeTab === 1 && (
+            <GpsExceptionQueueTable
+              records={gpsRecords}
+              totalCount={gpsTotal}
+              loading={gpsLoading}
+              params={gpsParams}
+              onParamsChange={(p) => setGpsParams((prev) => ({ ...prev, ...p }))}
+              onRefresh={loadGpsExceptions}
+              onApprove={(rec) => {
+                setSelectedRecord(rec);
+                setApproveDialogOpen(true);
+              }}
+              onReject={(rec) => {
+                setSelectedRecord(rec);
+                setRejectDialogOpen(true);
+              }}
+            />
+          )}
 
-            {activeTab === 2 && (
-              <IncompleteAttendanceTable
-                records={incompleteRecords}
-                totalCount={incompleteTotal}
-                loading={incompleteLoading}
-                params={incompleteParams}
-                onParamsChange={(p) => setIncompleteParams((prev) => ({ ...prev, ...p }))}
-                onRefresh={loadIncompleteAttendance}
-                onCorrect={(rec) => {
-                  setSelectedRecord(rec);
-                  setCorrectDialogOpen(true);
-                }}
-              />
-            )}
+          {activeTab === 2 && (
+            <IncompleteAttendanceTable
+              records={incompleteRecords}
+              totalCount={incompleteTotal}
+              loading={incompleteLoading}
+              params={incompleteParams}
+              onParamsChange={(p) => setIncompleteParams((prev) => ({ ...prev, ...p }))}
+              onRefresh={loadIncompleteAttendance}
+              onCorrect={(rec) => {
+                setSelectedRecord(rec);
+                setCorrectDialogOpen(true);
+              }}
+            />
+          )}
 
-            {activeTab === 3 && (
-              <Box textAlign="center" py={5}>
-                <IconAward size={48} color={theme.palette.primary.main} />
-                <Typography variant="h6" fontWeight={700} mt={2}>
-                  {t("ManualPointAdjustments")}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" maxWidth={500} mx="auto" mt={1}>
-                  {t("PositiveForRewardNegativeForPenalty")}
-                </Typography>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  startIcon={<IconPlus size={18} />}
-                  onClick={() => setAdjustPointsDialogOpen(true)}
-                  sx={{ borderRadius: "8px", textTransform: "none", mt: 3 }}
-                >
-                  {t("AdjustPoints")}
-                </Button>
-              </Box>
-            )}
-          </Box>
-        </Card>
-      </Stack>
+          {activeTab === 3 && (
+            <Box textAlign="center" py={5}>
+              <IconAward size={48} color={theme.palette.primary.main} />
+              <Typography variant="h6" fontWeight={700} mt={2}>
+                {t("ManualPointAdjustments")}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" maxWidth={500} mx="auto" mt={1}>
+                {t("PositiveForRewardNegativeForPenalty")}
+              </Typography>
+              <Button
+                variant="contained"
+                color="primary"
+                startIcon={<IconPlus size={18} />}
+                onClick={() => setAdjustPointsDialogOpen(true)}
+                sx={{ borderRadius: "8px", textTransform: "none", mt: 3, fontWeight: 600 }}
+              >
+                {t("AdjustPoints")}
+              </Button>
+            </Box>
+          )}
+
+          {activeTab === 4 && (
+            <LocationRequestsQueueTable
+              records={locationRequests}
+              loading={locationRequestsLoading}
+              onRefresh={loadLocationRequests}
+            />
+          )}
+
+          {activeTab === 5 && (
+            <PasswordRecoveryQueueTable
+              records={passwordRequests}
+              loading={passwordRequestsLoading}
+              onRefresh={loadPasswordRequests}
+            />
+          )}
+        </Stack>
+      </Card>
 
       {/* Dialogs */}
       <ApproveGpsDialog

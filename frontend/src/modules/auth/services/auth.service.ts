@@ -11,6 +11,7 @@ import {
   UpdateProfileRequest,
   ChangePasswordRequest,
   FirstLoginChangePasswordRequest,
+  ForgotPasswordRequestDto,
 } from "../types";
 
 
@@ -315,6 +316,63 @@ export async function firstLoginChangePassword(
       throw error;
     }
     throw normalizeApiError(error);
+  }
+}
+
+export async function submitForgotPassword(identifier: string): Promise<string> {
+  const response = await api.post<GenericBaseResponse<{ submitted: boolean; message: string }>>(
+    Router.Auth.ForgotPassword,
+    { identifier }
+  );
+  return response.data.data?.message || response.data.message || "Submitted successfully.";
+}
+
+export async function getPendingPasswordRequests(): Promise<ForgotPasswordRequestDto[]> {
+  const response = await api.get<GenericBaseResponse<ForgotPasswordRequestDto[]>>(
+    Router.Auth.PendingPasswordRequests
+  );
+  return response.data.data ?? [];
+}
+
+export async function approvePasswordRequest(id: string): Promise<void> {
+  const response = await api.post<GenericBaseResponse<boolean>>(
+    Router.Auth.ApprovePasswordRequest(id)
+  );
+  if (!response.data.succeeded) {
+    throw new Error(response.data.message || "Failed to approve password recovery request.");
+  }
+}
+
+export async function rejectPasswordRequest(id: string, reason?: string): Promise<void> {
+  const response = await api.post<GenericBaseResponse<boolean>>(
+    Router.Auth.RejectPasswordRequest(id),
+    { reason }
+  );
+  if (!response.data.succeeded) {
+    throw new Error(response.data.message || "Failed to reject password recovery request.");
+  }
+}
+
+export async function adminResetPassword(userId: string): Promise<void> {
+  const response = await api.post<GenericBaseResponse<boolean>>(
+    Router.Auth.AdminResetPassword(userId)
+  );
+  if (!response.data.succeeded) {
+    throw new Error(response.data.message || "Failed to reset password.");
+  }
+}
+
+export async function adminDirectChangePassword(
+  userId: string,
+  newPassword: string,
+  confirmPassword: string
+): Promise<void> {
+  const response = await api.post<GenericBaseResponse<boolean>>(
+    Router.Auth.AdminDirectChangePassword(userId),
+    { newPassword, confirmPassword }
+  );
+  if (!response.data.succeeded) {
+    throw new Error(response.data.message || "Failed to set password.");
   }
 }
 

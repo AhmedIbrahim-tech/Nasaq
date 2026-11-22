@@ -1,457 +1,295 @@
-'use client';
+"use client";
 
-import React, { useContext } from 'react';
-import Link from 'next/link';
-import Box from '@mui/material/Box';
-import Grid from '@mui/material/Grid';
-import Typography from '@mui/material/Typography';
-import Stack from '@mui/material/Stack';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
-import Chip from '@mui/material/Chip';
-import Button from '@mui/material/Button';
-import Avatar from '@mui/material/Avatar';
-import { useTheme, alpha } from '@mui/material/styles';
+import React, { useEffect, useState, useMemo, useContext } from "react";
+import Box from "@mui/material/Box";
+import Stack from "@mui/material/Stack";
+import { useTheme } from "@mui/material/styles";
 import {
   IconUsers,
-  IconMapPin,
-  IconUserCircle,
-  IconBell,
-  IconShieldLock,
-  IconCertificate,
-  IconLanguage,
-  IconServer,
-  IconCheck,
-  IconChevronRight,
-  IconChevronLeft,
-  IconCalendar,
-} from '@tabler/icons-react';
-import { useTranslations } from 'next-intl';
+  IconClockPlay,
+  IconCalendarTime,
+  IconAlertTriangle,
+  IconCalendarCheck,
+  IconAward,
+  IconChecklist,
+  IconClockCheck,
+} from "@tabler/icons-react";
+import { useTranslations, useLocale } from "next-intl";
 
-import PageContainer from '@/shared/components/container/PageContainer';
-import DashboardCard from '@/shared/components/cards/DashboardCard';
-import BlankCard from '@/shared/components/cards/BlankCard';
-import { useAppSelector } from '@/store/hooks';
-import { formatUserRole } from '@/shared/utils/format.utils';
-import { ProfilePhotoAvatar } from '@/shared/components/avatar';
-import { CustomizerContext } from '@/theme/customizerContext';
+import PageContainer from "@/shared/components/container/PageContainer";
+import {
+  ModernizeStatsCards,
+  ModernizeStatCardItem,
+} from "@/shared/components/tables/modernize";
+import { useAppSelector } from "@/store/hooks";
+import { CustomizerContext } from "@/theme/customizerContext";
+
+import { DashboardWelcomeHeader } from "../components/DashboardWelcomeHeader";
+import { DashboardRequiresAttention } from "../components/DashboardRequiresAttention";
+import { DashboardAdminSection } from "../components/DashboardAdminSection";
+import { DashboardEmployeeSection } from "../components/DashboardEmployeeSection";
+import { DashboardQuickActions } from "../components/DashboardQuickActions";
+
+import { adminOperationsService } from "@/modules/admin-operations/services/admin-operations.service";
+import { employeeService } from "@/modules/employees/services/employee.service";
+import { leavesService } from "@/modules/leaves/services/leaves.service";
+import { attendanceService } from "@/modules/attendance/services/attendance.service";
+import { pointsService } from "@/modules/points/services/points.service";
+
+import type { AdminOperationsSummary } from "@/modules/admin-operations/types";
+import type { EmployeesSummary } from "@/modules/employees/types";
+import type { LeaveSummary } from "@/modules/leaves/types";
+import type { CurrentAttendanceStatus } from "@/modules/attendance/types";
+import type { EmployeePointsSummary } from "@/modules/points/types";
 
 export default function DashboardView() {
   const theme = useTheme();
   const t = useTranslations();
-  const isRtl = theme.direction === 'rtl';
-  const isDark = theme.palette.mode === 'dark';
-  const { isLanguage, activeMode } = useContext(CustomizerContext);
+  const locale = useLocale();
+  const customizer = useContext(CustomizerContext);
+  const isRtl =
+    customizer?.isLanguage === "ar" ||
+    customizer?.activeDir === "rtl" ||
+    theme.direction === "rtl" ||
+    locale.startsWith("ar");
 
   const user = useAppSelector((state) => state.auth.user);
   const roles = useAppSelector((state) => state.auth.roles) || [];
 
-  const displayName = user?.fullName || user?.email?.split('@')[0] || t('User');
-  const rawRole = roles.length > 0 ? roles[0] : 'User';
-  const displayRole = formatUserRole(rawRole, t);
+  const isAdmin = roles.some((r) => r === "SuperAdmin" || r === "Admin");
+  const isSupervisor = roles.some((r) => r === "Supervisor" || r === "DepartmentHead");
+  const isEmployeeOnly = !isAdmin && !isSupervisor;
+  const displayName = user?.fullName || user?.email?.split("@")[0] || t("User");
 
-  // Formatted date string for the banner
-  const todayFormatted = new Intl.DateTimeFormat(isLanguage === 'ar' ? 'ar-SA' : 'en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  }).format(new Date());
+  const [loading, setLoading] = useState<boolean>(true);
+  const [adminSummary, setAdminSummary] = useState<AdminOperationsSummary | null>(null);
+  const [employeesSummary, setEmployeesSummary] = useState<EmployeesSummary | null>(null);
+  const [leaveSummary, setLeaveSummary] = useState<LeaveSummary | null>(null);
+  const [attendanceStatus, setAttendanceStatus] = useState<CurrentAttendanceStatus | null>(null);
+  const [pointsSummary, setPointsSummary] = useState<EmployeePointsSummary | null>(null);
 
-  // 1. Primary Operational Modules
-  const operationalModules = [
-    {
-      title: t('DashboardEmployeesTitle'),
-      description: t('DashboardEmployeesDesc'),
-      href: '/employees',
-      icon: <IconUsers size={24} stroke={1.75} />,
-      color: theme.palette.primary.main,
-      bgcolor: isDark ? alpha(theme.palette.primary.main, 0.15) : theme.palette.primary.light,
-      actionText: t('ViewAll') || 'View',
-    },
-    {
-      title: t('DashboardLocationsTitle'),
-      description: t('DashboardLocationsDesc'),
-      href: '/locations',
-      icon: <IconMapPin size={24} stroke={1.75} />,
-      color: theme.palette.info.main,
-      bgcolor: isDark ? alpha(theme.palette.info.main, 0.15) : theme.palette.info.light,
-      actionText: t('ViewAll') || 'View',
-    },
-    {
-      title: t('DashboardProfileTitle'),
-      description: t('DashboardProfileDesc'),
-      href: '/profile',
-      icon: <IconUserCircle size={24} stroke={1.75} />,
-      color: theme.palette.success.main,
-      bgcolor: isDark ? alpha(theme.palette.success.main, 0.15) : theme.palette.success.light,
-      actionText: t('Manage') || 'Manage',
-    },
-    {
-      title: t('DashboardNotificationsTitle'),
-      description: t('DashboardNotificationsDesc'),
-      href: '/notifications',
-      icon: <IconBell size={24} stroke={1.75} />,
-      color: theme.palette.warning.main,
-      bgcolor: isDark ? alpha(theme.palette.warning.main, 0.15) : theme.palette.warning.light,
-      actionText: t('ViewAll') || 'View',
-    },
-  ];
+  useEffect(() => {
+    let isMounted = true;
+    setLoading(true);
 
-  // 2. Genuine System Status & Security KPIs
-  const systemStatusKpis = [
-    {
-      title: t('DashboardKpiSecurityTitle'),
-      value: t('DashboardKpiSecurityValue'),
-      description: t('DashboardKpiSecurityDesc'),
-      icon: <IconShieldLock size={22} stroke={1.75} color={theme.palette.success.main} />,
-      color: isDark ? alpha(theme.palette.success.main, 0.15) : theme.palette.success.light,
-    },
-    {
-      title: t('DashboardKpiRoleTitle'),
-      value: displayRole,
-      description: t('DashboardKpiRoleDesc'),
-      icon: <IconCertificate size={22} stroke={1.75} color={theme.palette.primary.main} />,
-      color: isDark ? alpha(theme.palette.primary.main, 0.15) : theme.palette.primary.light,
-    },
-    {
-      title: t('DashboardKpiLocaleTitle'),
-      value: isLanguage === 'ar' ? 'العربية (RTL)' : 'English (LTR)',
-      description: isDark ? 'Dark Theme' : 'Light Theme',
-      icon: <IconLanguage size={22} stroke={1.75} color={theme.palette.info.main} />,
-      color: isDark ? alpha(theme.palette.info.main, 0.15) : theme.palette.info.light,
-    },
-    {
-      title: t('DashboardKpiRealtimeTitle'),
-      value: t('DashboardKpiRealtimeValue'),
-      description: t('DashboardKpiRealtimeDesc'),
-      icon: <IconServer size={22} stroke={1.75} color={theme.palette.warning.main} />,
-      color: isDark ? alpha(theme.palette.warning.main, 0.15) : theme.palette.warning.light,
-    },
-  ];
+    const fetchDashboardData = async () => {
+      const promises: Promise<any>[] = [];
 
-  // 3. System Guidelines
-  const platformGuidelines = [
-    t('DashboardSystemGuideline1'),
-    t('DashboardSystemGuideline2'),
-    t('DashboardSystemGuideline3'),
-    t('DashboardSystemGuideline4'),
-  ];
+      // 1. Administrative & Supervisor operations data
+      if (isAdmin || isSupervisor) {
+        promises.push(
+          adminOperationsService.getSummary().then((res) => {
+            if (isMounted) setAdminSummary(res);
+          })
+        );
+        promises.push(
+          employeeService.getSummary().then((res) => {
+            if (isMounted) setEmployeesSummary(res);
+          })
+        );
+      }
+
+      // 2. Leave Summary (Relevant for all roles)
+      promises.push(
+        leavesService.getSummary().then((res) => {
+          if (isMounted) setLeaveSummary(res);
+        })
+      );
+
+      // 3. Employee personal status & points (Safe: may fail gracefully for admin-only accounts without employee record)
+      promises.push(
+        attendanceService.getStatus().then((res) => {
+          if (isMounted) setAttendanceStatus(res);
+        })
+      );
+      promises.push(
+        pointsService.getMySummary().then((res) => {
+          if (isMounted) setPointsSummary(res);
+        })
+      );
+
+      await Promise.allSettled(promises);
+      if (isMounted) setLoading(false);
+    };
+
+    fetchDashboardData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isAdmin, isSupervisor]);
+
+  // Construct Role-Tailored KPI Cards using standard ModernizeStatsCards
+  const safeT = (key: string, arFallback: string, enFallback: string): string => {
+    try {
+      if (typeof t.has === "function" && t.has(key as any)) {
+        const val = t(key as any);
+        if (val && val !== key && !val.includes(key) && !val.startsWith("[Translation error")) {
+          // In RTL mode, prevent English fallback string from displaying if an Arabic translation exists
+          if (isRtl && /^[\x00-\x7F\s'&]+$/.test(val) && arFallback) {
+            return arFallback;
+          }
+          return val;
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return isRtl ? arFallback : enFallback;
+  };
+
+  const kpiItems = useMemo<ModernizeStatCardItem[]>(() => {
+    if (isAdmin) {
+      return [
+        {
+          label: safeT("TotalEmployees", "إجمالي الموظفين", "Total Employees"),
+          value: employeesSummary?.totalEmployees ?? 0,
+          color: "primary.main",
+          bgcolor: "primary.light",
+          icon: <IconUsers size={22} color={theme.palette.primary.main} stroke={1.75} />,
+        },
+        {
+          label: safeT("TodayAttendance", "حضور اليوم", "Today's Attendance"),
+          value: adminSummary?.todayTotalAttendance ?? 0,
+          color: "success.main",
+          bgcolor: "success.light",
+          icon: <IconClockPlay size={22} color={theme.palette.success.main} stroke={1.75} />,
+        },
+        {
+          label: safeT("PendingLeaves", "طلبات معلقة", "Pending Leaves"),
+          value: leaveSummary?.totalPending ?? 0,
+          color: "warning.main",
+          bgcolor: "warning.light",
+          icon: <IconCalendarTime size={22} color={theme.palette.warning.main} stroke={1.75} />,
+        },
+        {
+          label: safeT("ExceptionsAndIncomplete", "استثناءات وسجلات معلقة", "Exceptions & Incomplete"),
+          value:
+            (adminSummary?.pendingGpsExceptionsCount ?? 0) +
+            (adminSummary?.incompleteAttendanceCount ?? 0),
+          color: "error.main",
+          bgcolor: "error.light",
+          icon: <IconAlertTriangle size={22} color={theme.palette.error.main} stroke={1.75} />,
+        },
+      ];
+    }
+
+    if (isSupervisor) {
+      return [
+        {
+          label: safeT("TeamAttendanceToday", "حضور الفريق اليوم", "Team Attendance Today"),
+          value: adminSummary?.todayTotalAttendance ?? 0,
+          color: "success.main",
+          bgcolor: "success.light",
+          icon: <IconClockPlay size={22} color={theme.palette.success.main} stroke={1.75} />,
+        },
+        {
+          label: safeT("PendingApprovals", "طلبات بانتظار الاعتماد", "Pending Approvals"),
+          value: leaveSummary?.totalPending ?? 0,
+          color: "warning.main",
+          bgcolor: "warning.light",
+          icon: <IconChecklist size={22} color={theme.palette.warning.main} stroke={1.75} />,
+        },
+        {
+          label: safeT("ExceptionsQueue", "طابور الاستثناءات", "Exceptions Queue"),
+          value: adminSummary?.pendingGpsExceptionsCount ?? 0,
+          color: "error.main",
+          bgcolor: "error.light",
+          icon: <IconAlertTriangle size={22} color={theme.palette.error.main} stroke={1.75} />,
+        },
+        {
+          label: safeT("ActiveTeamMembers", "أعضاء الفريق النشطين", "Active Team Members"),
+          value: employeesSummary?.activeEmployees ?? employeesSummary?.totalEmployees ?? 0,
+          color: "primary.main",
+          bgcolor: "primary.light",
+          icon: <IconUsers size={22} color={theme.palette.primary.main} stroke={1.75} />,
+        },
+      ];
+    }
+
+    // Default Employee KPI Items
+    const isCheckedIn = Boolean(attendanceStatus?.isCheckedIn);
+    return [
+      {
+        label: safeT("TodayStatus", "حالة اليوم", "Today's Status"),
+        value: isCheckedIn ? safeT("Present", "حاضر", "Present") : safeT("NotCheckedIn", "لم يسجل", "Not Checked In"),
+        color: isCheckedIn ? "success.main" : "warning.main",
+        bgcolor: isCheckedIn ? "success.light" : "warning.light",
+        icon: <IconClockCheck size={22} color={isCheckedIn ? theme.palette.success.main : theme.palette.warning.main} stroke={1.75} />,
+      },
+      {
+        label: safeT("TotalPoints", "رصيد النقاط", "Total Points"),
+        value: pointsSummary?.totalFinalizedPoints ?? 0,
+        color: "warning.main",
+        bgcolor: "warning.light",
+        icon: <IconAward size={22} color={theme.palette.warning.main} stroke={1.75} />,
+      },
+      {
+        label: safeT("MyPendingLeaves", "طلبات إجازاتي المعلقة", "My Pending Leaves"),
+        value: leaveSummary?.myPendingCount ?? 0,
+        color: "info.main",
+        bgcolor: "info.light",
+        icon: <IconCalendarTime size={22} color={theme.palette.info.main} stroke={1.75} />,
+      },
+      {
+        label: safeT("ApprovedLeavesThisYear", "إجازات معتمدة هذا العام", "Approved Leaves This Year"),
+        value: leaveSummary?.myApprovedDaysThisYear ?? 0,
+        color: "secondary.main",
+        bgcolor: "secondary.light",
+        icon: <IconCalendarCheck size={22} color={theme.palette.secondary.main} stroke={1.75} />,
+      },
+    ];
+  }, [isAdmin, isSupervisor, adminSummary, employeesSummary, leaveSummary, attendanceStatus, pointsSummary, t, theme, isRtl]);
 
   return (
     <PageContainer
-      title={`${t('DashboardTitle')} — NASAQ`}
-      description={t('DashboardSubtitle')}
+      title={`${t("DashboardTitle")} — NASAQ`}
+      description={t("DashboardSubtitle")}
     >
-      <Box sx={{ mt: 1 }}>
-        {/* ======================================================== */}
-        {/* 1. Welcome Banner Card                                    */}
-        {/* ======================================================== */}
-        <Card
-          elevation={0}
-          sx={{
-            p: { xs: 2.5, sm: 3 },
-            mb: 3,
-            backgroundColor: isDark ? 'background.paper' : 'primary.light',
-            border: `1px solid ${theme.palette.divider}`,
-            borderRadius: 2,
-          }}
-        >
-          <Stack
-            direction={{ xs: 'column', md: 'row' }}
-            justifyContent="space-between"
-            alignItems={{ xs: 'flex-start', md: 'center' }}
-            spacing={2.5}
-          >
-            <Stack direction="row" spacing={2} alignItems="center">
-              <ProfilePhotoAvatar
-                photoId={user?.profilePhoto}
-                name={displayName}
-                size={60}
-                sx={{
-                  boxShadow: `0 3px 10px ${alpha(theme.palette.primary.main, 0.3)}`,
-                  border: `3px solid ${theme.palette.background.paper}`,
-                }}
-              />
-              <Box sx={{ minWidth: 0 }}>
-                <Typography variant="h4" fontWeight={700} sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' }, mb: 0.5 }}>
-                  {t('DashboardWelcomeBack', { name: displayName })}
-                </Typography>
-                <Typography variant="body2" color="textSecondary" sx={{ mb: 1, maxWidth: 680 }}>
-                  {t('DashboardWelcomeDesc')}
-                </Typography>
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <IconCalendar size={15} stroke={1.5} color={theme.palette.text.secondary} />
-                  <Typography variant="caption" color="textSecondary" fontWeight={500}>
-                    {todayFormatted}
-                  </Typography>
-                </Stack>
-              </Box>
-            </Stack>
+      <Stack spacing={3} sx={{ mt: 1 }}>
+        {/* 1. Compact Personalized Welcome Header */}
+        <DashboardWelcomeHeader
+          displayName={displayName}
+          photoId={user?.profilePhoto}
+          roles={roles}
+          isAdmin={isAdmin}
+          isSupervisor={isSupervisor}
+        />
 
-            <Stack
-              direction="row"
-              spacing={1}
-              flexWrap="wrap"
-              alignItems="center"
-              sx={{ alignSelf: { xs: 'flex-start', md: 'center' } }}
-            >
-              {roles.map((role) => (
-                <Chip
-                  key={role}
-                  label={formatUserRole(role, t)}
-                  color="primary"
-                  variant="outlined"
-                  size="small"
-                  sx={{
-                    fontWeight: 600,
-                    bgcolor: isDark ? alpha(theme.palette.primary.main, 0.15) : 'background.paper',
-                  }}
-                />
-              ))}
-            </Stack>
-          </Stack>
-        </Card>
+        {/* 2. Role-Appropriate Operational KPI Summary Cards */}
+        <ModernizeStatsCards items={kpiItems} loading={loading} />
 
-        {/* ======================================================== */}
-        {/* 2. Primary Operational Feature Modules                    */}
-        {/* ======================================================== */}
-        <Typography variant="h5" fontWeight={700} sx={{ mb: 2 }}>
-          {t('DashboardQuickNavigation')}
-        </Typography>
+        {/* 3. Actionable "Requires Attention" Section */}
+        <DashboardRequiresAttention
+          isAdmin={isAdmin}
+          isSupervisor={isSupervisor}
+          adminSummary={adminSummary}
+          leaveSummary={leaveSummary}
+          attendanceStatus={attendanceStatus}
+          loading={loading}
+        />
 
-        <Grid container spacing={3} sx={{ mb: 3 }}>
-          {operationalModules.map((module, idx) => (
-            <Grid key={idx} size={{ xs: 12, sm: 6, md: 3 }}>
-              <BlankCard
-                sx={{
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  transition: 'transform 0.15s ease, box-shadow 0.15s ease',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: (theme: any) =>
-                      isDark
-                        ? `0 6px 20px ${alpha(theme.palette.common.black, 0.4)}`
-                        : theme.shadows[10],
-                  },
-                }}
-              >
-                <CardContent sx={{ p: 2.5, flex: 1, display: 'flex', flexDirection: 'column' }}>
-                  <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-                    <Avatar
-                      sx={{
-                        bgcolor: module.bgcolor,
-                        color: module.color,
-                        width: 48,
-                        height: 48,
-                        borderRadius: '12px',
-                      }}
-                    >
-                      {module.icon}
-                    </Avatar>
-                  </Stack>
+        {/* 4. Role-Tailored Operational Breakdown */}
+        {(isAdmin || isSupervisor) && (
+          <DashboardAdminSection
+            adminSummary={adminSummary}
+            employeesSummary={employeesSummary}
+            loading={loading}
+          />
+        )}
 
-                  <Typography variant="h6" fontWeight={700} sx={{ mb: 1 }}>
-                    {module.title}
-                  </Typography>
+        {/* Employee Section: Shift & Location + Points Ledger */}
+        {(isEmployeeOnly || (!isAdmin && !isSupervisor)) && (
+          <DashboardEmployeeSection
+            attendanceStatus={attendanceStatus}
+            pointsSummary={pointsSummary}
+            loading={loading}
+          />
+        )}
 
-                  <Typography
-                    variant="body2"
-                    color="textSecondary"
-                    sx={{
-                      mb: 2.5,
-                      flex: 1,
-                      lineHeight: 1.5,
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    {module.description}
-                  </Typography>
-
-                  <Button
-                    component={Link}
-                    href={module.href}
-                    variant="outlined"
-                    size="small"
-                    fullWidth
-                    endIcon={isRtl ? <IconChevronLeft size={16} /> : <IconChevronRight size={16} />}
-                    sx={{
-                      justifyContent: 'space-between',
-                      borderRadius: '8px',
-                      fontWeight: 600,
-                      borderColor: theme.palette.divider,
-                      color: 'text.primary',
-                      '&:hover': {
-                        bgcolor: 'primary.light',
-                        color: 'primary.main',
-                        borderColor: 'primary.main',
-                      },
-                    }}
-                  >
-                    {module.title}
-                  </Button>
-                </CardContent>
-              </BlankCard>
-            </Grid>
-          ))}
-        </Grid>
-
-        {/* ======================================================== */}
-        {/* 3. System Status & Security KPIs                          */}
-        {/* ======================================================== */}
-        <Grid container spacing={3} sx={{ mb: 3 }}>
-          {systemStatusKpis.map((kpi, idx) => (
-            <Grid key={idx} size={{ xs: 12, sm: 6, md: 3 }}>
-              <DashboardCard>
-                <Stack spacing={1.25}>
-                  <Stack direction="row" justifyContent="space-between" alignItems="center">
-                    <Typography variant="subtitle2" color="textSecondary" fontWeight={600}>
-                      {kpi.title}
-                    </Typography>
-                    <Avatar sx={{ bgcolor: kpi.color, width: 38, height: 38, borderRadius: '10px' }}>
-                      {kpi.icon}
-                    </Avatar>
-                  </Stack>
-                  <Typography variant="h5" fontWeight={700}>
-                    {kpi.value}
-                  </Typography>
-                  <Typography variant="caption" color="textSecondary" sx={{ lineHeight: 1.4 }}>
-                    {kpi.description}
-                  </Typography>
-                </Stack>
-              </DashboardCard>
-            </Grid>
-          ))}
-        </Grid>
-
-        {/* ======================================================== */}
-        {/* 4. Operational Guidelines & Quick Navigation Details     */}
-        {/* ======================================================== */}
-        <Grid container spacing={3}>
-          <Grid size={{ xs: 12, md: 6 }}>
-            <DashboardCard title={t('DashboardSystemGuidelines')}>
-              <Stack spacing={2} sx={{ mt: 1 }}>
-                <Typography variant="body2" color="textSecondary">
-                  {t('DashboardWelcomeDesc')}
-                </Typography>
-                <Stack spacing={1.5}>
-                  {platformGuidelines.map((guideline, i) => (
-                    <Stack key={i} direction="row" spacing={1.5} alignItems="flex-start">
-                      <Box
-                        sx={{
-                          width: 20,
-                          height: 20,
-                          borderRadius: '50%',
-                          bgcolor: isDark ? alpha(theme.palette.success.main, 0.2) : theme.palette.success.light,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          flexShrink: 0,
-                          mt: 0.2,
-                        }}
-                      >
-                        <IconCheck size={14} color={theme.palette.success.main} stroke={2.5} />
-                      </Box>
-                      <Typography variant="body2" sx={{ lineHeight: 1.5 }}>
-                        {guideline}
-                      </Typography>
-                    </Stack>
-                  ))}
-                </Stack>
-              </Stack>
-            </DashboardCard>
-          </Grid>
-
-          <Grid size={{ xs: 12, md: 6 }}>
-            <DashboardCard title={t('DashboardQuickNavigation')}>
-              <Stack spacing={2.5} sx={{ mt: 1 }}>
-                <Typography variant="body2" color="textSecondary">
-                  {t('DashboardQuickNavigationDesc')}
-                </Typography>
-                <Grid container spacing={2}>
-                  <Grid size={{ xs: 12, sm: 6 }}>
-                    <Button
-                      component={Link}
-                      href="/employees"
-                      variant="outlined"
-                      fullWidth
-                      startIcon={<IconUsers size={18} />}
-                      sx={{
-                        py: 1.25,
-                        justifyContent: 'flex-start',
-                        borderRadius: '8px',
-                        fontWeight: 600,
-                        textAlign: 'start',
-                      }}
-                    >
-                      {t('DashboardEmployeesTitle')}
-                    </Button>
-                  </Grid>
-                  <Grid size={{ xs: 12, sm: 6 }}>
-                    <Button
-                      component={Link}
-                      href="/locations"
-                      variant="outlined"
-                      fullWidth
-                      startIcon={<IconMapPin size={18} />}
-                      sx={{
-                        py: 1.25,
-                        justifyContent: 'flex-start',
-                        borderRadius: '8px',
-                        fontWeight: 600,
-                        textAlign: 'start',
-                      }}
-                    >
-                      {t('DashboardLocationsTitle')}
-                    </Button>
-                  </Grid>
-                  <Grid size={{ xs: 12, sm: 6 }}>
-                    <Button
-                      component={Link}
-                      href="/profile"
-                      variant="outlined"
-                      fullWidth
-                      startIcon={<IconUserCircle size={18} />}
-                      sx={{
-                        py: 1.25,
-                        justifyContent: 'flex-start',
-                        borderRadius: '8px',
-                        fontWeight: 600,
-                        textAlign: 'start',
-                      }}
-                    >
-                      {t('DashboardProfileTitle')}
-                    </Button>
-                  </Grid>
-                  <Grid size={{ xs: 12, sm: 6 }}>
-                    <Button
-                      component={Link}
-                      href="/notifications"
-                      variant="outlined"
-                      fullWidth
-                      startIcon={<IconBell size={18} />}
-                      sx={{
-                        py: 1.25,
-                        justifyContent: 'flex-start',
-                        borderRadius: '8px',
-                        fontWeight: 600,
-                        textAlign: 'start',
-                      }}
-                    >
-                      {t('DashboardNotificationsTitle')}
-                    </Button>
-                  </Grid>
-                </Grid>
-              </Stack>
-            </DashboardCard>
-          </Grid>
-        </Grid>
-      </Box>
+        {/* 5. Contextual Quick Actions */}
+        <DashboardQuickActions isAdmin={isAdmin} isSupervisor={isSupervisor} />
+      </Stack>
     </PageContainer>
   );
 }

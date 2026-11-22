@@ -71,6 +71,28 @@ export function formatLocationsCount(count: number | null | undefined, isRtl: bo
 }
 
 /**
+ * Formats days count with full Arabic and English pluralization.
+ * Examples (AR): 0 يوم / يوم واحد / يومان / 5 أيام / 15 يوماً
+ * Examples (EN): 0 days / 1 day / 5 days
+ */
+export function formatDaysCount(count: number | null | undefined, isRtl: boolean): string {
+  const safeCount = typeof count === 'number' && !isNaN(count) ? count : 0;
+
+  if (isRtl) {
+    return formatArabicPlural(safeCount, {
+      zero: '0 يوم',
+      one: 'يوم واحد',
+      two: 'يومان',
+      few: '{count} أيام',
+      many: '{count} يوماً',
+    });
+  }
+
+  if (safeCount === 1) return '1 day';
+  return `${safeCount} days`;
+}
+
+/**
  * Formats selected items count for table toolbars and bulk selection badges.
  */
 export function formatSelectedCount(count: number, isRtl: boolean): string {
@@ -156,17 +178,14 @@ export function formatDateOnly(dateString: string | null | undefined, isRtl?: bo
   const match = String(dateString).match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (match) {
     const [, y, m, d] = match;
-    const utcDate = new Date(Date.UTC(Number(y), Number(m) - 1, Number(d)));
-    return utcDate.toLocaleDateString(isRtl ? 'ar-SA-u-nu-latn' : 'en-US', {
-      timeZone: 'UTC',
-      year: 'numeric',
-      month: 'numeric',
-      day: 'numeric',
-    });
+    return isRtl ? `${y}/${m}/${d}` : `${y}-${m}-${d}`;
   }
-  const d = new Date(dateString);
-  if (isNaN(d.getTime())) return '-';
-  return d.toLocaleDateString(isRtl ? 'ar-SA-u-nu-latn' : 'en-US');
+  const dt = new Date(dateString);
+  if (isNaN(dt.getTime())) return '-';
+  const y = dt.getUTCFullYear();
+  const m = String(dt.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(dt.getUTCDate()).padStart(2, '0');
+  return isRtl ? `${y}/${m}/${d}` : `${y}-${m}-${d}`;
 }
 
 /**
@@ -187,20 +206,27 @@ export function toDateInputValue(dateString: string | null | undefined): string 
 /**
  * Formats a timestamp (e.g. CreatedDate) in a locale-aware manner,
  * ensuring Arabic time indicators (ص / م) are used instead of raw English AM / PM.
+ * Enclosed with LRM (\u200e) marks to completely isolate bidirectional numeric text runs.
  */
 export function formatDateTime(dateString: string | null | undefined, isRtl?: boolean): string {
   if (!dateString) return '-';
   const d = new Date(dateString);
   if (isNaN(d.getTime())) return '-';
 
-  return new Intl.DateTimeFormat(isRtl ? 'ar-SA-u-nu-latn' : 'en-US', {
-    year: 'numeric',
-    month: 'numeric',
-    day: 'numeric',
+  const timeFormatted = new Intl.DateTimeFormat(isRtl ? 'ar-SA-u-nu-latn' : 'en-US', {
     hour: 'numeric',
     minute: '2-digit',
     hour12: true,
-  }).format(d);
+  }).format(d).replace(/[\u200e\u200f]/g, '');
+
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+
+  if (isRtl) {
+    return `${y}/${m}/${day}، ${timeFormatted}`;
+  }
+  return `${y}-${m}-${day} ${timeFormatted}`;
 }
 
 /**
@@ -219,11 +245,12 @@ export function formatTimeOnly(dateString: string | null | undefined, isRtl?: bo
   const d = new Date(dateString);
   if (isNaN(d.getTime())) return '-';
 
-  return new Intl.DateTimeFormat(isRtl ? 'ar-SA-u-nu-latn' : 'en-US', {
+  const formatted = new Intl.DateTimeFormat(isRtl ? 'ar-SA-u-nu-latn' : 'en-US', {
     hour: '2-digit',
     minute: '2-digit',
     hour12: true,
   }).format(d);
+  return formatted.replace(/[\u200e\u200f]/g, '');
 }
 
 /**

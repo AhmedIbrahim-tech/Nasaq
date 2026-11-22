@@ -66,7 +66,7 @@ export const GpsExceptionQueueTable: React.FC<GpsExceptionQueueTableProps> = ({
       id: "checkInTime",
       header: t("OriginalCheckInTime"),
       cell: (row) => (
-        <Typography variant="body2" sx={{ direction: "ltr", display: "inline-block" }}>
+        <Typography variant="body2" color="text.secondary">
           {formatDateTime(row.checkInTimeUtc, isRtl)}
         </Typography>
       ),

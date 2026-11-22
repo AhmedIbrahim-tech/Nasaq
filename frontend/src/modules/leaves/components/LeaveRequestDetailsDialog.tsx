@@ -24,6 +24,10 @@ import {
 import { useTranslations, useLocale } from "next-intl";
 import { formatDateTime, formatDateOnly } from "@/shared/utils/i18nFormatters";
 import { Router } from "@/lib/api/router";
+import {
+  getLocalizedEmployeeName,
+  getLocalizedLeaveTypeName,
+} from "@/shared/utils/localization";
 import type { LeaveRequest, LeaveRequestStatus } from "../types";
 
 interface LeaveRequestDetailsDialogProps {
@@ -40,6 +44,7 @@ export const LeaveRequestDetailsDialog: React.FC<LeaveRequestDetailsDialogProps>
   const t = useTranslations();
   const locale = useLocale();
   const isAr = locale.startsWith("ar");
+  const isRtl = isAr;
 
   if (!leaveRequest) return null;
 
@@ -104,10 +109,22 @@ export const LeaveRequestDetailsDialog: React.FC<LeaveRequestDetailsDialogProps>
               {t("Employee")}
             </Typography>
             <Typography variant="subtitle1" fontWeight={600}>
-              {leaveRequest.employeeName}
+              {getLocalizedEmployeeName(
+                {
+                  employeeName: leaveRequest.employeeName,
+                  employeeNameAr: leaveRequest.employeeNameAr,
+                },
+                isAr,
+                leaveRequest.employeeName
+              )}
             </Typography>
-            <Typography variant="body2" color="text.secondary" dir="ltr">
-              {leaveRequest.employeeCode} {leaveRequest.department ? `• ${leaveRequest.department}` : ""}
+            <Typography variant="body2" color="text.secondary">
+              <span style={{ direction: "ltr", unicodeBidi: "isolate", display: "inline-block" }}>
+                {leaveRequest.employeeCode}
+              </span>{" "}
+              {(isAr ? leaveRequest.departmentAr || leaveRequest.department : leaveRequest.department)
+                ? `• ${isAr ? leaveRequest.departmentAr || leaveRequest.department : leaveRequest.department}`
+                : ""}
             </Typography>
           </Grid>
 
@@ -117,7 +134,14 @@ export const LeaveRequestDetailsDialog: React.FC<LeaveRequestDetailsDialogProps>
             </Typography>
             <Stack direction="row" alignItems="center" spacing={1} sx={{ mt: 0.5 }}>
               <Typography variant="subtitle1" fontWeight={600}>
-                {isAr ? leaveRequest.leaveTypeNameAr : leaveRequest.leaveTypeName}
+                {getLocalizedLeaveTypeName(
+                  {
+                    leaveTypeName: leaveRequest.leaveTypeName,
+                    leaveTypeNameAr: leaveRequest.leaveTypeNameAr,
+                  },
+                  isAr,
+                  isAr ? "إجازة" : "Leave"
+                )}
               </Typography>
               <Chip
                 label={leaveRequest.isPaid ? t("PaidLeave") : t("Unpaid")}
@@ -137,8 +161,8 @@ export const LeaveRequestDetailsDialog: React.FC<LeaveRequestDetailsDialogProps>
             <Typography variant="caption" color="text.secondary">
               {t("StartDate")}
             </Typography>
-            <Typography variant="body1" fontWeight={500} dir="ltr">
-              {leaveRequest.startDate}
+            <Typography variant="body1" fontWeight={500}>
+              {leaveRequest.startDate ? formatDateOnly(leaveRequest.startDate, isRtl) : "-"}
             </Typography>
           </Grid>
 
@@ -146,8 +170,8 @@ export const LeaveRequestDetailsDialog: React.FC<LeaveRequestDetailsDialogProps>
             <Typography variant="caption" color="text.secondary">
               {t("EndDate")}
             </Typography>
-            <Typography variant="body1" fontWeight={500} dir="ltr">
-              {leaveRequest.endDate}
+            <Typography variant="body1" fontWeight={500}>
+              {leaveRequest.endDate ? formatDateOnly(leaveRequest.endDate, isRtl) : "-"}
             </Typography>
           </Grid>
 

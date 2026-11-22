@@ -75,58 +75,17 @@ public class CheckOutHandler : IRequestHandler<CheckOutCommand, GenericBaseRespo
 
         var utcNow = DateTime.UtcNow;
 
-        // 3. Resolve location for geofence validation
-        var location = record.WorkLocation ?? employee.WorkLocation;
-        if (location == null && employee.WorkLocationId.HasValue)
-        {
-            location = await _context.WorkLocations.FirstOrDefaultAsync(l => l.Id == employee.WorkLocationId.Value, cancellationToken);
-        }
+        // 3. Evaluate geofence compliance via Dual-Location Matrix (Approved Personal Location OR Any Active Company Location)
+        var geofenceEval = await _geofenceService.EvaluateAttendanceCoordinatesAsync(
+            request.Latitude,
+            request.Longitude,
+            request.AccuracyMeters,
+            employee.Id,
+            cancellationToken);
 
-        var checkOutStatus = VerificationStatus.Verified;
-        string? failureReason = null;
-        double? measuredDistance = null;
-
-        if (location != null && location.IsActive)
-        {
-            var hasCoords = _geofenceService.IsValidCoordinate(request.Latitude, request.Longitude);
-            if (hasCoords)
-            {
-                var isWithin = _geofenceService.IsWithinGeofence(
-                    request.Latitude!.Value,
-                    request.Longitude!.Value,
-                    location.Latitude,
-                    location.Longitude,
-                    location.RadiusMeters,
-                    out var dist);
-
-                measuredDistance = Math.Round(dist, 1);
-
-                if (request.AccuracyMeters.HasValue && request.AccuracyMeters.Value > location.AccuracyThresholdMeters)
-                {
-                    checkOutStatus = VerificationStatus.PendingReview;
-                    failureReason = $"low_accuracy: device reported {request.AccuracyMeters.Value}m, threshold is {location.AccuracyThresholdMeters}m";
-                }
-                else if (!isWithin)
-                {
-                    checkOutStatus = VerificationStatus.PendingReview;
-                    failureReason = $"outside_geofence_checkout: {measuredDistance}m from worksite (radius: {location.RadiusMeters}m)";
-                }
-                else
-                {
-                    checkOutStatus = VerificationStatus.Verified;
-                }
-            }
-            else
-            {
-                checkOutStatus = VerificationStatus.PendingReview;
-                failureReason = "gps_unavailable_checkout: departure coordinates were not provided or invalid";
-            }
-        }
-        else
-        {
-            checkOutStatus = VerificationStatus.PendingReview;
-            failureReason = location == null ? "unassigned_worksite: employee has no assigned location" : "inactive_worksite: assigned location is currently inactive";
-        }
+        var checkOutStatus = geofenceEval.Status;
+        var failureReason = geofenceEval.FailureReason;
+        var measuredDistance = geofenceEval.MeasuredDistanceMeters;
 
         // 4. Update the Attendance Record
         record.CheckOutTimeUtc = utcNow;

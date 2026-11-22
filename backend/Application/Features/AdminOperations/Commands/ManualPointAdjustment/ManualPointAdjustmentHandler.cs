@@ -59,7 +59,7 @@ public class ManualPointAdjustmentHandler : IRequestHandler<ManualPointAdjustmen
             SourceEventType = "AdminManualAdjustment",
             Date = today,
             TimestampUtc = DateTime.UtcNow,
-            Reason = $"Manual adjustment by {reviewerName}: {request.Reason.Trim()}",
+            Reason = request.Reason.Trim(),
             Created_Utc = DateTime.UtcNow,
             Created_By = _currentUser.UserId
         };

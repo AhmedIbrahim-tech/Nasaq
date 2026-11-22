@@ -12,6 +12,12 @@ export const Router = {
     Profile: `${PREFIX}/auth/me/profile`,
     ChangePassword: `${PREFIX}/auth/me/change-password`,
     FirstLoginChangePassword: `${PREFIX}/auth/first-login-change-password`,
+    ForgotPassword: `${PREFIX}/auth/forgot-password`,
+    PendingPasswordRequests: `${PREFIX}/auth/password-requests`,
+    ApprovePasswordRequest: (id: string) => `${PREFIX}/auth/password-requests/${encodeURIComponent(id)}/approve`,
+    RejectPasswordRequest: (id: string) => `${PREFIX}/auth/password-requests/${encodeURIComponent(id)}/reject`,
+    AdminResetPassword: (userId: string) => `${PREFIX}/auth/users/${encodeURIComponent(userId)}/reset-password`,
+    AdminDirectChangePassword: (userId: string) => `${PREFIX}/auth/users/${encodeURIComponent(userId)}/direct-change-password`,
   },
 
   Notifications: {
@@ -57,6 +63,17 @@ export const Router = {
     ToggleStatus: (id: string) => `${PREFIX}/locations/${encodeURIComponent(id)}/status`,
     Delete: (id: string) => `${PREFIX}/locations/${encodeURIComponent(id)}`,
     BulkDelete: `${PREFIX}/locations/bulk-delete`,
+    GlobalRadius: `${PREFIX}/locations/global-radius`,
+    UpdateCoordinates: (id: string) => `${PREFIX}/locations/${encodeURIComponent(id)}/coordinates`,
+    MyPersonalLocation: `${PREFIX}/locations/my-personal`,
+    RegisterPersonalLocation: `${PREFIX}/locations/register-personal`,
+    RequestLocationChange: `${PREFIX}/locations/request-change`,
+    CancelLocationRequest: (id: string) => `${PREFIX}/locations/requests/${encodeURIComponent(id)}/cancel`,
+    PendingLocationRequests: `${PREFIX}/locations/requests/pending`,
+    ApproveLocationRequest: (id: string) => `${PREFIX}/locations/requests/${encodeURIComponent(id)}/approve`,
+    RejectLocationRequest: (id: string) => `${PREFIX}/locations/requests/${encodeURIComponent(id)}/reject`,
+    AdminChangeEmployeeLocation: (employeeId: string) => `${PREFIX}/locations/employees/${encodeURIComponent(employeeId)}/change-location`,
+    ResetEmployeeLocation: (employeeId: string) => `${PREFIX}/locations/employees/${encodeURIComponent(employeeId)}/reset-location`,
   },
 
   Shifts: {

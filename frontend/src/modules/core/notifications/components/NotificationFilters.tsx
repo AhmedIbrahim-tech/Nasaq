@@ -185,7 +185,7 @@ export const NotificationFilters: React.FC<NotificationFiltersProps> = ({
         </Stack>
 
         {/* Read/Unread Toggle & Action Buttons (End Side) */}
-        <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
+        <Box sx={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}>
           {/* Modernize Styled Segmented Toggle */}
           <ToggleButtonGroup
             size="small"
@@ -323,7 +323,7 @@ export const NotificationFilters: React.FC<NotificationFiltersProps> = ({
           >
             {t("Refresh")}
           </Button>
-        </Stack>
+        </Box>
       </Stack>
     </Box>
   );

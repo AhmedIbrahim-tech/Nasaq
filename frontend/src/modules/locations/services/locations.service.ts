@@ -8,6 +8,10 @@ import type {
   UpdateLocationRequest,
   ToggleLocationStatusRequest,
   LocationsSummary,
+  GlobalGeofenceRadius,
+  MyLocationStatus,
+  EmployeeLocationRequest,
+  EmployeePersonalLocation,
 } from "../types";
 
 /**
@@ -113,5 +117,136 @@ export const locationsService = {
       throw new Error(response.data.message || "Failed to fetch locations summary.");
     }
     return response.data.data;
+  },
+
+  async getGlobalRadius(): Promise<GlobalGeofenceRadius> {
+    const response = await api.get<GenericBaseResponse<GlobalGeofenceRadius>>(
+      Router.Locations.GlobalRadius
+    );
+    return response.data.data ?? { radiusMeters: 50.0 };
+  },
+
+  async updateGlobalRadius(radiusMeters: number): Promise<GlobalGeofenceRadius> {
+    const response = await api.put<GenericBaseResponse<GlobalGeofenceRadius>>(
+      Router.Locations.GlobalRadius,
+      { radiusMeters }
+    );
+    if (!response.data.succeeded) {
+      throw new Error(response.data.message || "Failed to update global radius.");
+    }
+    return response.data.data!;
+  },
+
+  async updateCoordinates(id: string, latitude: number, longitude: number): Promise<void> {
+    const response = await api.put<GenericBaseResponse<boolean>>(
+      Router.Locations.UpdateCoordinates(id),
+      { latitude, longitude }
+    );
+    if (!response.data.succeeded) {
+      throw new Error(response.data.message || "Failed to update coordinates.");
+    }
+  },
+
+  async getMyPersonalLocation(): Promise<MyLocationStatus> {
+    const response = await api.get<GenericBaseResponse<MyLocationStatus>>(
+      Router.Locations.MyPersonalLocation
+    );
+    return response.data.data ?? { hasApprovedLocation: false, hasPendingRequest: false };
+  },
+
+  async registerPersonalLocation(
+    latitude: number,
+    longitude: number,
+    accuracyMeters?: number,
+    addressDescription?: string
+  ): Promise<MyLocationStatus> {
+    const response = await api.post<GenericBaseResponse<MyLocationStatus>>(
+      Router.Locations.RegisterPersonalLocation,
+      { latitude, longitude, accuracyMeters, addressDescription }
+    );
+    if (!response.data.succeeded) {
+      throw new Error(response.data.message || "Failed to register personal location.");
+    }
+    return response.data.data!;
+  },
+
+  async requestLocationChange(
+    latitude: number,
+    longitude: number,
+    accuracyMeters?: number,
+    addressDescription?: string
+  ): Promise<EmployeeLocationRequest> {
+    const response = await api.post<GenericBaseResponse<EmployeeLocationRequest>>(
+      Router.Locations.RequestLocationChange,
+      { latitude, longitude, accuracyMeters, addressDescription }
+    );
+    if (!response.data.succeeded) {
+      throw new Error(response.data.message || "Failed to submit location change request.");
+    }
+    return response.data.data!;
+  },
+
+  async cancelLocationRequest(id: string): Promise<void> {
+    const response = await api.post<GenericBaseResponse<boolean>>(
+      Router.Locations.CancelLocationRequest(id)
+    );
+    if (!response.data.succeeded) {
+      throw new Error(response.data.message || "Failed to cancel location request.");
+    }
+  },
+
+  async getPendingLocationRequests(): Promise<EmployeeLocationRequest[]> {
+    const response = await api.get<GenericBaseResponse<EmployeeLocationRequest[]>>(
+      Router.Locations.PendingLocationRequests
+    );
+    return response.data.data ?? [];
+  },
+
+  async approveLocationRequest(id: string, adminNotes?: string): Promise<void> {
+    const response = await api.post<GenericBaseResponse<boolean>>(
+      Router.Locations.ApproveLocationRequest(id),
+      { adminNotes }
+    );
+    if (!response.data.succeeded) {
+      throw new Error(response.data.message || "Failed to approve location request.");
+    }
+  },
+
+  async rejectLocationRequest(id: string, rejectionReason: string): Promise<void> {
+    const response = await api.post<GenericBaseResponse<boolean>>(
+      Router.Locations.RejectLocationRequest(id),
+      { rejectionReason }
+    );
+    if (!response.data.succeeded) {
+      throw new Error(response.data.message || "Failed to reject location request.");
+    }
+  },
+
+  async adminChangeEmployeeLocation(
+    employeeId: string,
+    latitude: number,
+    longitude: number,
+    accuracyMeters?: number,
+    addressDescription?: string,
+    adminNotes?: string
+  ): Promise<EmployeePersonalLocation> {
+    const response = await api.post<GenericBaseResponse<EmployeePersonalLocation>>(
+      Router.Locations.AdminChangeEmployeeLocation(employeeId),
+      { latitude, longitude, accuracyMeters, addressDescription, adminNotes }
+    );
+    if (!response.data.succeeded) {
+      throw new Error(response.data.message || "Failed to directly update employee location.");
+    }
+    return response.data.data!;
+  },
+
+  async resetEmployeeLocation(employeeId: string, reason?: string): Promise<void> {
+    const response = await api.post<GenericBaseResponse<boolean>>(
+      Router.Locations.ResetEmployeeLocation(employeeId),
+      { reason }
+    );
+    if (!response.data.succeeded) {
+      throw new Error(response.data.message || "Failed to reset employee location.");
+    }
   },
 };

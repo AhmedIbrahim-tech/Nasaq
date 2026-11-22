@@ -15,7 +15,8 @@ import Typography from "@mui/material/Typography";
 import CircularProgress from "@mui/material/CircularProgress";
 import Alert from "@mui/material/Alert";
 import Stack from "@mui/material/Stack";
-import { IconMapPin, IconInfoCircle } from "@tabler/icons-react";
+import Chip from "@mui/material/Chip";
+import { IconMapPin, IconInfoCircle, IconCurrentLocation } from "@tabler/icons-react";
 import { useTranslations } from "next-intl";
 import DialogCloseButton from "@/shared/components/buttons/DialogCloseButton";
 import type { WorkLocation, CreateLocationRequest, UpdateLocationRequest } from "../types";
@@ -56,6 +57,44 @@ export const LocationFormDialog: React.FC<LocationFormDialogProps> = ({
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isCapturingGps, setIsCapturingGps] = useState(false);
+  const [capturedAccuracy, setCapturedAccuracy] = useState<number | null>(null);
+
+  const handleCaptureCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setErrors((prev) => ({ ...prev, latitude: "Geolocation is not supported by your browser." }));
+      return;
+    }
+
+    setIsCapturingGps(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setIsCapturingGps(false);
+        setFormData((prev) => ({
+          ...prev,
+          latitude: pos.coords.latitude.toFixed(6),
+          longitude: pos.coords.longitude.toFixed(6),
+        }));
+        setCapturedAccuracy(pos.coords.accuracy);
+        setErrors((prev) => {
+          const updated = { ...prev };
+          delete updated.latitude;
+          delete updated.longitude;
+          return updated;
+        });
+      },
+      (err) => {
+        setIsCapturingGps(false);
+        setErrors((prev) => ({
+          ...prev,
+          latitude: err.code === err.PERMISSION_DENIED
+            ? "Permission denied. Please allow location access."
+            : "Failed to acquire current location.",
+        }));
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    );
+  };
 
   useEffect(() => {
     if (mode === "edit" && location) {
@@ -204,6 +243,37 @@ export const LocationFormDialog: React.FC<LocationFormDialogProps> = ({
                 helperText={errors.name}
                 placeholder={t("LocationNamePlaceholder")}
               />
+            </Grid>
+
+            {/* GPS Method A: Capture Current Location */}
+            <Grid size={{ xs: 12 }}>
+              <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap" useFlexGap>
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  size="small"
+                  onClick={handleCaptureCurrentLocation}
+                  disabled={isCapturingGps || isSubmitting}
+                  startIcon={
+                    isCapturingGps ? (
+                      <CircularProgress size={16} color="inherit" />
+                    ) : (
+                      <IconCurrentLocation size={18} />
+                    )
+                  }
+                  sx={{ borderRadius: "8px", textTransform: "none", fontWeight: 600 }}
+                >
+                  {isCapturingGps ? "جارٍ تحديد الموقع..." : "تحديد موقعي الحالي / Use Current Location"}
+                </Button>
+                {capturedAccuracy && (
+                  <Chip
+                    size="small"
+                    variant="outlined"
+                    color={capturedAccuracy <= 50 ? "success" : "warning"}
+                    label={`الدقة: ±${capturedAccuracy.toFixed(0)}m`}
+                  />
+                )}
+              </Stack>
             </Grid>
 
             {/* Latitude */}

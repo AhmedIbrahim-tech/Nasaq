@@ -21,15 +21,33 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
     }
   }
 
-  if (!config.headers["Accept-Language"]) {
-    try {
-      if (typeof window !== "undefined") {
-        const lang = localStorage.getItem("corestarter_lang") || "en";
+  try {
+    if (typeof window !== "undefined") {
+      let lang = "ar";
+      const prefs = localStorage.getItem("nasaq.ui.preferences.v1");
+      if (prefs) {
+        try {
+          const parsed = JSON.parse(prefs);
+          if (parsed.isLanguage === "en" || parsed.isLanguage === "ar") {
+            lang = parsed.isLanguage;
+          }
+        } catch {
+          // Ignore parse errors
+        }
+      } else {
+        const legacy = localStorage.getItem("corestarter_lang") || localStorage.getItem("nasaq_lang");
+        if (legacy === "en" || legacy === "ar") {
+          lang = legacy;
+        }
+      }
+      if (typeof config.headers.set === "function") {
+        config.headers.set("Accept-Language", lang);
+      } else {
         config.headers["Accept-Language"] = lang;
       }
-    } catch {
-      // Ignore localStorage errors
     }
+  } catch {
+    // Ignore localStorage errors
   }
 
   return config;

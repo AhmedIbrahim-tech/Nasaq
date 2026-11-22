@@ -6,6 +6,8 @@ import Typography from "@mui/material/Typography";
 import Chip from "@mui/material/Chip";
 import Stack from "@mui/material/Stack";
 import Grid from "@mui/material/Grid";
+import Button from "@mui/material/Button";
+import Divider from "@mui/material/Divider";
 import TextField from "@mui/material/TextField";
 import MenuItem from "@mui/material/MenuItem";
 import FormControlLabel from "@mui/material/FormControlLabel";
@@ -121,7 +123,7 @@ export const DailyAttendanceTable: React.FC<DailyAttendanceTableProps> = ({
       id: "date",
       header: t("Date"),
       cell: (row) => (
-        <Typography variant="body2" sx={{ direction: "ltr", display: "inline-block", fontFamily: "monospace" }}>
+        <Typography variant="body2" color="text.secondary">
           {row.date ? formatDateOnly(row.date, isRtl) : "-"}
         </Typography>
       ),
@@ -217,8 +219,11 @@ export const DailyAttendanceTable: React.FC<DailyAttendanceTableProps> = ({
 
   const renderExpandedRow = (record: AttendanceRecord) => (
     <Box
+      dir={isRtl ? "rtl" : "ltr"}
       sx={{
-        p: 2,
+        direction: isRtl ? "rtl" : "ltr",
+        textAlign: isRtl ? "right" : "left",
+        p: 2.25,
         bgcolor: (theme) =>
           theme.palette.mode === "dark"
             ? alpha(theme.palette.background.default, 0.6)
@@ -227,6 +232,55 @@ export const DailyAttendanceTable: React.FC<DailyAttendanceTableProps> = ({
         border: (theme) => `1px solid ${theme.palette.divider}`,
       }}
     >
+      {/* Employee & Status Summary Header */}
+      <Stack
+        direction="row"
+        justifyContent="space-between"
+        alignItems="center"
+        sx={{ mb: 2 }}
+        flexWrap="wrap"
+        gap={1.5}
+      >
+        <Stack direction="row" spacing={1.5} alignItems="center">
+          <ProfilePhotoAvatar
+            name={isRtl && record.employeeNameAr ? record.employeeNameAr : record.employeeName}
+            size={40}
+            colorScheme="soft"
+            sx={{ border: (theme) => `1px solid ${theme.palette.divider}` }}
+          />
+          <Box>
+            <Typography variant="subtitle2" fontWeight={700} color="primary.main">
+              {isRtl && record.employeeNameAr ? record.employeeNameAr : record.employeeName}
+            </Typography>
+            <Box sx={{ mt: 0.5, display: "flex", alignItems: "center", gap: 0.75, flexWrap: "wrap" }}>
+              <Box
+                component="span"
+                sx={{
+                  fontFamily: "monospace",
+                  bgcolor: "action.hover",
+                  px: 1,
+                  py: 0.25,
+                  borderRadius: "6px",
+                  border: (theme) => `1px solid ${theme.palette.divider}`,
+                  direction: "ltr",
+                  unicodeBidi: "isolate",
+                  display: "inline-block",
+                  fontSize: "0.75rem",
+                }}
+              >
+                {record.employeeCode}
+              </Box>
+              {(isRtl && record.departmentAr ? record.departmentAr : record.department) && (
+                <Typography variant="caption" color="text.secondary">
+                  • {isRtl && record.departmentAr ? record.departmentAr : record.department}
+                </Typography>
+              )}
+            </Box>
+          </Box>
+        </Stack>
+        {getStatusChip(record.status)}
+      </Stack>
+
       <Grid container spacing={1.5}>
         {/* Work Location */}
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
@@ -425,6 +479,67 @@ export const DailyAttendanceTable: React.FC<DailyAttendanceTableProps> = ({
           </Grid>
         )}
       </Grid>
+
+      {/* Standard Action Buttons per RULE UI-034 */}
+      {(record.checkInStatus === "PendingReview" ||
+        record.checkOutStatus === "PendingReview" ||
+        !record.checkOutTimeUtc) && (
+        <>
+          <Divider sx={{ my: 1.75 }} />
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            alignItems="center"
+            flexWrap="wrap"
+            gap={1.25}
+          >
+            <Typography variant="caption" color="text.secondary">
+              {record.checkInStatus === "PendingReview" || record.checkOutStatus === "PendingReview"
+                ? (t("PendingGpsExceptions") || t("PendingReview"))
+                : t("NotCheckedOut")}
+            </Typography>
+
+            <Stack direction="row" spacing={1.25} alignItems="center">
+              {(record.checkInStatus === "PendingReview" || record.checkOutStatus === "PendingReview") && (
+                <>
+                  <Button
+                    size="small"
+                    variant="contained"
+                    color="success"
+                    startIcon={<IconCheck size={16} />}
+                    onClick={() => onApproveGps(record)}
+                    sx={{ borderRadius: "8px", px: 1.75, fontWeight: 600 }}
+                  >
+                    {t("ApproveGps")}
+                  </Button>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    color="error"
+                    startIcon={<IconX size={16} />}
+                    onClick={() => onRejectGps(record)}
+                    sx={{ borderRadius: "8px", px: 1.75, fontWeight: 600 }}
+                  >
+                    {t("RejectGps")}
+                  </Button>
+                </>
+              )}
+              {!record.checkOutTimeUtc && (
+                <Button
+                  size="small"
+                  variant="contained"
+                  color="primary"
+                  startIcon={<IconClockCheck size={16} />}
+                  onClick={() => onCorrectIncomplete(record)}
+                  sx={{ borderRadius: "8px", px: 1.75, fontWeight: 600 }}
+                >
+                  {t("CorrectIncomplete")}
+                </Button>
+              )}
+            </Stack>
+          </Stack>
+        </>
+      )}
     </Box>
   );
 

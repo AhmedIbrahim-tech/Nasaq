@@ -95,9 +95,7 @@ export const RejectGpsDialog: React.FC<RejectGpsDialogProps> = ({
                 <IconClock size={18} />
                 <Typography variant="body2" color="text.secondary">
                   {t("OriginalCheckInTime")}:{" "}
-                  <Box component="span" sx={{ direction: "ltr", display: "inline-block" }}>
-                    {formatDateTime(record.checkInTimeUtc, isRtl)}
-                  </Box>
+                  <span>{formatDateTime(record.checkInTimeUtc, isRtl)}</span>
                 </Typography>
               </Box>
 

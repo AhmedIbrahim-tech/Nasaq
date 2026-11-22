@@ -31,6 +31,7 @@ import CustomCheckbox from '@/shared/components/forms/theme-elements/CustomCheck
 import CustomTextField from '@/shared/components/forms/theme-elements/CustomTextField';
 import { useAppSelector } from '@/store/hooks';
 import { FirstLoginChangePasswordDialog } from './FirstLoginChangePasswordDialog';
+import { ForgotPasswordDialog } from './ForgotPasswordDialog';
 import { LoginFormProps } from '../types';
 import { useLogin } from '../hooks/useLogin';
 import NasaqBrand from './NasaqBrand';
@@ -40,6 +41,7 @@ export default function LoginForm({ title, subtitle, subtext }: LoginFormProps) 
   const t = useTranslations();
   const [showPassword, setShowPassword] = useState(false);
   const [helpDialogOpen, setHelpDialogOpen] = useState(false);
+  const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
 
   const { register, control, errors, errorMessage, isLoading, handleSubmit } = useLogin();
   const { requiresPasswordChange, setupToken } = useAppSelector((state) => state.auth);
@@ -423,7 +425,7 @@ export default function LoginForm({ title, subtitle, subtext }: LoginFormProps) 
             <Typography
               component="button"
               type="button"
-              onClick={() => setHelpDialogOpen(true)}
+              onClick={() => setForgotPasswordOpen(true)}
               sx={{
                 background: 'none',
                 border: 'none',
@@ -440,11 +442,11 @@ export default function LoginForm({ title, subtitle, subtext }: LoginFormProps) 
                 },
               }}
             >
-              {t.has('NeedHelpSigningIn')
-                ? t('NeedHelpSigningIn')
-                : t.has('ForgotPassword')
+              {t.has('ForgotPassword')
                 ? t('ForgotPassword')
-                : 'Need help signing in?'}
+                : t.has('NeedHelpSigningIn')
+                ? t('NeedHelpSigningIn')
+                : 'Forgot Password?'}
             </Typography>
           </Box>
 
@@ -622,6 +624,12 @@ export default function LoginForm({ title, subtitle, subtext }: LoginFormProps) 
       <FirstLoginChangePasswordDialog
         open={Boolean(requiresPasswordChange && setupToken)}
         setupToken={setupToken}
+      />
+
+      {/* Forgot Password Administrative Request Dialog */}
+      <ForgotPasswordDialog
+        open={forgotPasswordOpen}
+        onClose={() => setForgotPasswordOpen(false)}
       />
     </Box>
   );

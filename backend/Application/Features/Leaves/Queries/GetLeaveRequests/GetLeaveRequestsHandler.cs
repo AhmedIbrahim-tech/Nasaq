@@ -92,6 +92,7 @@ public class GetLeaveRequestsHandler : IRequestHandler<GetLeaveRequestsQuery, Ge
         var pageSize = Math.Clamp(request.PageSize, 1, 100);
 
         var canReview = _currentUser.IsAdmin || _currentUser.IsSuperAdmin || _currentUser.IsSupervisor;
+        var currentUserId = _currentUser.UserId;
 
         var items = await query
             .OrderByDescending(r => r.SubmittedAtUtc)
@@ -102,8 +103,10 @@ public class GetLeaveRequestsHandler : IRequestHandler<GetLeaveRequestsQuery, Ge
                 Id = r.Id,
                 EmployeeId = r.EmployeeId,
                 EmployeeName = r.Employee != null ? r.Employee.FullName : string.Empty,
+                EmployeeNameAr = r.Employee != null ? r.Employee.FullNameAr : null,
                 EmployeeCode = r.Employee != null ? r.Employee.EmployeeCode : string.Empty,
                 Department = r.Employee != null ? r.Employee.Department : null,
+                DepartmentAr = r.Employee != null ? r.Employee.DepartmentAr : null,
                 LeaveTypeId = r.LeaveTypeId,
                 LeaveTypeName = r.LeaveType != null ? r.LeaveType.Name : string.Empty,
                 LeaveTypeNameAr = r.LeaveType != null ? r.LeaveType.NameAr : string.Empty,
@@ -119,8 +122,8 @@ public class GetLeaveRequestsHandler : IRequestHandler<GetLeaveRequestsQuery, Ge
                 ReviewedAtUtc = r.ReviewedAtUtc,
                 ReviewedBy = r.ReviewedBy,
                 ReviewNotes = r.ReviewNotes,
-                CanCancel = false,
-                CanReview = canReview && r.Status == LeaveRequestStatus.Pending,
+                CanCancel = (!string.IsNullOrEmpty(currentUserId) && r.Employee != null && r.Employee.UserId == currentUserId) && r.Status == LeaveRequestStatus.Pending,
+                CanReview = canReview && r.Status == LeaveRequestStatus.Pending && (string.IsNullOrEmpty(currentUserId) || r.Employee == null || r.Employee.UserId != currentUserId),
                 ApprovalHistory = r.ApprovalHistory
                     .OrderBy(h => h.ActionDateUtc)
                     .Select(h => new LeaveApprovalHistoryDto

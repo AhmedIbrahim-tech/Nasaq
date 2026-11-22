@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
@@ -12,8 +12,16 @@ import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import Alert from "@mui/material/Alert";
 import CircularProgress from "@mui/material/CircularProgress";
+import { useTheme } from "@mui/material/styles";
 import { IconCircleCheck, IconCircleX } from "@tabler/icons-react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
+import { formatDateOnly, formatDaysCount } from "@/shared/utils/i18nFormatters";
+import { useAppSelector } from "@/store/hooks";
+import { CustomizerContext } from "@/theme/customizerContext";
+import {
+  getLocalizedEmployeeName,
+  getLocalizedLeaveTypeName,
+} from "@/shared/utils/localization";
 import type { LeaveRequest } from "../types";
 
 interface LeaveReviewDialogProps {
@@ -36,6 +44,15 @@ export const LeaveReviewDialog: React.FC<LeaveReviewDialogProps> = ({
   isLoading = false,
 }) => {
   const t = useTranslations();
+  const theme = useTheme();
+  const locale = useLocale();
+  const customizer = useContext(CustomizerContext);
+  const isRtl =
+    customizer?.isLanguage === "ar" ||
+    customizer?.activeDir === "rtl" ||
+    theme.direction === "rtl" ||
+    locale.startsWith("ar");
+  const authUser = useAppSelector((state) => state.auth.user);
   const [notes, setNotes] = useState<string>("");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -47,6 +64,65 @@ export const LeaveReviewDialog: React.FC<LeaveReviewDialogProps> = ({
   }, [open]);
 
   if (!leaveRequest) return null;
+
+  const isOwnRequest = Boolean(
+    leaveRequest &&
+      authUser &&
+      ((authUser.employeeId && leaveRequest.employeeId && authUser.employeeId.toLowerCase() === leaveRequest.employeeId.toLowerCase()) ||
+        (authUser.fullName && leaveRequest.employeeName && authUser.fullName.toLowerCase() === leaveRequest.employeeName.toLowerCase()) ||
+        (authUser.email && leaveRequest.employeeName && authUser.email.toLowerCase().includes(leaveRequest.employeeName.toLowerCase())) ||
+        (authUser.email && authUser.email.split("@")[0].toLowerCase() === leaveRequest.employeeName.toLowerCase()))
+  );
+
+  const localizeErrorMessage = (msg: string | null | undefined): string => {
+    if (!msg) return t("ErrorReviewingLeaveRequest");
+    const lower = msg.toLowerCase();
+    if (
+      lower.includes("cannot reject your own leave request") ||
+      lower.includes("reject your own") ||
+      lower.includes("cannot reject own") ||
+      lower.includes("لا يمكنك رفض طلب الإجازة") ||
+      msg.includes("لا يمكنك رفض طلب الإجازة")
+    ) {
+      return isRtl
+        ? "لا يمكنك رفض طلب الإجازة الخاص بك. يرجى استخدام خيار الإلغاء بدلاً من ذلك."
+        : "You cannot reject your own leave request. Use cancel instead.";
+    }
+    if (
+      lower.includes("cannot approve your own leave request") ||
+      lower.includes("approve your own") ||
+      lower.includes("cannot approve own") ||
+      lower.includes("لا يمكنك اعتماد طلب الإجازة") ||
+      msg.includes("لا يمكنك اعتماد طلب الإجازة")
+    ) {
+      return isRtl
+        ? "لا يمكنك اعتماد طلب الإجازة الخاص بك."
+        : "You cannot approve your own leave request.";
+    }
+    if (lower.includes("not found") || msg.includes("غير موجود")) {
+      return isRtl ? "طلب الإجازة غير موجود." : "Leave request not found.";
+    }
+    if (
+      lower.includes("only pending requests can be rejected") ||
+      lower.includes("only pending requests") ||
+      lower.includes("cannot reject a request with status") ||
+      lower.includes("cannot approve a request with status")
+    ) {
+      return isRtl
+        ? "لا يمكن مراجعة هذا الطلب لأنه ليس في حالة قيد الانتظار."
+        : "Only pending requests can be reviewed.";
+    }
+    if (
+      lower.includes("authorized to review leave requests") ||
+      lower.includes("authorized to review") ||
+      lower.includes("authorized to approve")
+    ) {
+      return isRtl
+        ? "أنت مصرح فقط بمراجعة طلبات الإجازة للموظفين التابعين لفريقك."
+        : "You are only authorized to review leave requests for your assigned team members.";
+    }
+    return msg;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,7 +141,8 @@ export const LeaveReviewDialog: React.FC<LeaveReviewDialogProps> = ({
       }
       onClose();
     } catch (err: any) {
-      setErrorMsg(err.response?.data?.message || err.message || t("ErrorReviewingLeaveRequest"));
+      const raw = err.response?.data?.message || err.message;
+      setErrorMsg(localizeErrorMessage(raw));
     }
   };
 
@@ -77,8 +154,11 @@ export const LeaveReviewDialog: React.FC<LeaveReviewDialogProps> = ({
       onClose={isLoading ? undefined : onClose}
       maxWidth="sm"
       fullWidth
+      dir={isRtl ? "rtl" : "ltr"}
       PaperProps={{
         sx: {
+          direction: isRtl ? "rtl" : "ltr",
+          textAlign: isRtl ? "right" : "left",
           maxHeight: { xs: "calc(100% - 20px)", sm: "calc(100% - 64px)" },
           display: "flex",
           flexDirection: "column",
@@ -109,18 +189,78 @@ export const LeaveReviewDialog: React.FC<LeaveReviewDialogProps> = ({
         </DialogTitle>
 
         <DialogContent sx={{ p: 3, overflowY: "auto", flex: "1 1 auto" }}>
+          {isOwnRequest && (
+            <Alert
+              severity="warning"
+              dir={isRtl ? "rtl" : "ltr"}
+              sx={{
+                mb: 2,
+                textAlign: isRtl ? "right" : "left",
+                direction: isRtl ? "rtl" : "ltr",
+              }}
+            >
+              {isRtl
+                ? "لا يمكنك مراجعة أو رفض طلب الإجازة الخاص بك. يرجى استخدام خيار إلغاء الطلب بدلاً من ذلك."
+                : "You cannot review or reject your own leave request. Please use the cancel option instead."}
+            </Alert>
+          )}
+
           {errorMsg && (
-            <Alert severity="error" sx={{ mb: 2 }}>
+            <Alert
+              severity="error"
+              dir={isRtl ? "rtl" : "ltr"}
+              sx={{
+                mb: 2,
+                textAlign: isRtl ? "right" : "left",
+                direction: isRtl ? "rtl" : "ltr",
+              }}
+            >
               {errorMsg}
             </Alert>
           )}
 
           <Alert severity={isApprove ? "info" : "warning"} sx={{ mb: 2.5 }}>
             <Typography variant="subtitle2" fontWeight={600}>
-              {leaveRequest.employeeName} ({leaveRequest.employeeCode})
+              {getLocalizedEmployeeName(
+                {
+                  employeeName: leaveRequest.employeeName,
+                  employeeNameAr: leaveRequest.employeeNameAr,
+                },
+                isRtl,
+                leaveRequest.employeeName
+              )}{" "}
+              (
+              <span style={{ direction: "ltr", unicodeBidi: "isolate", display: "inline-block" }}>
+                {leaveRequest.employeeCode}
+              </span>
+              )
             </Typography>
-            <Typography variant="body2">
-              {leaveRequest.leaveTypeName} • {leaveRequest.startDate} - {leaveRequest.endDate} ({leaveRequest.daysCount} {t("Days")})
+            <Typography
+              variant="body2"
+              sx={{
+                mt: 0.5,
+                display: "flex",
+                alignItems: "center",
+                gap: 0.75,
+                flexWrap: "wrap",
+                direction: isRtl ? "rtl" : "ltr",
+              }}
+            >
+              <Typography component="span" variant="body2" fontWeight={600}>
+                {getLocalizedLeaveTypeName(
+                  {
+                    leaveTypeName: leaveRequest.leaveTypeName,
+                    leaveTypeNameAr: leaveRequest.leaveTypeNameAr,
+                  },
+                  isRtl,
+                  isRtl ? "إجازة" : "Leave"
+                )}
+              </Typography>
+              <span>({formatDaysCount(leaveRequest.daysCount, isRtl)})</span>
+              <span>•</span>
+              <span style={{ direction: "ltr", unicodeBidi: "isolate", display: "inline-block" }}>
+                {formatDateOnly(leaveRequest.startDate, isRtl)} → {formatDateOnly(leaveRequest.endDate, isRtl)}
+              </span>
             </Typography>
           </Alert>
 
@@ -165,7 +305,7 @@ export const LeaveReviewDialog: React.FC<LeaveReviewDialogProps> = ({
             type="submit"
             variant="contained"
             color={isApprove ? "success" : "error"}
-            disabled={isLoading}
+            disabled={isLoading || isOwnRequest}
             startIcon={isLoading ? <CircularProgress size={18} color="inherit" /> : undefined}
           >
             {isApprove ? t("Approve") : t("Reject")}

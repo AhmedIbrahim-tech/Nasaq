@@ -48,3 +48,51 @@ export interface LocationsSummary {
   assignedEmployeesTotal: number;
   avgGeofenceRadiusMeters: number;
 }
+
+export interface EmployeePersonalLocation {
+  id: string;
+  employeeId: string;
+  latitude: number;
+  longitude: number;
+  accuracyMeters?: number | null;
+  addressDescription?: string | null;
+  isApproved: boolean;
+  approvedAtUtc?: string | null;
+  approvedBy?: string | null;
+  isActive: boolean;
+  source?: string | null;
+  created_Utc: string;
+}
+
+export interface EmployeeLocationRequest {
+  id: string;
+  employeeId: string;
+  employeeName?: string | null;
+  employeeNameAr?: string | null;
+  employeeCode?: string | null;
+  requestType: number;
+  latitude: number;
+  longitude: number;
+  accuracyMeters?: number | null;
+  addressDescription?: string | null;
+  status: number;
+  rejectionReason?: string | null;
+  reviewedAtUtc?: string | null;
+  reviewedBy?: string | null;
+  adminNotes?: string | null;
+  created_Utc: string;
+}
+
+export interface MyLocationStatus {
+  approvedLocation?: EmployeePersonalLocation | null;
+  pendingRequest?: EmployeeLocationRequest | null;
+  lastRejectedRequest?: EmployeeLocationRequest | null;
+  hasApprovedLocation: boolean;
+  hasPendingRequest: boolean;
+}
+
+export interface GlobalGeofenceRadius {
+  radiusMeters: number;
+  lastUpdatedUtc?: string | null;
+  updatedBy?: string | null;
+}

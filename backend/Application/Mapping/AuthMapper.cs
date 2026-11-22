@@ -6,7 +6,11 @@ namespace Application.Mapping;
 
 public static class AuthMapper
 {
-    public static AuthUserResponse ToUserResponse(ApplicationUser user, Employee? employee = null) => new()
+    public static AuthUserResponse ToUserResponse(
+        ApplicationUser user,
+        Employee? employee = null,
+        bool hasApprovedPersonalLocation = false,
+        bool hasPendingLocationRequest = false) => new()
     {
         Id = user.Id,
         Email = user.Email,
@@ -19,13 +23,18 @@ public static class AuthMapper
         Department = employee?.Department ?? user.Department,
         DepartmentAr = employee?.DepartmentAr ?? user.DepartmentAr,
         ProfilePhoto = employee?.ProfilePhoto,
-        EmployeeId = employee?.Id
+        EmployeeId = employee?.Id,
+        MustChangePasswordOnNextLogin = user.MustChangePasswordOnNextLogin,
+        HasApprovedPersonalLocation = hasApprovedPersonalLocation,
+        HasPendingLocationRequest = hasPendingLocationRequest
     };
 
     public static CurrentUserResponse ToCurrentUserResponse(
         ApplicationUser user,
         IReadOnlyList<string> roles,
-        Employee? employee = null) => new()
+        Employee? employee = null,
+        bool hasApprovedPersonalLocation = false,
+        bool hasPendingLocationRequest = false) => new()
     {
         Id = user.Id,
         Email = user.Email,
@@ -39,6 +48,9 @@ public static class AuthMapper
         DepartmentAr = employee?.DepartmentAr ?? user.DepartmentAr,
         Roles = roles,
         ProfilePhoto = employee?.ProfilePhoto,
-        EmployeeId = employee?.Id
+        EmployeeId = employee?.Id,
+        MustChangePasswordOnNextLogin = user.MustChangePasswordOnNextLogin,
+        HasApprovedPersonalLocation = hasApprovedPersonalLocation,
+        HasPendingLocationRequest = hasPendingLocationRequest
     };
 }

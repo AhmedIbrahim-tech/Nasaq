@@ -36,6 +36,11 @@ import {
   ModernizeRowAction,
 } from "@/shared/components/tables/modernize/ModernizeDataTable";
 import { ConfirmActionDialog } from "@/shared/components/dialogs/ConfirmActionDialog";
+import { formatDateOnly } from "@/shared/utils/i18nFormatters";
+import {
+  getLocalizedEmployeeName,
+  getLocalizedLeaveTypeName,
+} from "@/shared/utils/localization";
 import { leavesService } from "../services/leaves.service";
 import {
   setMyRequests,
@@ -65,9 +70,12 @@ export const LeavesView: React.FC = () => {
   const t = useTranslations();
   const locale = useLocale();
   const isAr = locale.startsWith("ar");
+  const isRtl = isAr;
   const dispatch = useAppDispatch();
 
   const roles = useAppSelector((state) => state.auth.roles) || [];
+  const authUser = useAppSelector((state) => state.auth.user);
+  const currentEmployeeId = authUser?.employeeId;
   const isPrivileged = roles.some((r) =>
     [RoleNames.SuperAdmin, RoleNames.Admin, RoleNames.Supervisor].includes(r as any)
   );
@@ -84,6 +92,22 @@ export const LeavesView: React.FC = () => {
     summary,
     actionLoading,
   } = useAppSelector((state) => state.leaves);
+
+  const isMyRequest = (row: LeaveRequest): boolean => {
+    if (currentEmployeeId && row.employeeId) {
+      return row.employeeId.toLowerCase() === currentEmployeeId.toLowerCase();
+    }
+    if (authUser?.fullName && row.employeeName && row.employeeName.toLowerCase() === authUser.fullName.toLowerCase()) {
+      return true;
+    }
+    if (authUser?.email && row.employeeName && authUser.email.toLowerCase().includes(row.employeeName.toLowerCase())) {
+      return true;
+    }
+    if (myRequests && myRequests.some((m) => m.id === row.id)) {
+      return true;
+    }
+    return false;
+  };
 
   const [activeTab, setActiveTab] = useState<number>(0);
   const [loadingSummary, setLoadingSummary] = useState<boolean>(true);
@@ -291,7 +315,14 @@ export const LeavesView: React.FC = () => {
       cell: (row) => (
         <Box>
           <Typography variant="subtitle2" fontWeight={600}>
-            {isAr ? row.leaveTypeNameAr : row.leaveTypeName}
+            {getLocalizedLeaveTypeName(
+              {
+                leaveTypeName: row.leaveTypeName,
+                leaveTypeNameAr: row.leaveTypeNameAr,
+              },
+              isAr,
+              isAr ? "إجازة" : "Leave"
+            )}
           </Typography>
           <Stack direction="row" spacing={0.5} sx={{ mt: 0.5 }}>
             <Chip
@@ -310,8 +341,10 @@ export const LeavesView: React.FC = () => {
       header: t("EffectiveDates"),
       cell: (row) => (
         <Box>
-          <Typography variant="body2" dir="ltr" fontWeight={500}>
-            {row.startDate} → {row.endDate}
+          <Typography variant="body2" fontWeight={500}>
+            <span style={{ direction: "ltr", unicodeBidi: "isolate", display: "inline-block" }}>
+              {formatDateOnly(row.startDate, isRtl)} → {formatDateOnly(row.endDate, isRtl)}
+            </span>
           </Typography>
           <Typography variant="caption" color="text.secondary">
             {row.daysCount} {t("Days")}
@@ -363,10 +396,22 @@ export const LeavesView: React.FC = () => {
       cell: (row) => (
         <Box>
           <Typography variant="subtitle2" fontWeight={600}>
-            {row.employeeName}
+            {getLocalizedEmployeeName(
+              {
+                employeeName: row.employeeName,
+                employeeNameAr: row.employeeNameAr,
+              },
+              isAr,
+              row.employeeName
+            )}
           </Typography>
-          <Typography variant="caption" color="text.secondary" dir="ltr">
-            {row.employeeCode} {row.department ? `• ${row.department}` : ""}
+          <Typography variant="caption" color="text.secondary">
+            <span style={{ direction: "ltr", unicodeBidi: "isolate", display: "inline-block" }}>
+              {row.employeeCode}
+            </span>{" "}
+            {(isAr ? row.departmentAr || row.department : row.department)
+              ? `• ${isAr ? row.departmentAr || row.department : row.department}`
+              : ""}
           </Typography>
         </Box>
       ),
@@ -377,7 +422,14 @@ export const LeavesView: React.FC = () => {
       cell: (row) => (
         <Box>
           <Typography variant="subtitle2" fontWeight={500}>
-            {isAr ? row.leaveTypeNameAr : row.leaveTypeName}
+            {getLocalizedLeaveTypeName(
+              {
+                leaveTypeName: row.leaveTypeName,
+                leaveTypeNameAr: row.leaveTypeNameAr,
+              },
+              isAr,
+              isAr ? "إجازة" : "Leave"
+            )}
           </Typography>
           <Chip
             label={row.isPaid ? t("PaidLeave") : t("Unpaid")}
@@ -394,8 +446,10 @@ export const LeavesView: React.FC = () => {
       header: t("EffectiveDates"),
       cell: (row) => (
         <Box>
-          <Typography variant="body2" dir="ltr" fontWeight={500}>
-            {row.startDate} → {row.endDate}
+          <Typography variant="body2" fontWeight={500}>
+            <span style={{ direction: "ltr", unicodeBidi: "isolate", display: "inline-block" }}>
+              {formatDateOnly(row.startDate, isRtl)} → {formatDateOnly(row.endDate, isRtl)}
+            </span>
           </Typography>
           <Typography variant="caption" color="text.secondary">
             {row.daysCount} {t("Days")}
@@ -423,7 +477,7 @@ export const LeavesView: React.FC = () => {
     {
       label: t("Approve"),
       icon: <IconCheck size={18} color="#13DEB9" />,
-      show: (row: LeaveRequest) => row.status === "Pending",
+      show: (row: LeaveRequest) => (row.canReview ?? false) && row.status === "Pending" && !isMyRequest(row),
       onClick: (row: LeaveRequest) => {
         setRequestToReview(row);
         setReviewMode("approve");
@@ -433,11 +487,20 @@ export const LeavesView: React.FC = () => {
     {
       label: t("Reject"),
       icon: <IconX size={18} color="#FA896B" />,
-      show: (row: LeaveRequest) => row.status === "Pending",
+      show: (row: LeaveRequest) => (row.canReview ?? false) && row.status === "Pending" && !isMyRequest(row),
       onClick: (row: LeaveRequest) => {
         setRequestToReview(row);
         setReviewMode("reject");
         setReviewDialogOpen(true);
+      },
+    },
+    {
+      label: t("CancelRequest"),
+      icon: <IconX size={18} color="#FA896B" />,
+      show: (row: LeaveRequest) => ((row.canCancel ?? false) || isMyRequest(row)) && row.status === "Pending",
+      onClick: (row: LeaveRequest) => {
+        setRequestToCancel(row);
+        setCancelDialogOpen(true);
       },
     },
     {
@@ -470,8 +533,10 @@ export const LeavesView: React.FC = () => {
       id: "code",
       header: t("LeaveTypeCode"),
       cell: (row) => (
-        <Typography variant="body2" dir="ltr" fontWeight={600} color="primary.main">
-          {row.code}
+        <Typography variant="body2" fontWeight={600} color="primary.main">
+          <span style={{ direction: "ltr", unicodeBidi: "isolate", display: "inline-block" }}>
+            {row.code}
+          </span>
         </Typography>
       ),
     },
@@ -503,7 +568,7 @@ export const LeavesView: React.FC = () => {
       id: "days",
       header: t("DefaultDaysPerYear"),
       cell: (row) => (
-        <Typography variant="body2" dir="ltr">
+        <Typography variant="body2">
           {row.defaultDaysPerYear !== null && row.defaultDaysPerYear !== undefined
             ? `${row.defaultDaysPerYear} ${t("Days")}`
             : "—"}
@@ -626,7 +691,7 @@ export const LeavesView: React.FC = () => {
           <LeaveStatsCards
             summary={summary}
             loading={loadingSummary}
-            isManager={isPrivileged}
+            isManager={isPrivileged && activeTab === 1}
           />
 
           <Divider />

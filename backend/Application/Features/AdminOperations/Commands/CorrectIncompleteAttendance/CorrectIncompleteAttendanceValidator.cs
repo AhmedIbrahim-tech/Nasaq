@@ -11,7 +11,7 @@ public class CorrectIncompleteAttendanceValidator : AbstractValidator<CorrectInc
 
         RuleFor(x => x.ManualCheckOutTimeUtc)
             .NotEmpty().WithMessage("Manual Check-out timestamp is required.")
-            .LessThanOrEqualTo(DateTime.UtcNow.AddMinutes(5)).WithMessage("Check-out time cannot be in the future.");
+            .LessThanOrEqualTo(_ => DateTime.UtcNow.AddMinutes(5)).WithMessage("Check-out time cannot be in the future.");
 
         RuleFor(x => x.Reason)
             .NotEmpty().WithMessage("Correction reason is mandatory.")

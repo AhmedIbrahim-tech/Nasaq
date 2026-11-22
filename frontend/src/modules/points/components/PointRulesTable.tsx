@@ -2,17 +2,21 @@
 
 import React from "react";
 import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 import Chip from "@mui/material/Chip";
 import Stack from "@mui/material/Stack";
 import Switch from "@mui/material/Switch";
-import { IconEdit, IconCheck, IconX } from "@tabler/icons-react";
+import { useTheme } from "@mui/material/styles";
+import { IconPencil, IconPlus } from "@tabler/icons-react";
 import { useTranslations } from "next-intl";
 import {
   ModernizeDataTable,
   ModernizeColumnDef,
   ModernizeRowAction,
 } from "@/shared/components/tables/modernize/ModernizeDataTable";
+import { ModernizeTableToolbar } from "@/shared/components/tables/modernize/ModernizeTableToolbar";
+import { formatDateOnly } from "@/shared/utils/i18nFormatters";
 import type { PointRule } from "../types";
 
 interface PointRulesTableProps {
@@ -24,6 +28,8 @@ interface PointRulesTableProps {
   onPageChange: (newPage: number) => void;
   onEdit: (rule: PointRule) => void;
   onToggleStatus: (rule: PointRule) => void;
+  onAddNew?: () => void;
+  onRefresh?: () => void;
 }
 
 export const PointRulesTable: React.FC<PointRulesTableProps> = ({
@@ -35,8 +41,12 @@ export const PointRulesTable: React.FC<PointRulesTableProps> = ({
   onPageChange,
   onEdit,
   onToggleStatus,
+  onAddNew,
+  onRefresh,
 }) => {
   const t = useTranslations();
+  const theme = useTheme();
+  const isRtl = theme.direction === "rtl";
 
   const getCategoryChip = (cat: string) => {
     switch (cat) {
@@ -87,10 +97,11 @@ export const PointRulesTable: React.FC<PointRulesTableProps> = ({
         <Typography
           variant="subtitle2"
           fontWeight={700}
-          dir="ltr"
           sx={{ color: row.points > 0 ? "success.main" : "error.main" }}
         >
-          {row.points > 0 ? `+${row.points}` : row.points}
+          <span style={{ direction: "ltr", unicodeBidi: "isolate", display: "inline-block" }}>
+            {row.points > 0 ? `+${row.points}` : row.points}
+          </span>
         </Typography>
       ),
     },
@@ -98,8 +109,10 @@ export const PointRulesTable: React.FC<PointRulesTableProps> = ({
       id: "effectiveDates",
       header: t("EffectiveDates"),
       cell: (row) => (
-        <Typography variant="caption" dir="ltr" color="text.secondary">
-          {row.effectiveFrom} {row.effectiveTo ? `→ ${row.effectiveTo}` : `(${t("OpenEnded")})`}
+        <Typography variant="caption" color="text.secondary">
+          <span style={{ direction: "ltr", unicodeBidi: "isolate", display: "inline-block" }}>
+            {row.effectiveFrom ? formatDateOnly(row.effectiveFrom, isRtl) : ""} {row.effectiveTo ? `→ ${formatDateOnly(row.effectiveTo, isRtl)}` : `(${t("OpenEnded")})`}
+          </span>
         </Typography>
       ),
     },
@@ -120,23 +133,45 @@ export const PointRulesTable: React.FC<PointRulesTableProps> = ({
   const actions: ModernizeRowAction<PointRule>[] = [
     {
       label: t("EditRule"),
-      icon: <IconEdit size={18} color="#5D87FF" />,
+      icon: <IconPencil size={18} color={theme.palette.warning.main} />,
       onClick: (row) => onEdit(row),
     },
   ];
 
   return (
-    <ModernizeDataTable
-      data={rules}
-      columns={columns}
-      loading={loading}
-      totalCount={totalCount}
-      page={page}
-      pageSize={pageSize}
-      onPageChange={onPageChange}
-      actions={actions}
-      getRowId={(row) => row.id}
-      emptyMessage={t("NoPointRulesFound")}
-    />
+    <Stack spacing={2.5}>
+      <ModernizeTableToolbar
+        title={t("ConfiguredPointRules")}
+        action={
+          onAddNew ? (
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<IconPlus size={18} />}
+              onClick={onAddNew}
+              sx={{ borderRadius: "8px", fontWeight: 600 }}
+            >
+              {t("NewRule")}
+            </Button>
+          ) : undefined
+        }
+        onRefresh={onRefresh}
+        isRefreshing={loading}
+        showFilters={false}
+        onToggleFilters={() => {}}
+      />
+      <ModernizeDataTable
+        data={rules}
+        columns={columns}
+        loading={loading}
+        totalCount={totalCount}
+        page={page}
+        pageSize={pageSize}
+        onPageChange={onPageChange}
+        actions={actions}
+        getRowId={(row) => row.id}
+        emptyMessage={t("NoPointRulesFound")}
+      />
+    </Stack>
   );
 };

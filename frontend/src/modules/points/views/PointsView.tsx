@@ -296,7 +296,7 @@ export const PointsView: React.FC = () => {
 
         <Stack spacing={3} p={{ xs: 2, sm: 2.5, md: 3 }}>
           {/* KPI Balance Summary Cards */}
-          <PointsSummaryCards summary={summary} />
+          <PointsSummaryCards summary={summary} loading={summaryLoading} />
 
           <Divider />
 
@@ -312,6 +312,7 @@ export const PointsView: React.FC = () => {
                 setMyPage(p);
                 loadMyTransactions(p);
               }}
+              onRefresh={() => loadMyTransactions(myPage)}
               showEmployeeColumn={false}
               canReverse={false}
             />
@@ -329,6 +330,7 @@ export const PointsView: React.FC = () => {
                 setOrgPage(p);
                 loadOrgTransactions(p);
               }}
+              onRefresh={() => loadOrgTransactions(orgPage)}
               showEmployeeColumn={true}
               canReverse={isAdmin}
               onReverse={(tx) => {
@@ -340,43 +342,29 @@ export const PointsView: React.FC = () => {
 
           {/* Tab 2: Point Rules Management (Admins) */}
           {activeTab === 2 && isAdmin && (
-            <Box>
-              <Box display="flex" justifyContent="space-between" alignItems="center" mb={2} flexWrap="wrap" gap={1.5}>
-                <Typography variant="h6" fontWeight={700}>
-                  {t("ConfiguredPointRules")}
-                </Typography>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  startIcon={<IconPlus size={18} />}
-                  onClick={() => {
-                    setSelectedRule(null);
-                    setRuleDialogMode("create");
-                    setRuleDialogOpen(true);
-                  }}
-                  sx={{ borderRadius: "8px", fontWeight: 600 }}
-                >
-                  {t("NewRule")}
-                </Button>
-              </Box>
-              <PointRulesTable
-                rules={rules}
-                totalCount={rulesTotalCount}
-                loading={rulesLoading}
-                page={rulesPage}
-                pageSize={10}
-                onPageChange={(p) => {
-                  setRulesPage(p);
-                  loadRules(p);
-                }}
-                onEdit={(r) => {
-                  setSelectedRule(r);
-                  setRuleDialogMode("edit");
-                  setRuleDialogOpen(true);
-                }}
-                onToggleStatus={handleToggleRuleStatus}
-              />
-            </Box>
+            <PointRulesTable
+              rules={rules}
+              totalCount={rulesTotalCount}
+              loading={rulesLoading}
+              page={rulesPage}
+              pageSize={10}
+              onPageChange={(p) => {
+                setRulesPage(p);
+                loadRules(p);
+              }}
+              onAddNew={() => {
+                setSelectedRule(null);
+                setRuleDialogMode("create");
+                setRuleDialogOpen(true);
+              }}
+              onRefresh={() => loadRules(rulesPage)}
+              onEdit={(r) => {
+                setSelectedRule(r);
+                setRuleDialogMode("edit");
+                setRuleDialogOpen(true);
+              }}
+              onToggleStatus={handleToggleRuleStatus}
+            />
           )}
         </Stack>
       </Card>

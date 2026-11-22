@@ -33,10 +33,10 @@ export interface ModernizeColumnConfig {
 
 export interface ModernizeTableToolbarProps {
   title: string;
-  search: string;
-  onSearchChange: (value: string) => void;
-  showFilters: boolean;
-  onToggleFilters: () => void;
+  search?: string;
+  onSearchChange?: (value: string) => void;
+  showFilters?: boolean;
+  onToggleFilters?: () => void;
   filterContent?: React.ReactNode;
   columns?: ModernizeColumnConfig[];
   onToggleColumn?: (columnId: string) => void;
@@ -47,15 +47,16 @@ export interface ModernizeTableToolbarProps {
   onRefresh?: () => void;
   isRefreshing?: boolean;
   extraActions?: React.ReactNode;
+  action?: React.ReactNode;
   onResetFilters?: () => void;
   hasActiveFilters?: boolean;
 }
 
 export const ModernizeTableToolbar: React.FC<ModernizeTableToolbarProps> = ({
   title,
-  search,
+  search = "",
   onSearchChange,
-  showFilters,
+  showFilters = false,
   onToggleFilters,
   filterContent,
   columns = [],
@@ -67,6 +68,7 @@ export const ModernizeTableToolbar: React.FC<ModernizeTableToolbarProps> = ({
   onRefresh,
   isRefreshing = false,
   extraActions,
+  action,
   onResetFilters,
   hasActiveFilters = false,
 }) => {
@@ -83,7 +85,7 @@ export const ModernizeTableToolbar: React.FC<ModernizeTableToolbarProps> = ({
   }, [search]);
 
   const handleReset = () => {
-    onSearchChange("");
+    onSearchChange?.("");
     setShowSearch(false);
     onResetFilters?.();
   };
@@ -126,50 +128,51 @@ export const ModernizeTableToolbar: React.FC<ModernizeTableToolbarProps> = ({
         </Typography>
 
         <Box display="flex" alignItems="center" gap={1.5} flexWrap="wrap">
-          {/* 1. Search Toggle / Input — ALWAYS FIRST */}
-          {!showSearch ? (
-            <Tooltip title={t.has("Search") ? t("Search") : "Search"}>
-              <IconButton
-                onClick={() => setShowSearch(true)}
-                size="small"
-                aria-label={t.has("Search") ? t("Search") : "Search"}
-                sx={toolbarButtonSx}
-              >
-                <IconSearch size={18} />
-              </IconButton>
-            </Tooltip>
-          ) : (
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                border: "1px solid",
-                borderColor: "primary.main",
-                px: 1.25,
-                py: 0.25,
-                bgcolor: alpha(theme.palette.primary.main, 0.04),
-                borderRadius: "8px",
-              }}
-            >
-              <InputBase
-                value={search}
-                onChange={(e) => onSearchChange(e.target.value)}
-                autoFocus
-                placeholder={`${t.has("Search") ? t("Search") : "Search"}...`}
-                sx={{ fontSize: 14, minWidth: 160 }}
-              />
-              <IconButton
-                size="small"
-                aria-label={t.has("Close") ? t("Close") : "Close"}
-                onClick={() => {
-                  onSearchChange("");
-                  setShowSearch(false);
+          {/* 1. Search Toggle / Input — ALWAYS FIRST (When onSearchChange provided) */}
+          {onSearchChange &&
+            (!showSearch ? (
+              <Tooltip title={t.has("Search") ? t("Search") : "Search"}>
+                <IconButton
+                  onClick={() => setShowSearch(true)}
+                  size="small"
+                  aria-label={t.has("Search") ? t("Search") : "Search"}
+                  sx={toolbarButtonSx}
+                >
+                  <IconSearch size={18} />
+                </IconButton>
+              </Tooltip>
+            ) : (
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  border: "1px solid",
+                  borderColor: "primary.main",
+                  px: 1.25,
+                  py: 0.25,
+                  bgcolor: alpha(theme.palette.primary.main, 0.04),
+                  borderRadius: "8px",
                 }}
               >
-                <IconX size={15} />
-              </IconButton>
-            </Box>
-          )}
+                <InputBase
+                  value={search}
+                  onChange={(e) => onSearchChange(e.target.value)}
+                  autoFocus
+                  placeholder={`${t.has("Search") ? t("Search") : "Search"}...`}
+                  sx={{ fontSize: 14, minWidth: 160 }}
+                />
+                <IconButton
+                  size="small"
+                  aria-label={t.has("Close") ? t("Close") : "Close"}
+                  onClick={() => {
+                    onSearchChange("");
+                    setShowSearch(false);
+                  }}
+                >
+                  <IconX size={15} />
+                </IconButton>
+              </Box>
+            ))}
 
           {/* 2. Filter toggle button */}
           {filterContent && (
@@ -371,7 +374,7 @@ export const ModernizeTableToolbar: React.FC<ModernizeTableToolbarProps> = ({
           )}
 
           {/* 8. Extra Actions */}
-          {extraActions}
+          {extraActions || action}
         </Box>
       </Box>
 

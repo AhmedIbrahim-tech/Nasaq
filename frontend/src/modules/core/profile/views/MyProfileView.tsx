@@ -14,6 +14,7 @@ import {
   IconKey,
   IconPalette,
   IconShieldLock,
+  IconMapPin,
 } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
 
@@ -26,6 +27,7 @@ import { useLogout } from '@/modules/auth/hooks/useLogout';
 import { ProfileHeader } from '../components/ProfileHeader';
 import { OverviewTab } from '../components/OverviewTab';
 import { PersonalInfoTab } from '../components/PersonalInfoTab';
+import { PersonalLocationTab } from '../components/PersonalLocationTab';
 import { SecurityTab } from '../components/SecurityTab';
 import { PreferencesTab } from '../components/PreferencesTab';
 import { AccessPermissionsTab } from '../components/AccessPermissionsTab';
@@ -142,6 +144,11 @@ export function MyProfileView() {
               label={t('Personal Information')}
             />
             <Tab
+              icon={<IconMapPin size={18} />}
+              iconPosition="start"
+              label={t.has('Approved Location') ? t('Approved Location') : 'Approved Location'}
+            />
+            <Tab
               icon={<IconKey size={18} />}
               iconPosition="start"
               label={t.has('Security') ? t('Security') : 'Security'}
@@ -180,7 +187,9 @@ export function MyProfileView() {
             />
           )}
 
-          {activeTab === 2 && (
+          {activeTab === 2 && <PersonalLocationTab />}
+
+          {activeTab === 3 && (
             <SecurityTab
               accessToken={accessToken}
               accessTokenExpiresAtUtc={accessTokenExpiresAtUtc}
@@ -188,9 +197,9 @@ export function MyProfileView() {
             />
           )}
 
-          {activeTab === 3 && <PreferencesTab />}
+          {activeTab === 4 && <PreferencesTab />}
 
-          {activeTab === 4 && <AccessPermissionsTab user={user} roles={roles} />}
+          {activeTab === 5 && <AccessPermissionsTab user={user} roles={roles} />}
         </Box>
       </Stack>
     </PageContainer>

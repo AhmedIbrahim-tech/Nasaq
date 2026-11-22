@@ -46,6 +46,8 @@ public class Employee : IAuditableEntity
 
     public virtual ICollection<EmployeeScheduleAssignment> ScheduleAssignments { get; set; } = new List<EmployeeScheduleAssignment>();
     public virtual ICollection<LeaveRequest> LeaveRequests { get; set; } = new List<LeaveRequest>();
+    public virtual ICollection<EmployeePersonalLocation> PersonalLocations { get; set; } = new List<EmployeePersonalLocation>();
+    public virtual ICollection<EmployeeLocationRequest> LocationRequests { get; set; } = new List<EmployeeLocationRequest>();
 
     public Guid? ProfilePhoto { get; set; }
 

@@ -28,8 +28,10 @@ export interface LeaveRequest {
   id: string;
   employeeId: string;
   employeeName: string;
+  employeeNameAr?: string | null;
   employeeCode: string;
   department?: string | null;
+  departmentAr?: string | null;
   leaveTypeId: string;
   leaveTypeName: string;
   leaveTypeNameAr: string;

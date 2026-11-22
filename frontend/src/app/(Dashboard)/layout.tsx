@@ -17,6 +17,7 @@ import { CustomizerContext } from "@/theme/customizerContext";
 import config from "@/theme/config";
 
 import { ConnectionRecoveryView } from "@/shared/components/recovery/ConnectionRecoveryView";
+import { OnboardingCoordinator } from "@/shared/components/onboarding/OnboardingCoordinator";
 
 const MainWrapper = styled("div")(() => ({
   display: "flex",
@@ -125,6 +126,7 @@ export default function RootLayout({
             {children}
             {/* <Index /> */}
           </Box>
+          <OnboardingCoordinator />
 
           {/* ------------------------------------------- */}
           {/* End Page */}

@@ -238,6 +238,7 @@ export const CustomizerContextProvider: React.FC<CustomizerContextProps> = ({ ch
     document.documentElement.setAttribute('data-theme-mode', preferences.activeMode);
     document.documentElement.setAttribute('dir', preferences.activeDir);
     document.documentElement.setAttribute('lang', preferences.isLanguage);
+    document.dir = preferences.activeDir;
     document.documentElement.setAttribute('data-color-theme', preferences.activeTheme);
     document.documentElement.setAttribute('data-layout', preferences.activeLayout);
     document.documentElement.setAttribute('data-boxed-layout', preferences.isLayout);

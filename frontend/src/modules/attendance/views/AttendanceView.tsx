@@ -138,9 +138,9 @@ export const AttendanceView: React.FC = () => {
         </Alert>
       )}
 
-      {/* Top Section: Check-In Terminal & Today's Shift/Location Context */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid size={{ xs: 12, md: 7 }}>
+      {/* Top Section: Dominant Attendance Action Panel + Secondary Work Info Panel */}
+      <Grid container spacing={3} sx={{ mb: 4 }} alignItems="stretch">
+        <Grid size={{ xs: 12, md: 7, lg: 7.5 }}>
           <CheckInCard
             status={status}
             isLoading={statusLoading}
@@ -148,7 +148,7 @@ export const AttendanceView: React.FC = () => {
             onCheckOut={handleCheckOut}
           />
         </Grid>
-        <Grid size={{ xs: 12, md: 5 }}>
+        <Grid size={{ xs: 12, md: 5, lg: 4.5 }}>
           <AttendanceStatusCard status={status} />
         </Grid>
       </Grid>
@@ -160,6 +160,14 @@ export const AttendanceView: React.FC = () => {
           onChange={(_, val) => setActiveTab(val)}
           textColor="primary"
           indicatorColor="primary"
+          sx={{
+            minHeight: 52,
+            "& .MuiTab-root": {
+              minHeight: 52,
+              fontWeight: 600,
+              gap: 1,
+            },
+          }}
         >
           <Tab
             icon={<IconCalendarTime size={18} />}

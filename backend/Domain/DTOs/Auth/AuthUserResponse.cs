@@ -14,4 +14,7 @@ public sealed class AuthUserResponse
     public string? DepartmentAr { get; set; }
     public Guid? ProfilePhoto { get; set; }
     public Guid? EmployeeId { get; set; }
+    public bool MustChangePasswordOnNextLogin { get; set; }
+    public bool HasApprovedPersonalLocation { get; set; }
+    public bool HasPendingLocationRequest { get; set; }
 }

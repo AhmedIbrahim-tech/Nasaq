@@ -1,134 +1,149 @@
-using Domain.Entities;
-using Domain.Enums;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-
 namespace Infrastructure.Data;
 
 public static class DevDataSeeder
 {
     public const string FixtureMarker = "DEV_FIXTURE";
 
-    public static async Task SeedDevFixturesAsync(ApplicationDbContext context, ILogger logger)
+    public static async Task SeedDevFixturesAsync(ApplicationDbContext context, ILogger logger, CancellationToken cancellationToken = default)
     {
-        logger.LogInformation("[DevDataSeeder] Checking and applying safe development fixtures...");
+        logger.LogInformation("[DevDataSeeder] Checking safe development fixtures...");
 
-        await SeedShiftsAndSchedulesAsync(context, logger);
-        await SeedPointRulesAsync(context, logger);
-        await SeedPointTransactionsAsync(context, logger);
-        await SeedLeaveRequestsAsync(context, logger);
-        await SeedAttendanceRecordsAsync(context, logger);
+        await SeedShiftsAndSchedulesAsync(context, logger, cancellationToken);
+        await SeedPointRulesAsync(context, logger, cancellationToken);
+        await SeedPointTransactionsAsync(context, logger, cancellationToken);
+        await SeedLeaveRequestsAsync(context, logger, cancellationToken);
+        await SeedAttendanceRecordsAsync(context, logger, cancellationToken);
 
         logger.LogInformation("[DevDataSeeder] Development fixtures check completed.");
     }
 
-    private static async Task SeedShiftsAndSchedulesAsync(ApplicationDbContext context, ILogger logger)
+    private static async Task SeedShiftsAndSchedulesAsync(ApplicationDbContext context, ILogger logger, CancellationToken cancellationToken)
     {
-        if (await context.WorkShifts.AnyAsync(s => s.Notes == FixtureMarker))
+        WorkShift? morningShift = null;
+
+        if (await context.WorkShifts.AnyAsync(cancellationToken))
         {
-            return;
+            logger.LogInformation("[SEEDER] WorkShifts: Existing data detected. Seeding skipped.");
+            morningShift = await context.WorkShifts.FirstOrDefaultAsync(cancellationToken);
+        }
+        else
+        {
+            logger.LogInformation("[SEEDER] WorkShifts: Table is empty. Initial seeding started.");
+
+            morningShift = new WorkShift
+            {
+                Name = "Morning Shift (08:00 - 16:30)",
+                NameAr = "الوردية الصباحية (08:00 - 16:30)",
+                StartTime = new TimeOnly(8, 0),
+                EndTime = new TimeOnly(16, 30),
+                EarlyStartTime = new TimeOnly(7, 30),
+                OnTimeStartTime = new TimeOnly(8, 15),
+                LateStartTime = new TimeOnly(8, 45),
+                CutoffTime = new TimeOnly(9, 30),
+                IsOvernight = false,
+                IsActive = true,
+                Notes = FixtureMarker
+            };
+
+            var eveningShift = new WorkShift
+            {
+                Name = "Evening Shift (16:00 - 00:30)",
+                NameAr = "الوردية المسائية (16:00 - 00:30)",
+                StartTime = new TimeOnly(16, 0),
+                EndTime = new TimeOnly(0, 30),
+                EarlyStartTime = new TimeOnly(15, 30),
+                OnTimeStartTime = new TimeOnly(16, 15),
+                LateStartTime = new TimeOnly(16, 45),
+                CutoffTime = new TimeOnly(17, 30),
+                IsOvernight = true,
+                IsActive = true,
+                Notes = FixtureMarker
+            };
+
+            var nightShift = new WorkShift
+            {
+                Name = "Night Shift (00:00 - 08:30)",
+                NameAr = "الوردية الليلية (00:00 - 08:30)",
+                StartTime = new TimeOnly(0, 0),
+                EndTime = new TimeOnly(8, 30),
+                IsOvernight = false,
+                IsActive = true,
+                Notes = FixtureMarker
+            };
+
+            context.WorkShifts.AddRange(morningShift, eveningShift, nightShift);
+            await context.SaveChangesAsync(cancellationToken);
+            logger.LogInformation("[SEEDER] WorkShifts: 3 records inserted successfully.");
         }
 
-        var morningShift = new WorkShift
+        if (await context.WorkSchedules.AnyAsync(cancellationToken))
         {
-            Name = "Morning Shift (08:00 - 16:30)",
-            NameAr = "الوردية الصباحية (08:00 - 16:30)",
-            StartTime = new TimeOnly(8, 0),
-            EndTime = new TimeOnly(16, 30),
-            EarlyStartTime = new TimeOnly(7, 30),
-            OnTimeStartTime = new TimeOnly(8, 15),
-            LateStartTime = new TimeOnly(8, 45),
-            CutoffTime = new TimeOnly(9, 30),
-            IsOvernight = false,
-            IsActive = true,
-            Notes = FixtureMarker
-        };
-
-        var eveningShift = new WorkShift
-        {
-            Name = "Evening Shift (16:00 - 00:30)",
-            NameAr = "الوردية المسائية (16:00 - 00:30)",
-            StartTime = new TimeOnly(16, 0),
-            EndTime = new TimeOnly(0, 30),
-            EarlyStartTime = new TimeOnly(15, 30),
-            OnTimeStartTime = new TimeOnly(16, 15),
-            LateStartTime = new TimeOnly(16, 45),
-            CutoffTime = new TimeOnly(17, 30),
-            IsOvernight = true,
-            IsActive = true,
-            Notes = FixtureMarker
-        };
-
-        var nightShift = new WorkShift
-        {
-            Name = "Night Shift (00:00 - 08:30)",
-            NameAr = "الوردية الليلية (00:00 - 08:30)",
-            StartTime = new TimeOnly(0, 0),
-            EndTime = new TimeOnly(8, 30),
-            IsOvernight = false,
-            IsActive = true,
-            Notes = FixtureMarker
-        };
-
-        context.WorkShifts.AddRange(morningShift, eveningShift, nightShift);
-        await context.SaveChangesAsync();
-
-        // Create standard schedule
-        var schedule = new WorkSchedule
-        {
-            Name = "Weekly Standard 5-Day Schedule",
-            NameAr = "جدول العمل الأسبوعي القياسي (5 أيام)",
-            Description = FixtureMarker,
-            DescriptionAr = "أيام العمل من الأحد إلى الخميس مع راحة يومي الجمعة والسبت",
-            IsDefault = true,
-            IsActive = true
-        };
-
-        for (int day = 0; day <= 6; day++)
-        {
-            var isWork = day != (int)DayOfWeek.Friday && day != (int)DayOfWeek.Saturday;
-            schedule.Days.Add(new WorkScheduleDay
-            {
-                DayOfWeek = (DayOfWeek)day,
-                IsWorkingDay = isWork,
-                WorkShiftId = isWork ? morningShift.Id : null
-            });
+            logger.LogInformation("[SEEDER] WorkSchedules: Existing data detected. Seeding skipped.");
         }
-
-        context.WorkSchedules.Add(schedule);
-        await context.SaveChangesAsync();
-
-        // Assign schedule to employees
-        var employees = await context.Employees
-            .Where(e => e.EmployeeCode == "EMP-001" || e.EmployeeCode == "EMP-SUPER01")
-            .ToListAsync();
-
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        foreach (var emp in employees)
+        else
         {
-            if (!await context.EmployeeScheduleAssignments.AnyAsync(a => a.EmployeeId == emp.Id))
+            logger.LogInformation("[SEEDER] WorkSchedules: Table is empty. Initial seeding started.");
+
+            var schedule = new WorkSchedule
             {
-                context.EmployeeScheduleAssignments.Add(new EmployeeScheduleAssignment
+                Name = "Weekly Standard 5-Day Schedule",
+                NameAr = "جدول العمل الأسبوعي القياسي (5 أيام)",
+                Description = FixtureMarker,
+                DescriptionAr = "أيام العمل من الأحد إلى الخميس مع راحة يومي الجمعة والسبت",
+                IsDefault = true,
+                IsActive = true
+            };
+
+            for (int day = 0; day <= 6; day++)
+            {
+                var isWork = day != (int)DayOfWeek.Friday && day != (int)DayOfWeek.Saturday;
+                schedule.Days.Add(new WorkScheduleDay
                 {
-                    EmployeeId = emp.Id,
-                    WorkScheduleId = schedule.Id,
-                    EffectiveFrom = today.AddDays(-30),
-                    IsActive = true,
-                    Notes = FixtureMarker
+                    DayOfWeek = (DayOfWeek)day,
+                    IsWorkingDay = isWork,
+                    WorkShiftId = isWork ? morningShift?.Id : null
                 });
             }
-        }
 
-        await context.SaveChangesAsync();
-        logger.LogInformation("[DevDataSeeder] Seeded Shifts, Schedule, and Assignments.");
+            context.WorkSchedules.Add(schedule);
+            await context.SaveChangesAsync(cancellationToken);
+
+            // Assign schedule to EMP-001 and EMP-SUPER01 if assignments table is empty
+            if (!await context.EmployeeScheduleAssignments.AnyAsync(cancellationToken))
+            {
+                var employeesToAssign = await context.Employees
+                    .Where(e => e.EmployeeCode == "EMP-001" || e.EmployeeCode == "EMP-SUPER01")
+                    .ToListAsync(cancellationToken);
+
+                var today = DateOnly.FromDateTime(DateTime.UtcNow);
+                foreach (var emp in employeesToAssign)
+                {
+                    context.EmployeeScheduleAssignments.Add(new EmployeeScheduleAssignment
+                    {
+                        EmployeeId = emp.Id,
+                        WorkScheduleId = schedule.Id,
+                        EffectiveFrom = today.AddDays(-30),
+                        EffectiveTo = null,
+                        IsActive = true
+                    });
+                }
+
+                await context.SaveChangesAsync(cancellationToken);
+            }
+
+            logger.LogInformation("[SEEDER] WorkSchedules: 1 records inserted successfully.");
+        }
     }
 
-    private static async Task SeedPointRulesAsync(ApplicationDbContext context, ILogger logger)
+    private static async Task SeedPointRulesAsync(ApplicationDbContext context, ILogger logger, CancellationToken cancellationToken)
     {
-        if (await context.PointRules.AnyAsync(r => r.Description == FixtureMarker))
+        if (await context.PointRules.AnyAsync(cancellationToken))
         {
+            logger.LogInformation("[SEEDER] PointRules: Existing data detected. Seeding skipped.");
             return;
         }
+
+        logger.LogInformation("[SEEDER] PointRules: Table is empty. Initial seeding started.");
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var rules = new List<PointRule>
@@ -220,26 +235,29 @@ public static class DevDataSeeder
         };
 
         context.PointRules.AddRange(rules);
-        await context.SaveChangesAsync();
-        logger.LogInformation("[DevDataSeeder] Seeded {Count} Point Rules.", rules.Count);
+        await context.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("[SEEDER] PointRules: {Count} records inserted successfully.", rules.Count);
     }
 
-    private static async Task SeedPointTransactionsAsync(ApplicationDbContext context, ILogger logger)
+    private static async Task SeedPointTransactionsAsync(ApplicationDbContext context, ILogger logger, CancellationToken cancellationToken)
     {
-        if (await context.PointTransactions.AnyAsync(t => t.SourceEventType == FixtureMarker))
+        if (await context.PointTransactions.AnyAsync(cancellationToken))
         {
+            logger.LogInformation("[SEEDER] PointTransactions: Existing operational data detected. Seeding skipped.");
             return;
         }
 
+        logger.LogInformation("[SEEDER] PointTransactions: Table is empty. Initial seeding started.");
+
         var employees = await context.Employees
             .Where(e => e.EmployeeCode == "EMP-001" || e.EmployeeCode == "EMP-SUPER01")
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
         if (employees.Count == 0) return;
 
-        var onTimeRule = await context.PointRules.FirstOrDefaultAsync(r => r.EventType == PointEventType.OnTimeArrival);
-        var earlyRule = await context.PointRules.FirstOrDefaultAsync(r => r.EventType == PointEventType.EarlyArrival);
-        var lateRule = await context.PointRules.FirstOrDefaultAsync(r => r.EventType == PointEventType.LateArrival);
+        var onTimeRule = await context.PointRules.FirstOrDefaultAsync(r => r.EventType == PointEventType.OnTimeArrival, cancellationToken);
+        var earlyRule = await context.PointRules.FirstOrDefaultAsync(r => r.EventType == PointEventType.EarlyArrival, cancellationToken);
+        var lateRule = await context.PointRules.FirstOrDefaultAsync(r => r.EventType == PointEventType.LateArrival, cancellationToken);
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
         var transactions = new List<PointTransaction>();
@@ -250,14 +268,14 @@ public static class DevDataSeeder
             {
                 EmployeeId = emp.Id,
                 RuleId = onTimeRule?.Id,
-                Category = PointCategory.Green,
                 EventType = PointEventType.OnTimeArrival,
                 Points = 1,
+                Category = PointCategory.Green,
+                SourceEventType = FixtureMarker,
                 Status = PointTransactionStatus.Finalized,
-                Date = today.AddDays(-3),
-                TimestampUtc = DateTime.UtcNow.AddDays(-3),
-                Reason = "DEV_FIXTURE: حضور نظامي في الموعد",
-                SourceEventType = FixtureMarker
+                Date = today.AddDays(-5),
+                TimestampUtc = today.AddDays(-5).ToDateTime(new TimeOnly(8, 5), DateTimeKind.Utc),
+                Reason = "حضور في الموعد المحدد"
             });
 
             // 2. Early arrival (+2 Green, Finalized)
@@ -265,14 +283,14 @@ public static class DevDataSeeder
             {
                 EmployeeId = emp.Id,
                 RuleId = earlyRule?.Id,
-                Category = PointCategory.Green,
                 EventType = PointEventType.EarlyArrival,
                 Points = 2,
+                Category = PointCategory.Green,
+                SourceEventType = FixtureMarker,
                 Status = PointTransactionStatus.Finalized,
-                Date = today.AddDays(-2),
-                TimestampUtc = DateTime.UtcNow.AddDays(-2),
-                Reason = "DEV_FIXTURE: حضور مبكر قبل بدء الوردية",
-                SourceEventType = FixtureMarker
+                Date = today.AddDays(-4),
+                TimestampUtc = today.AddDays(-4).ToDateTime(new TimeOnly(7, 45), DateTimeKind.Utc),
+                Reason = "مكافأة حضور مبكر"
             });
 
             // 3. Late arrival (-2 Red, Finalized)
@@ -280,162 +298,131 @@ public static class DevDataSeeder
             {
                 EmployeeId = emp.Id,
                 RuleId = lateRule?.Id,
-                Category = PointCategory.Red,
                 EventType = PointEventType.LateArrival,
                 Points = -2,
-                Status = PointTransactionStatus.Finalized,
-                Date = today.AddDays(-1),
-                TimestampUtc = DateTime.UtcNow.AddDays(-1),
-                Reason = "DEV_FIXTURE: تأخير 22 دقيقة عن بدء الوردية",
-                SourceEventType = FixtureMarker
-            });
-
-            // 4. Authorized manual adjustment (+5 Green, Finalized)
-            transactions.Add(new PointTransaction
-            {
-                EmployeeId = emp.Id,
-                Category = PointCategory.Green,
-                EventType = PointEventType.ManualAdjustment,
-                Points = 5,
-                Status = PointTransactionStatus.Finalized,
-                Date = today,
-                TimestampUtc = DateTime.UtcNow.AddHours(-2),
-                Reason = "DEV_FIXTURE: مكافأة تميز في التغطية الميدانية",
-                SourceEventType = FixtureMarker
-            });
-
-            // 5. Geofence exception Pending Review (-5 Red, PendingReview)
-            transactions.Add(new PointTransaction
-            {
-                EmployeeId = emp.Id,
                 Category = PointCategory.Red,
+                SourceEventType = FixtureMarker,
+                Status = PointTransactionStatus.Finalized,
+                Date = today.AddDays(-3),
+                TimestampUtc = today.AddDays(-3).ToDateTime(new TimeOnly(8, 25), DateTimeKind.Utc),
+                Reason = "تأخر عن الحضور المعتمد"
+            });
+
+            // 4. Pending Review Exception (-5 Red, PendingReview)
+            transactions.Add(new PointTransaction
+            {
+                EmployeeId = emp.Id,
+                RuleId = null,
                 EventType = PointEventType.GeofenceBreach,
                 Points = -5,
+                Category = PointCategory.Red,
+                SourceEventType = FixtureMarker,
                 Status = PointTransactionStatus.PendingReview,
-                Date = today,
-                TimestampUtc = DateTime.UtcNow.AddHours(-1),
-                Reason = "DEV_FIXTURE: قيد مراجعة استثناء الموقع الجغرافي",
-                SourceEventType = FixtureMarker
+                Date = today.AddDays(-1),
+                TimestampUtc = today.AddDays(-1).ToDateTime(new TimeOnly(9, 15), DateTimeKind.Utc),
+                Reason = "قيد مراجعة استثناء الموقع الجغرافي"
             });
 
-            // 6. Reversible & Reversed transaction
-            var originalTx = new PointTransaction
+            // 5. Direct Admin Adjustment (+3 Green, Finalized)
+            transactions.Add(new PointTransaction
             {
                 EmployeeId = emp.Id,
-                Category = PointCategory.Red,
-                EventType = PointEventType.LateArrival,
-                Points = -2,
-                Status = PointTransactionStatus.Reversed,
-                Date = today.AddDays(-5),
-                TimestampUtc = DateTime.UtcNow.AddDays(-5),
-                Reason = "DEV_FIXTURE: خصم تأخير تم إلغاؤه بعذر مقبول",
-                SourceEventType = FixtureMarker
-            };
-            transactions.Add(originalTx);
-
-            var reversalTx = new PointTransaction
-            {
-                EmployeeId = emp.Id,
-                Category = PointCategory.Green,
+                RuleId = null,
                 EventType = PointEventType.ManualAdjustment,
-                Points = 2,
+                Points = 3,
+                Category = PointCategory.Green,
+                SourceEventType = "AdminManualAdjustment",
                 Status = PointTransactionStatus.Finalized,
-                Date = today.AddDays(-4),
-                TimestampUtc = DateTime.UtcNow.AddDays(-4),
-                Reason = "DEV_FIXTURE: تسوية عكسية للخصم الخاطئ",
-                SourceEventType = FixtureMarker,
-                RelatedTransactionId = originalTx.Id
-            };
-            transactions.Add(reversalTx);
+                Date = today,
+                TimestampUtc = today.ToDateTime(new TimeOnly(10, 0), DateTimeKind.Utc),
+                Reason = "Manual adjustment by superadmin@nasaq.local: تم التحقق من المهمة الخارجية واعتماد النقاط"
+            });
         }
 
         context.PointTransactions.AddRange(transactions);
-        await context.SaveChangesAsync();
-        logger.LogInformation("[DevDataSeeder] Seeded {Count} Point Transactions.", transactions.Count);
+        await context.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("[SEEDER] PointTransactions: {Count} records inserted successfully.", transactions.Count);
     }
 
-    private static async Task SeedLeaveRequestsAsync(ApplicationDbContext context, ILogger logger)
+    private static async Task SeedLeaveRequestsAsync(ApplicationDbContext context, ILogger logger, CancellationToken cancellationToken)
     {
-        var annualType = await context.LeaveTypes.FirstOrDefaultAsync(t => t.Code == "ANNUAL");
-        var sickType = await context.LeaveTypes.FirstOrDefaultAsync(t => t.Code == "SICK");
-        var emergencyType = await context.LeaveTypes.FirstOrDefaultAsync(t => t.Code == "EMERGENCY");
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
-
-        var superEmp = await context.Employees.FirstOrDefaultAsync(e => e.EmployeeCode == "EMP-SUPER01");
-        if (superEmp != null && !await context.LeaveRequests.AnyAsync(l => l.EmployeeId == superEmp.Id && l.Reason != null && l.Reason.StartsWith(FixtureMarker)))
+        if (await context.LeaveRequests.AnyAsync(cancellationToken))
         {
-            if (annualType != null && emergencyType != null)
-            {
-                var superApproved = new LeaveRequest
-                {
-                    EmployeeId = superEmp.Id,
-                    LeaveTypeId = annualType.Id,
-                    StartDate = today.AddDays(10),
-                    EndDate = today.AddDays(14),
-                    DaysCount = 5,
-                    Reason = $"{FixtureMarker}: إجازة سنوية مجدولة",
-                    Status = LeaveRequestStatus.Approved,
-                    SubmittedAtUtc = DateTime.UtcNow.AddDays(-3),
-                    ReviewedAtUtc = DateTime.UtcNow.AddDays(-2),
-                    ReviewedBy = "Management",
-                    ReviewNotes = "معتمد"
-                };
-                superApproved.ApprovalHistory.Add(new LeaveApprovalHistory
-                {
-                    LeaveRequestId = superApproved.Id,
-                    Action = LeaveApprovalAction.Submitted,
-                    ActionDateUtc = DateTime.UtcNow.AddDays(-3),
-                    ActorName = "System SuperAdmin",
-                    Comments = "طلب إجازة سنوية"
-                });
-                superApproved.ApprovalHistory.Add(new LeaveApprovalHistory
-                {
-                    LeaveRequestId = superApproved.Id,
-                    Action = LeaveApprovalAction.Approved,
-                    ActionDateUtc = DateTime.UtcNow.AddDays(-2),
-                    ActorName = "Management",
-                    Comments = "معتمد"
-                });
-                context.LeaveRequests.Add(superApproved);
-
-                var superPending = new LeaveRequest
-                {
-                    EmployeeId = superEmp.Id,
-                    LeaveTypeId = emergencyType.Id,
-                    StartDate = today.AddDays(3),
-                    EndDate = today.AddDays(3),
-                    DaysCount = 1,
-                    Reason = $"{FixtureMarker}: ظرف طارئ عائلي",
-                    Status = LeaveRequestStatus.Pending,
-                    SubmittedAtUtc = DateTime.UtcNow.AddHours(-4)
-                };
-                superPending.ApprovalHistory.Add(new LeaveApprovalHistory
-                {
-                    LeaveRequestId = superPending.Id,
-                    Action = LeaveApprovalAction.Submitted,
-                    ActionDateUtc = DateTime.UtcNow.AddHours(-4),
-                    ActorName = "System SuperAdmin",
-                    Comments = "قيد المراجعة"
-                });
-                context.LeaveRequests.Add(superPending);
-                await context.SaveChangesAsync();
-                logger.LogInformation("[DevDataSeeder] Seeded 2 SuperAdmin Leave Requests.");
-            }
-        }
-
-        if (await context.LeaveRequests.AnyAsync(l => l.Reason != null && l.Reason.StartsWith(FixtureMarker)))
-        {
+            logger.LogInformation("[SEEDER] LeaveRequests: Existing operational data detected. Seeding skipped.");
             return;
         }
 
-        var emp1 = await context.Employees.FirstOrDefaultAsync(e => e.EmployeeCode == "EMP-001");
-        var emp2 = await context.Employees.FirstOrDefaultAsync(e => e.EmployeeCode == "EMP-002");
+        logger.LogInformation("[SEEDER] LeaveRequests: Table is empty. Initial seeding started.");
+
+        var annualType = await context.LeaveTypes.FirstOrDefaultAsync(t => t.Code == "ANNUAL", cancellationToken);
+        var sickType = await context.LeaveTypes.FirstOrDefaultAsync(t => t.Code == "SICK", cancellationToken);
+        var emergencyType = await context.LeaveTypes.FirstOrDefaultAsync(t => t.Code == "EMERGENCY", cancellationToken);
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        var superEmp = await context.Employees.FirstOrDefaultAsync(e => e.EmployeeCode == "EMP-SUPER01", cancellationToken);
+        var emp1 = await context.Employees.FirstOrDefaultAsync(e => e.EmployeeCode == "EMP-001", cancellationToken);
+        var emp2 = await context.Employees.FirstOrDefaultAsync(e => e.EmployeeCode == "EMP-002", cancellationToken);
 
         var requests = new List<LeaveRequest>();
 
+        if (superEmp != null && annualType != null && emergencyType != null)
+        {
+            var superApproved = new LeaveRequest
+            {
+                EmployeeId = superEmp.Id,
+                LeaveTypeId = annualType.Id,
+                StartDate = today.AddDays(10),
+                EndDate = today.AddDays(14),
+                DaysCount = 5,
+                Reason = "إجازة سنوية مجدولة",
+                Status = LeaveRequestStatus.Approved,
+                SubmittedAtUtc = DateTime.UtcNow.AddDays(-3),
+                ReviewedAtUtc = DateTime.UtcNow.AddDays(-2),
+                ReviewedBy = "Management",
+                ReviewNotes = "معتمد"
+            };
+            superApproved.ApprovalHistory.Add(new LeaveApprovalHistory
+            {
+                LeaveRequestId = superApproved.Id,
+                Action = LeaveApprovalAction.Submitted,
+                ActionDateUtc = DateTime.UtcNow.AddDays(-3),
+                ActorName = "سوبر أدمن النظام",
+                Comments = "طلب إجازة سنوية"
+            });
+            superApproved.ApprovalHistory.Add(new LeaveApprovalHistory
+            {
+                LeaveRequestId = superApproved.Id,
+                Action = LeaveApprovalAction.Approved,
+                ActionDateUtc = DateTime.UtcNow.AddDays(-2),
+                ActorName = "Management",
+                Comments = "معتمد"
+            });
+            requests.Add(superApproved);
+
+            var superPending = new LeaveRequest
+            {
+                EmployeeId = superEmp.Id,
+                LeaveTypeId = emergencyType.Id,
+                StartDate = today.AddDays(3),
+                EndDate = today.AddDays(3),
+                DaysCount = 1,
+                Reason = "ظرف طارئ عائلي",
+                Status = LeaveRequestStatus.Pending,
+                SubmittedAtUtc = DateTime.UtcNow.AddHours(-4)
+            };
+            superPending.ApprovalHistory.Add(new LeaveApprovalHistory
+            {
+                LeaveRequestId = superPending.Id,
+                Action = LeaveApprovalAction.Submitted,
+                ActionDateUtc = DateTime.UtcNow.AddHours(-4),
+                ActorName = "سوبر أدمن النظام",
+                Comments = "قيد المراجعة"
+            });
+            requests.Add(superPending);
+        }
+
         if (emp1 != null && annualType != null && sickType != null)
         {
-            // 1. Approved Annual Leave (3 days)
             var approved = new LeaveRequest
             {
                 EmployeeId = emp1.Id,
@@ -443,7 +430,7 @@ public static class DevDataSeeder
                 StartDate = today.AddDays(7),
                 EndDate = today.AddDays(9),
                 DaysCount = 3,
-                Reason = $"{FixtureMarker}: إجازة سنوية عائلية مخططة مسبقاً",
+                Reason = "إجازة سنوية عائلية مخططة مسبقاً",
                 Status = LeaveRequestStatus.Approved,
                 SubmittedAtUtc = DateTime.UtcNow.AddDays(-2),
                 ReviewedAtUtc = DateTime.UtcNow.AddDays(-1),
@@ -455,7 +442,7 @@ public static class DevDataSeeder
                 LeaveRequestId = approved.Id,
                 Action = LeaveApprovalAction.Submitted,
                 ActionDateUtc = DateTime.UtcNow.AddDays(-2),
-                ActorName = "Mohamed Photographer",
+                ActorName = "محمد المصور",
                 Comments = "طلب إجازة سنوية"
             });
             approved.ApprovalHistory.Add(new LeaveApprovalHistory
@@ -463,12 +450,11 @@ public static class DevDataSeeder
                 LeaveRequestId = approved.Id,
                 Action = LeaveApprovalAction.Approved,
                 ActionDateUtc = DateTime.UtcNow.AddDays(-1),
-                ActorName = "Ahmad Supervisor",
+                ActorName = "أحمد المشرف",
                 Comments = "معتمد"
             });
             requests.Add(approved);
 
-            // 2. Pending Sick Leave (2 days)
             var pending = new LeaveRequest
             {
                 EmployeeId = emp1.Id,
@@ -476,7 +462,7 @@ public static class DevDataSeeder
                 StartDate = today.AddDays(1),
                 EndDate = today.AddDays(2),
                 DaysCount = 2,
-                Reason = $"{FixtureMarker}: إجازة مرضية لظرف صحي ومراجعة طبية",
+                Reason = "إجازة مرضية لظرف صحي ومراجعة طبية",
                 Status = LeaveRequestStatus.Pending,
                 SubmittedAtUtc = DateTime.UtcNow.AddHours(-3)
             };
@@ -485,7 +471,7 @@ public static class DevDataSeeder
                 LeaveRequestId = pending.Id,
                 Action = LeaveApprovalAction.Submitted,
                 ActionDateUtc = DateTime.UtcNow.AddHours(-3),
-                ActorName = "Mohamed Photographer",
+                ActorName = "محمد المصور",
                 Comments = "بانتظار مراجعة التقرير الطبي والاعتماد"
             });
             requests.Add(pending);
@@ -493,7 +479,6 @@ public static class DevDataSeeder
 
         if (emp2 != null && emergencyType != null)
         {
-            // 3. Rejected Emergency Leave (1 day)
             var rejected = new LeaveRequest
             {
                 EmployeeId = emp2.Id,
@@ -501,67 +486,58 @@ public static class DevDataSeeder
                 StartDate = today.AddDays(-4),
                 EndDate = today.AddDays(-4),
                 DaysCount = 1,
-                Reason = $"{FixtureMarker}: طلب إجازة اضطرارية",
+                Reason = "ظرف طارئ خاص",
                 Status = LeaveRequestStatus.Rejected,
                 SubmittedAtUtc = DateTime.UtcNow.AddDays(-5),
                 ReviewedAtUtc = DateTime.UtcNow.AddDays(-4),
                 ReviewedBy = "Operations Administrator",
-                ReviewNotes = "تعذر القبول لتعارض مع مواعيد التغطية الميدانية الإلزامية"
+                ReviewNotes = "مرفوض - لم يتم التنسيق المسبق مع مسؤول المستودع"
             };
+            rejected.ApprovalHistory.Add(new LeaveApprovalHistory
+            {
+                LeaveRequestId = rejected.Id,
+                Action = LeaveApprovalAction.Submitted,
+                ActionDateUtc = DateTime.UtcNow.AddDays(-5),
+                ActorName = "سارة اللوجستية",
+                Comments = "طلب إجازة اضطرارية"
+            });
             rejected.ApprovalHistory.Add(new LeaveApprovalHistory
             {
                 LeaveRequestId = rejected.Id,
                 Action = LeaveApprovalAction.Rejected,
                 ActionDateUtc = DateTime.UtcNow.AddDays(-4),
-                ActorName = "Operations Administrator",
+                ActorName = "مسؤول العمليات الإدارية",
                 Comments = "مرفوض"
             });
             requests.Add(rejected);
-
-            // 4. Cancelled Annual Leave
-            if (annualType != null)
-            {
-                var cancelled = new LeaveRequest
-                {
-                    EmployeeId = emp2.Id,
-                    LeaveTypeId = annualType.Id,
-                    StartDate = today.AddDays(14),
-                    EndDate = today.AddDays(16),
-                    DaysCount = 3,
-                    Reason = $"{FixtureMarker}: تم إلغاء الطلب لتغير خطة السفر",
-                    Status = LeaveRequestStatus.Cancelled,
-                    SubmittedAtUtc = DateTime.UtcNow.AddDays(-7),
-                    ReviewedAtUtc = DateTime.UtcNow.AddDays(-6),
-                    ReviewedBy = emp2.FullName,
-                    ReviewNotes = "ألغي من قبل الموظف"
-                };
-                requests.Add(cancelled);
-            }
         }
 
         context.LeaveRequests.AddRange(requests);
-        await context.SaveChangesAsync();
-        logger.LogInformation("[DevDataSeeder] Seeded {Count} Leave Requests.", requests.Count);
+        await context.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("[SEEDER] LeaveRequests: {Count} records inserted successfully.", requests.Count);
     }
 
-    private static async Task SeedAttendanceRecordsAsync(ApplicationDbContext context, ILogger logger)
+    private static async Task SeedAttendanceRecordsAsync(ApplicationDbContext context, ILogger logger, CancellationToken cancellationToken)
     {
-        if (await context.AttendanceRecords.AnyAsync(a => a.Notes == FixtureMarker))
+        if (await context.AttendanceRecords.AnyAsync(cancellationToken))
         {
+            logger.LogInformation("[SEEDER] AttendanceRecords: Existing operational data detected. Seeding skipped.");
             return;
         }
 
-        var emp1 = await context.Employees.FirstOrDefaultAsync(e => e.EmployeeCode == "EMP-001");
-        var emp2 = await context.Employees.FirstOrDefaultAsync(e => e.EmployeeCode == "EMP-002");
-        var superEmp = await context.Employees.FirstOrDefaultAsync(e => e.EmployeeCode == "EMP-SUPER01");
-        var hq = await context.WorkLocations.FirstOrDefaultAsync(l => l.Name.Contains("Riyadh"));
-        var shift = await context.WorkShifts.FirstOrDefaultAsync();
+        logger.LogInformation("[SEEDER] AttendanceRecords: Table is empty. Initial seeding started.");
+
+        var emp1 = await context.Employees.FirstOrDefaultAsync(e => e.EmployeeCode == "EMP-001", cancellationToken);
+        var emp2 = await context.Employees.FirstOrDefaultAsync(e => e.EmployeeCode == "EMP-002", cancellationToken);
+        var superEmp = await context.Employees.FirstOrDefaultAsync(e => e.EmployeeCode == "EMP-SUPER01", cancellationToken);
+        var hq = await context.WorkLocations.FirstOrDefaultAsync(l => l.Name.Contains("Riyadh"), cancellationToken);
+        var shift = await context.WorkShifts.FirstOrDefaultAsync(cancellationToken);
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var yesterday = today.AddDays(-1);
         var records = new List<AttendanceRecord>();
 
-        // 1. Incomplete Attendance (Checked in yesterday morning, missing check-out!) -> For Incomplete Attendance Table
+        // 1. Incomplete Attendance (Checked in yesterday morning, missing check-out!)
         if (emp1 != null)
         {
             var checkInYesterday = yesterday.ToDateTime(new TimeOnly(8, 2, 0), DateTimeKind.Utc);
@@ -586,7 +562,7 @@ public static class DevDataSeeder
             });
         }
 
-        // 2. GPS Exception Check-in Pending Review (Low Accuracy: 209m > 50m) -> For GPS Exceptions Queue
+        // 2. GPS Exception Check-in Pending Review (Low Accuracy: 209m > 50m)
         if (emp2 != null)
         {
             var checkInToday = today.ToDateTime(new TimeOnly(8, 10, 0), DateTimeKind.Utc);
@@ -612,7 +588,7 @@ public static class DevDataSeeder
             });
         }
 
-        // 3. GPS Exception Check-out Pending Review (Outside Geofence: 320m > 200m) -> For GPS Exceptions Queue
+        // 3. GPS Exception Check-out Pending Review (Outside Geofence: 320m > 200m)
         if (superEmp != null)
         {
             var checkInTwoDaysAgo = today.AddDays(-2).ToDateTime(new TimeOnly(8, 0, 0), DateTimeKind.Utc);
@@ -674,7 +650,7 @@ public static class DevDataSeeder
         }
 
         context.AttendanceRecords.AddRange(records);
-        await context.SaveChangesAsync();
-        logger.LogInformation("[DevDataSeeder] Seeded {Count} Attendance Records.", records.Count);
+        await context.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("[SEEDER] AttendanceRecords: {Count} records inserted successfully.", records.Count);
     }
 }

@@ -18,6 +18,12 @@ public static class Router
         public const string Profile = Prefix + "/me/profile";
         public const string ChangePassword = Prefix + "/me/change-password";
         public const string FirstLoginChangePassword = Prefix + "/first-login-change-password";
+        public const string ForgotPassword = Prefix + "/forgot-password";
+        public const string PendingPasswordRequests = Prefix + "/password-requests";
+        public const string ApprovePasswordRequest = Prefix + "/password-requests/{id}/approve";
+        public const string RejectPasswordRequest = Prefix + "/password-requests/{id}/reject";
+        public const string AdminResetPassword = Prefix + "/users/{userId}/reset-password";
+        public const string AdminDirectChangePassword = Prefix + "/users/{userId}/direct-change-password";
     }
 
     public static class Notifications
@@ -70,6 +76,17 @@ public static class Router
         public const string ToggleStatus = Prefix + "/" + SingleRoute + "/status";
         public const string Delete = Prefix + "/" + SingleRoute;
         public const string BulkDelete = Prefix + "/bulk-delete";
+        public const string GlobalRadius = Prefix + "/global-radius";
+        public const string UpdateCoordinates = Prefix + "/" + SingleRoute + "/coordinates";
+        public const string MyPersonalLocation = Prefix + "/my-personal";
+        public const string RegisterPersonalLocation = Prefix + "/register-personal";
+        public const string RequestLocationChange = Prefix + "/request-change";
+        public const string CancelLocationRequest = Prefix + "/requests/{id}/cancel";
+        public const string PendingLocationRequests = Prefix + "/requests/pending";
+        public const string ApproveLocationRequest = Prefix + "/requests/{id}/approve";
+        public const string RejectLocationRequest = Prefix + "/requests/{id}/reject";
+        public const string AdminChangeEmployeeLocation = Prefix + "/employees/{employeeId}/change-location";
+        public const string ResetEmployeeLocation = Prefix + "/employees/{employeeId}/reset-location";
     }
 
     public static class Shifts

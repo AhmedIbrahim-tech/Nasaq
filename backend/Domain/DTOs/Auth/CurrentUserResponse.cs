@@ -15,4 +15,7 @@ public sealed class CurrentUserResponse
     public IReadOnlyList<string> Roles { get; set; } = [];
     public Guid? ProfilePhoto { get; set; }
     public Guid? EmployeeId { get; set; }
+    public bool MustChangePasswordOnNextLogin { get; set; }
+    public bool HasApprovedPersonalLocation { get; set; }
+    public bool HasPendingLocationRequest { get; set; }
 }

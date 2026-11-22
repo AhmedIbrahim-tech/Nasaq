@@ -482,7 +482,16 @@ export function ModernizeDataTable<T>({
                         }}
                       >
                         <TableCell colSpan={totalColSpan} sx={{ p: 0, borderBottom: `1px solid ${theme.palette.divider}` }}>
-                          <Box sx={{ p: { xs: 2, sm: 2.75 } }}>{renderExpandedRow(item)}</Box>
+                          <Box
+                            dir={isRtl ? "rtl" : "ltr"}
+                            sx={{
+                              direction: isRtl ? "rtl" : "ltr",
+                              textAlign: isRtl ? "right" : "left",
+                              p: { xs: 2, sm: 2.75 },
+                            }}
+                          >
+                            {renderExpandedRow(item)}
+                          </Box>
                         </TableCell>
                       </TableRow>
                     )}
