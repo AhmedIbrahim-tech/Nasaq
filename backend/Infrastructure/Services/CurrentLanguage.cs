@@ -22,6 +22,16 @@ public sealed class CurrentLanguage : ICurrentLanguage
             if (httpContext == null)
                 return "ar";
 
+            // 0. Custom headers (X-Language, X-Locale)
+            if (httpContext.Request.Headers.TryGetValue("X-Language", out var xLang) && !string.IsNullOrWhiteSpace(xLang))
+            {
+                return TranslationResolutionExtensions.NormalizeLanguageCode(xLang.ToString());
+            }
+            if (httpContext.Request.Headers.TryGetValue("X-Locale", out var xLocale) && !string.IsNullOrWhiteSpace(xLocale))
+            {
+                return TranslationResolutionExtensions.NormalizeLanguageCode(xLocale.ToString());
+            }
+
             // 1. Explicit query parameter (?lang=ar, ?locale=en)
             if (httpContext.Request.Query.TryGetValue("lang", out var langQuery) && !string.IsNullOrWhiteSpace(langQuery))
             {

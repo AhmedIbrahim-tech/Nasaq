@@ -42,8 +42,10 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
       }
       if (typeof config.headers.set === "function") {
         config.headers.set("Accept-Language", lang);
+        config.headers.set("X-Language", lang);
       } else {
         config.headers["Accept-Language"] = lang;
+        config.headers["X-Language"] = lang;
       }
     }
   } catch {

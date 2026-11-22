@@ -93,10 +93,16 @@ export const employeeService = {
     formData.append("employeeCode", data.employeeCode);
     formData.append("firstName", data.firstName);
     formData.append("lastName", data.lastName);
+    if (data.firstNameAr) formData.append("firstNameAr", data.firstNameAr);
+    if (data.lastNameAr) formData.append("lastNameAr", data.lastNameAr);
+    if (data.firstNameEn) formData.append("firstNameEn", data.firstNameEn);
+    if (data.lastNameEn) formData.append("lastNameEn", data.lastNameEn);
     formData.append("email", data.email);
     if (data.phoneNumber) formData.append("phoneNumber", data.phoneNumber);
     if (data.department) formData.append("department", data.department);
+    if (data.departmentAr) formData.append("departmentAr", data.departmentAr);
     if (data.jobTitle) formData.append("jobTitle", data.jobTitle);
+    if (data.jobTitleAr) formData.append("jobTitleAr", data.jobTitleAr);
     formData.append("hireDate", data.hireDate);
     if (data.supervisorId) formData.append("supervisorId", data.supervisorId);
     if (data.workLocationId) formData.append("workLocationId", data.workLocationId);
@@ -122,10 +128,16 @@ export const employeeService = {
     const formData = new FormData();
     formData.append("firstName", data.firstName);
     formData.append("lastName", data.lastName);
+    if (data.firstNameAr !== undefined) formData.append("firstNameAr", data.firstNameAr || "");
+    if (data.lastNameAr !== undefined) formData.append("lastNameAr", data.lastNameAr || "");
+    if (data.firstNameEn !== undefined) formData.append("firstNameEn", data.firstNameEn || "");
+    if (data.lastNameEn !== undefined) formData.append("lastNameEn", data.lastNameEn || "");
     formData.append("email", data.email);
     if (data.phoneNumber) formData.append("phoneNumber", data.phoneNumber);
-    if (data.department) formData.append("department", data.department);
-    if (data.jobTitle) formData.append("jobTitle", data.jobTitle);
+    if (data.department !== undefined) formData.append("department", data.department || "");
+    if (data.departmentAr !== undefined) formData.append("departmentAr", data.departmentAr || "");
+    if (data.jobTitle !== undefined) formData.append("jobTitle", data.jobTitle || "");
+    if (data.jobTitleAr !== undefined) formData.append("jobTitleAr", data.jobTitleAr || "");
     formData.append("hireDate", data.hireDate);
     if (data.supervisorId) formData.append("supervisorId", data.supervisorId);
     if (data.workLocationId !== undefined) {

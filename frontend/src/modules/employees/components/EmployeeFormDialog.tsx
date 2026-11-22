@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
@@ -18,13 +18,16 @@ import CircularProgress from "@mui/material/CircularProgress";
 import Divider from "@mui/material/Divider";
 import Avatar from "@mui/material/Avatar";
 import Stack from "@mui/material/Stack";
+import { useTheme } from "@mui/material/styles";
 import { IconUser, IconCamera, IconTrash } from "@tabler/icons-react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { RoleNames } from "@/shared/constants/roles";
 import { Router } from "@/lib/api/router";
 import DialogCloseButton from "@/shared/components/buttons/DialogCloseButton";
 import { toDateInputValue } from "@/shared/utils/i18nFormatters";
 import { ProfilePhotoAvatar } from "@/shared/components/avatar";
+import { CustomizerContext } from "@/theme/customizerContext";
+import { SecondaryLanguageCheckbox } from "@/shared/components/forms/SecondaryLanguageCheckbox";
 import type { WorkLocation } from "@/modules/locations";
 import type { Employee, SupervisorLookup } from "../types";
 

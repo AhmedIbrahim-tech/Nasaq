@@ -35,10 +35,14 @@ public sealed class CreateEmployeeHandler(
         }
 
         var requestedRole = request.UserRole?.Trim();
-        var firstName = !string.IsNullOrWhiteSpace(request.FirstNameEn) ? request.FirstNameEn.Trim() : request.FirstName.Trim();
-        var lastName = !string.IsNullOrWhiteSpace(request.LastNameEn) ? request.LastNameEn.Trim() : request.LastName.Trim();
         var firstNameAr = !string.IsNullOrWhiteSpace(request.FirstNameAr) ? request.FirstNameAr.Trim() : null;
         var lastNameAr = !string.IsNullOrWhiteSpace(request.LastNameAr) ? request.LastNameAr.Trim() : null;
+        var firstName = !string.IsNullOrWhiteSpace(request.FirstNameEn)
+            ? request.FirstNameEn.Trim()
+            : (!string.IsNullOrWhiteSpace(request.FirstName) ? request.FirstName.Trim() : (firstNameAr ?? string.Empty));
+        var lastName = !string.IsNullOrWhiteSpace(request.LastNameEn)
+            ? request.LastNameEn.Trim()
+            : (!string.IsNullOrWhiteSpace(request.LastName) ? request.LastName.Trim() : (lastNameAr ?? string.Empty));
         var department = request.Department?.Trim();
         var departmentAr = request.DepartmentAr?.Trim();
         var jobTitle = request.JobTitle?.Trim();

@@ -93,9 +93,14 @@ export function getLocalizedEmployeeName(
     en = `${emp.firstName || ""} ${emp.lastName || ""}`.trim();
   }
 
-  // If in RTL mode and no Arabic name is provided, check if it's a known system role/user
-  if (isRtl && !ar && en && KNOWN_NAME_TRANSLATIONS[en]) {
-    ar = KNOWN_NAME_TRANSLATIONS[en].ar;
+  // If in RTL mode and no Arabic name is provided or matches English, check known translations
+  if (isRtl && (!ar || ar.toLowerCase() === en.toLowerCase()) && en) {
+    const match = Object.entries(KNOWN_NAME_TRANSLATIONS).find(
+      ([key]) => key.toLowerCase() === en.toLowerCase()
+    );
+    if (match) {
+      ar = match[1].ar;
+    }
   }
 
   return getLocalizedValue(ar, en, isRtl, fallback);
@@ -141,18 +146,21 @@ export function getLocalizedLeaveTypeName(
   let ar = (entity.leaveTypeNameAr || entity.nameAr || "").trim();
 
   if (isRtl) {
-    if (ar && ar !== en) return ar;
-    if (en && KNOWN_LEAVE_TYPE_TRANSLATIONS[en]) {
-      return KNOWN_LEAVE_TYPE_TRANSLATIONS[en].ar;
-    }
-    if (ar && KNOWN_LEAVE_TYPE_TRANSLATIONS[ar]) {
-      return KNOWN_LEAVE_TYPE_TRANSLATIONS[ar].ar;
+    if (ar && ar.toLowerCase() !== en.toLowerCase()) return ar;
+    const match = Object.entries(KNOWN_LEAVE_TYPE_TRANSLATIONS).find(
+      ([key]) => key.toLowerCase() === (en || ar).toLowerCase()
+    );
+    if (match) {
+      return match[1].ar;
     }
     return ar || en || (fallback === "—" ? "إجازة" : fallback);
   } else {
-    if (en) return en;
-    if (ar && KNOWN_LEAVE_TYPE_TRANSLATIONS[ar]) {
-      return KNOWN_LEAVE_TYPE_TRANSLATIONS[ar].en;
+    if (en && (!ar || en.toLowerCase() !== ar.toLowerCase())) return en;
+    const match = Object.entries(KNOWN_LEAVE_TYPE_TRANSLATIONS).find(
+      ([key]) => key.toLowerCase() === (ar || en).toLowerCase()
+    );
+    if (match) {
+      return match[1].en;
     }
     return en || ar || (fallback === "—" ? "Leave" : fallback);
   }

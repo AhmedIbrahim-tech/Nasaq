@@ -64,7 +64,9 @@ public class GetMyLeaveRequestsHandler : IRequestHandler<GetMyLeaveRequestsQuery
                 DepartmentAr = employee.DepartmentAr,
                 LeaveTypeId = r.LeaveTypeId,
                 LeaveTypeName = r.LeaveType != null ? r.LeaveType.Name : string.Empty,
-                LeaveTypeNameAr = r.LeaveType != null ? r.LeaveType.NameAr : string.Empty,
+                LeaveTypeNameAr = r.LeaveType != null
+                    ? (!string.IsNullOrWhiteSpace(r.LeaveType.NameAr) ? r.LeaveType.NameAr : r.LeaveType.Name)
+                    : string.Empty,
                 LeaveTypeCode = r.LeaveType != null ? r.LeaveType.Code : string.Empty,
                 IsPaid = r.LeaveType != null && r.LeaveType.IsPaid,
                 StartDate = r.StartDate,

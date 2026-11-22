@@ -24,6 +24,7 @@ public static class AuthMapper
         DepartmentAr = employee?.DepartmentAr ?? user.DepartmentAr,
         ProfilePhoto = employee?.ProfilePhoto,
         EmployeeId = employee?.Id,
+        EmployeeCode = employee?.EmployeeCode,
         MustChangePasswordOnNextLogin = user.MustChangePasswordOnNextLogin,
         HasApprovedPersonalLocation = hasApprovedPersonalLocation,
         HasPendingLocationRequest = hasPendingLocationRequest
@@ -49,6 +50,7 @@ public static class AuthMapper
         Roles = roles,
         ProfilePhoto = employee?.ProfilePhoto,
         EmployeeId = employee?.Id,
+        EmployeeCode = employee?.EmployeeCode,
         MustChangePasswordOnNextLogin = user.MustChangePasswordOnNextLogin,
         HasApprovedPersonalLocation = hasApprovedPersonalLocation,
         HasPendingLocationRequest = hasPendingLocationRequest

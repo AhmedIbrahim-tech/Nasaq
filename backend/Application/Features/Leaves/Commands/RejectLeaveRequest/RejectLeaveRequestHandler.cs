@@ -42,28 +42,31 @@ public class RejectLeaveRequestHandler : IRequestHandler<RejectLeaveRequestComma
             .Include(r => r.ApprovalHistory)
             .FirstOrDefaultAsync(r => r.Id == request.Id, cancellationToken);
 
+        var isAr = _currentLanguage == null || _currentLanguage.LanguageCode.StartsWith("ar", StringComparison.OrdinalIgnoreCase);
+
         if (leaveRequest == null)
         {
-            var notFoundMsg = _currentLanguage != null && _currentLanguage.LanguageCode.StartsWith("ar", StringComparison.OrdinalIgnoreCase)
-                ? "طلب الإجازة غير موجود."
-                : "Leave request not found.";
+            var notFoundMsg = isAr ? "طلب الإجازة غير موجود." : "Leave request not found.";
             return GenericBaseResponse<LeaveRequestDto>.Fail(notFoundMsg, HttpStatusCode.NotFound);
         }
 
         if (leaveRequest.Status != LeaveRequestStatus.Pending)
         {
-            return GenericBaseResponse<LeaveRequestDto>.Fail(
-                $"Cannot reject a request with status '{leaveRequest.Status}'. Only pending requests can be rejected.",
-                HttpStatusCode.BadRequest);
+            var statusMsg = isAr
+                ? "لا يمكن رفض هذا الطلب لأنه ليس في حالة قيد الانتظار."
+                : $"Cannot reject a request with status '{leaveRequest.Status}'. Only pending requests can be rejected.";
+            return GenericBaseResponse<LeaveRequestDto>.Fail(statusMsg, HttpStatusCode.BadRequest);
         }
 
-        // Self-rejection safeguard
-        if (!string.IsNullOrEmpty(_currentUser.UserId) && leaveRequest.Employee?.UserId == _currentUser.UserId)
+        // Self-rejection safeguard: Check both User ID and Employee record mapping
+        var isOwnRequest = (!string.IsNullOrEmpty(_currentUser.UserId) && leaveRequest.Employee?.UserId == _currentUser.UserId)
+            || (_currentUser.UserId != null && leaveRequest.EmployeeId == (await _context.Employees.Where(e => e.UserId == _currentUser.UserId).Select(e => e.Id).FirstOrDefaultAsync(cancellationToken)));
+
+        if (isOwnRequest)
         {
-            var isEn = _currentLanguage != null && _currentLanguage.LanguageCode.StartsWith("en", StringComparison.OrdinalIgnoreCase);
-            var msg = isEn
-                ? "You cannot reject your own leave request. Use cancel instead."
-                : "لا يمكنك رفض طلب الإجازة الخاص بك. يرجى استخدام خيار الإلغاء بدلاً من ذلك.";
+            var msg = isAr
+                ? "لا يمكنك رفض طلب الإجازة الخاص بك. يرجى استخدام خيار الإلغاء بدلاً من ذلك."
+                : "You cannot reject your own leave request. Use cancel instead.";
             return GenericBaseResponse<LeaveRequestDto>.Fail(msg, HttpStatusCode.Forbidden);
         }
 
@@ -76,9 +79,10 @@ public class RejectLeaveRequestHandler : IRequestHandler<RejectLeaveRequestComma
 
             if (currentSupervisor == null || leaveRequest.Employee?.SupervisorId != currentSupervisor.Id)
             {
-                return GenericBaseResponse<LeaveRequestDto>.Fail(
-                    "You are only authorized to review leave requests for your assigned team members.",
-                    HttpStatusCode.Forbidden);
+                var authMsg = isAr
+                    ? "أنت مصرح فقط بمراجعة طلبات الإجازة للموظفين التابعين لفريقك."
+                    : "You are only authorized to review leave requests for your assigned team members.";
+                return GenericBaseResponse<LeaveRequestDto>.Fail(authMsg, HttpStatusCode.Forbidden);
             }
         }
 
@@ -154,6 +158,7 @@ public class RejectLeaveRequestHandler : IRequestHandler<RejectLeaveRequestComma
                 }).ToList()
         };
 
-        return GenericBaseResponse<LeaveRequestDto>.Success(dto, "Leave request rejected successfully.");
+        var successMsg = isAr ? "تم رفض طلب الإجازة بنجاح." : "Leave request rejected successfully.";
+        return GenericBaseResponse<LeaveRequestDto>.Success(dto, successMsg);
     }
 }

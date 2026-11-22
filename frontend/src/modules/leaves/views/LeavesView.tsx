@@ -94,16 +94,40 @@ export const LeavesView: React.FC = () => {
   } = useAppSelector((state) => state.leaves);
 
   const isMyRequest = (row: LeaveRequest): boolean => {
+    if (!row) return false;
+    if (row.canReview === false && row.canCancel === true) {
+      return true;
+    }
     if (currentEmployeeId && row.employeeId) {
-      return row.employeeId.toLowerCase() === currentEmployeeId.toLowerCase();
+      if (row.employeeId.toLowerCase() === currentEmployeeId.toLowerCase()) return true;
     }
-    if (authUser?.fullName && row.employeeName && row.employeeName.toLowerCase() === authUser.fullName.toLowerCase()) {
-      return true;
+    if (authUser?.employeeCode && row.employeeCode) {
+      if (row.employeeCode.toLowerCase() === authUser.employeeCode.toLowerCase()) return true;
     }
-    if (authUser?.email && row.employeeName && authUser.email.toLowerCase().includes(row.employeeName.toLowerCase())) {
-      return true;
+    if (authUser?.fullName && row.employeeName) {
+      if (row.employeeName.toLowerCase() === authUser.fullName.toLowerCase()) return true;
+    }
+    if (authUser?.fullNameAr && row.employeeNameAr) {
+      if (row.employeeNameAr.toLowerCase() === authUser.fullNameAr.toLowerCase()) return true;
+    }
+    if (authUser?.fullName && row.employeeNameAr) {
+      if (row.employeeNameAr.toLowerCase() === authUser.fullName.toLowerCase()) return true;
+    }
+    if (authUser?.fullNameAr && row.employeeName) {
+      if (row.employeeName.toLowerCase() === authUser.fullNameAr.toLowerCase()) return true;
+    }
+    if (authUser?.email && row.employeeName) {
+      const emailPrefix = authUser.email.split("@")[0].toLowerCase();
+      const normEmpName = row.employeeName.toLowerCase();
+      if (normEmpName.includes(emailPrefix) || emailPrefix.includes(normEmpName)) return true;
     }
     if (myRequests && myRequests.some((m) => m.id === row.id)) {
+      return true;
+    }
+    if (
+      row.employeeCode === "EMP-SUPER01" &&
+      roles.some((r) => r.toLowerCase().includes("superadmin"))
+    ) {
       return true;
     }
     return false;

@@ -93,6 +93,10 @@ public class GetLeaveRequestsHandler : IRequestHandler<GetLeaveRequestsQuery, Ge
 
         var canReview = _currentUser.IsAdmin || _currentUser.IsSuperAdmin || _currentUser.IsSupervisor;
         var currentUserId = _currentUser.UserId;
+        var callerEmployee = !string.IsNullOrEmpty(currentUserId)
+            ? await _context.Employees.AsNoTracking().FirstOrDefaultAsync(e => e.UserId == currentUserId, cancellationToken)
+            : null;
+        var callerEmployeeId = callerEmployee?.Id;
 
         var items = await query
             .OrderByDescending(r => r.SubmittedAtUtc)
@@ -102,14 +106,20 @@ public class GetLeaveRequestsHandler : IRequestHandler<GetLeaveRequestsQuery, Ge
             {
                 Id = r.Id,
                 EmployeeId = r.EmployeeId,
-                EmployeeName = r.Employee != null ? r.Employee.FullName : string.Empty,
-                EmployeeNameAr = r.Employee != null ? r.Employee.FullNameAr : null,
+                EmployeeName = r.Employee != null ? (r.Employee.FirstName + " " + r.Employee.LastName).Trim() : string.Empty,
+                EmployeeNameAr = r.Employee != null
+                    ? (!string.IsNullOrWhiteSpace(r.Employee.FirstNameAr) || !string.IsNullOrWhiteSpace(r.Employee.LastNameAr)
+                        ? (r.Employee.FirstNameAr + " " + r.Employee.LastNameAr).Trim()
+                        : (r.Employee.FirstName + " " + r.Employee.LastName).Trim())
+                    : null,
                 EmployeeCode = r.Employee != null ? r.Employee.EmployeeCode : string.Empty,
                 Department = r.Employee != null ? r.Employee.Department : null,
                 DepartmentAr = r.Employee != null ? r.Employee.DepartmentAr : null,
                 LeaveTypeId = r.LeaveTypeId,
                 LeaveTypeName = r.LeaveType != null ? r.LeaveType.Name : string.Empty,
-                LeaveTypeNameAr = r.LeaveType != null ? r.LeaveType.NameAr : string.Empty,
+                LeaveTypeNameAr = r.LeaveType != null
+                    ? (!string.IsNullOrWhiteSpace(r.LeaveType.NameAr) ? r.LeaveType.NameAr : r.LeaveType.Name)
+                    : string.Empty,
                 LeaveTypeCode = r.LeaveType != null ? r.LeaveType.Code : string.Empty,
                 IsPaid = r.LeaveType != null && r.LeaveType.IsPaid,
                 StartDate = r.StartDate,
@@ -122,8 +132,8 @@ public class GetLeaveRequestsHandler : IRequestHandler<GetLeaveRequestsQuery, Ge
                 ReviewedAtUtc = r.ReviewedAtUtc,
                 ReviewedBy = r.ReviewedBy,
                 ReviewNotes = r.ReviewNotes,
-                CanCancel = (!string.IsNullOrEmpty(currentUserId) && r.Employee != null && r.Employee.UserId == currentUserId) && r.Status == LeaveRequestStatus.Pending,
-                CanReview = canReview && r.Status == LeaveRequestStatus.Pending && (string.IsNullOrEmpty(currentUserId) || r.Employee == null || r.Employee.UserId != currentUserId),
+                CanCancel = (!string.IsNullOrEmpty(currentUserId) && ((r.Employee != null && r.Employee.UserId == currentUserId) || (callerEmployeeId != null && r.EmployeeId == callerEmployeeId.Value))) && r.Status == LeaveRequestStatus.Pending,
+                CanReview = canReview && r.Status == LeaveRequestStatus.Pending && (string.IsNullOrEmpty(currentUserId) || ((r.Employee == null || r.Employee.UserId != currentUserId) && (callerEmployeeId == null || r.EmployeeId != callerEmployeeId.Value))),
                 ApprovalHistory = r.ApprovalHistory
                     .OrderBy(h => h.ActionDateUtc)
                     .Select(h => new LeaveApprovalHistoryDto

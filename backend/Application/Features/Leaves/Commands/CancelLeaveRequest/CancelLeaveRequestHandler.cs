@@ -16,23 +16,28 @@ public class CancelLeaveRequestHandler : IRequestHandler<CancelLeaveRequestComma
     private readonly IUnitOfWork _unitOfWork;
     private readonly ICurrentUser _currentUser;
     private readonly INotificationService _notificationService;
+    private readonly ICurrentLanguage? _currentLanguage;
 
     public CancelLeaveRequestHandler(
         IApplicationDbContext context,
         IUnitOfWork unitOfWork,
         ICurrentUser currentUser,
-        INotificationService notificationService)
+        INotificationService notificationService,
+        ICurrentLanguage? currentLanguage = null)
     {
         _context = context;
         _unitOfWork = unitOfWork;
         _currentUser = currentUser;
         _notificationService = notificationService;
+        _currentLanguage = currentLanguage;
     }
 
     public async Task<GenericBaseResponse<LeaveRequestDto>> Handle(
         CancelLeaveRequestCommand request,
         CancellationToken cancellationToken)
     {
+        var isAr = _currentLanguage == null || _currentLanguage.LanguageCode.StartsWith("ar", StringComparison.OrdinalIgnoreCase);
+
         var leaveRequest = await _context.LeaveRequests
             .Include(r => r.Employee)
             .Include(r => r.LeaveType)
@@ -41,16 +46,21 @@ public class CancelLeaveRequestHandler : IRequestHandler<CancelLeaveRequestComma
 
         if (leaveRequest == null)
         {
-            return GenericBaseResponse<LeaveRequestDto>.Fail("Leave request not found.", HttpStatusCode.NotFound);
+            var notFoundMsg = isAr ? "طلب الإجازة غير موجود." : "Leave request not found.";
+            return GenericBaseResponse<LeaveRequestDto>.Fail(notFoundMsg, HttpStatusCode.NotFound);
         }
 
         // Authorization check: only request owner or Admin/SuperAdmin
-        var isOwner = !string.IsNullOrEmpty(_currentUser.UserId) && leaveRequest.Employee?.UserId == _currentUser.UserId;
+        var isOwner = (!string.IsNullOrEmpty(_currentUser.UserId) && leaveRequest.Employee?.UserId == _currentUser.UserId)
+            || (_currentUser.UserId != null && leaveRequest.EmployeeId == (await _context.Employees.Where(e => e.UserId == _currentUser.UserId).Select(e => e.Id).FirstOrDefaultAsync(cancellationToken)));
         var isAdmin = _currentUser.IsAdmin || _currentUser.IsSuperAdmin;
 
         if (!isOwner && !isAdmin)
         {
-            return GenericBaseResponse<LeaveRequestDto>.Fail("You are not authorized to cancel this leave request.", HttpStatusCode.Forbidden);
+            var authMsg = isAr
+                ? "غير مصرح لك بإلغاء هذا الطلب."
+                : "You are not authorized to cancel this leave request.";
+            return GenericBaseResponse<LeaveRequestDto>.Fail(authMsg, HttpStatusCode.Forbidden);
         }
 
         // Cancellation rules: can cancel if Pending, or Approved but start date hasn't passed
@@ -63,9 +73,10 @@ public class CancelLeaveRequestHandler : IRequestHandler<CancelLeaveRequestComma
             }
             else
             {
-                return GenericBaseResponse<LeaveRequestDto>.Fail(
-                    $"Cannot cancel a leave request with status '{leaveRequest.Status}'.",
-                    HttpStatusCode.BadRequest);
+                var statusMsg = isAr
+                    ? "لا يمكن إلغاء طلب إجازة بهذه الحالة."
+                    : $"Cannot cancel a leave request with status '{leaveRequest.Status}'.";
+                return GenericBaseResponse<LeaveRequestDto>.Fail(statusMsg, HttpStatusCode.BadRequest);
             }
         }
 
@@ -137,6 +148,7 @@ public class CancelLeaveRequestHandler : IRequestHandler<CancelLeaveRequestComma
                 }).ToList()
         };
 
-        return GenericBaseResponse<LeaveRequestDto>.Success(dto, "Leave request cancelled successfully.");
+        var successMsg = isAr ? "تم إلغاء طلب الإجازة بنجاح." : "Leave request cancelled successfully.";
+        return GenericBaseResponse<LeaveRequestDto>.Success(dto, successMsg);
     }
 }

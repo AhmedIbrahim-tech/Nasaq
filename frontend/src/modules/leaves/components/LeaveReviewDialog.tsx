@@ -51,8 +51,13 @@ export const LeaveReviewDialog: React.FC<LeaveReviewDialogProps> = ({
     customizer?.isLanguage === "ar" ||
     customizer?.activeDir === "rtl" ||
     theme.direction === "rtl" ||
-    locale.startsWith("ar");
+    locale.startsWith("ar") ||
+    (typeof document !== "undefined" &&
+      (document.documentElement.dir === "rtl" ||
+        document.documentElement.lang === "ar" ||
+        document.body.dir === "rtl"));
   const authUser = useAppSelector((state) => state.auth.user);
+  const roles = useAppSelector((state) => state.auth.roles) || [];
   const [notes, setNotes] = useState<string>("");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -67,11 +72,34 @@ export const LeaveReviewDialog: React.FC<LeaveReviewDialogProps> = ({
 
   const isOwnRequest = Boolean(
     leaveRequest &&
-      authUser &&
-      ((authUser.employeeId && leaveRequest.employeeId && authUser.employeeId.toLowerCase() === leaveRequest.employeeId.toLowerCase()) ||
-        (authUser.fullName && leaveRequest.employeeName && authUser.fullName.toLowerCase() === leaveRequest.employeeName.toLowerCase()) ||
-        (authUser.email && leaveRequest.employeeName && authUser.email.toLowerCase().includes(leaveRequest.employeeName.toLowerCase())) ||
-        (authUser.email && authUser.email.split("@")[0].toLowerCase() === leaveRequest.employeeName.toLowerCase()))
+      (leaveRequest.canReview === false ||
+        (authUser &&
+          ((authUser.employeeId &&
+            leaveRequest.employeeId &&
+            authUser.employeeId.toLowerCase() === leaveRequest.employeeId.toLowerCase()) ||
+            (authUser.employeeCode &&
+              leaveRequest.employeeCode &&
+              authUser.employeeCode.toLowerCase() === leaveRequest.employeeCode.toLowerCase()) ||
+            (authUser.fullName &&
+              leaveRequest.employeeName &&
+              authUser.fullName.toLowerCase() === leaveRequest.employeeName.toLowerCase()) ||
+            (authUser.fullNameAr &&
+              leaveRequest.employeeNameAr &&
+              authUser.fullNameAr.toLowerCase() === leaveRequest.employeeNameAr.toLowerCase()) ||
+            (authUser.fullName &&
+              leaveRequest.employeeNameAr &&
+              authUser.fullName.toLowerCase() === leaveRequest.employeeNameAr.toLowerCase()) ||
+            (authUser.fullNameAr &&
+              leaveRequest.employeeName &&
+              authUser.fullNameAr.toLowerCase() === leaveRequest.employeeName.toLowerCase()) ||
+            (authUser.email &&
+              leaveRequest.employeeName &&
+              authUser.email.toLowerCase().includes(leaveRequest.employeeName.toLowerCase())) ||
+            (authUser.email &&
+              authUser.email.split("@")[0].toLowerCase() === leaveRequest.employeeName.toLowerCase()) ||
+            (leaveRequest.employeeCode === "EMP-SUPER01" &&
+              (roles.some((r) => r.toLowerCase().includes("superadmin")) ||
+                authUser.email?.includes("superadmin"))))))
   );
 
   const localizeErrorMessage = (msg: string | null | undefined): string => {
@@ -127,6 +155,15 @@ export const LeaveReviewDialog: React.FC<LeaveReviewDialogProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
+
+    if (isOwnRequest) {
+      setErrorMsg(
+        isRtl
+          ? "لا يمكنك مراجعة أو رفض طلب الإجازة الخاص بك. يرجى استخدام خيار الإلغاء بدلاً من ذلك."
+          : "You cannot review or reject your own leave request. Please use the cancel option instead."
+      );
+      return;
+    }
 
     if (mode === "reject" && !notes.trim()) {
       setErrorMsg(t("RejectionReasonRequired"));
@@ -283,7 +320,7 @@ export const LeaveReviewDialog: React.FC<LeaveReviewDialogProps> = ({
             }
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            disabled={isLoading}
+            disabled={isLoading || isOwnRequest}
             autoFocus
           />
         </DialogContent>
