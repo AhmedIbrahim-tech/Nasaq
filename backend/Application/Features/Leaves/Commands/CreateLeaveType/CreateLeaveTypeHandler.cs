@@ -36,13 +36,23 @@ public class CreateLeaveTypeHandler : IRequestHandler<CreateLeaveTypeCommand, Ge
                 HttpStatusCode.Conflict);
         }
 
+        var nameAr = !string.IsNullOrWhiteSpace(request.NameAr) ? request.NameAr.Trim() : null;
+        var nameEn = !string.IsNullOrWhiteSpace(request.NameEn)
+            ? request.NameEn.Trim()
+            : (!string.IsNullOrWhiteSpace(request.Name) ? request.Name.Trim() : (nameAr ?? string.Empty));
+        var descAr = !string.IsNullOrWhiteSpace(request.DescriptionAr) ? request.DescriptionAr.Trim() : null;
+        var descEn = !string.IsNullOrWhiteSpace(request.DescriptionEn)
+            ? request.DescriptionEn.Trim()
+            : (!string.IsNullOrWhiteSpace(request.Description) ? request.Description.Trim() : null);
+
         var leaveType = new LeaveType
         {
             Id = Guid.NewGuid(),
-            Name = request.Name.Trim(),
-            NameAr = request.NameAr.Trim(),
+            Name = nameEn,
+            NameAr = nameAr ?? nameEn,
             Code = normalizedCode,
-            Description = request.Description?.Trim(),
+            Description = descEn,
+            DescriptionAr = descAr,
             IsPaid = request.IsPaid,
             RequiresAttachment = request.RequiresAttachment,
             DefaultDaysPerYear = request.DefaultDaysPerYear,
@@ -59,6 +69,7 @@ public class CreateLeaveTypeHandler : IRequestHandler<CreateLeaveTypeCommand, Ge
             NameAr = leaveType.NameAr,
             Code = leaveType.Code,
             Description = leaveType.Description,
+            DescriptionAr = leaveType.DescriptionAr,
             IsPaid = leaveType.IsPaid,
             RequiresAttachment = leaveType.RequiresAttachment,
             DefaultDaysPerYear = leaveType.DefaultDaysPerYear,

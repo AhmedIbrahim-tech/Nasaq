@@ -28,6 +28,7 @@ import {
 } from "@tabler/icons-react";
 import { useTranslations } from "next-intl";
 import { ModernizeDataTable, ModernizeColumnDef } from "@/shared/components/tables/modernize/ModernizeDataTable";
+import { getLocalizedEmployeeName } from "@/shared/utils/localization";
 import { locationsService } from "@/modules/locations/services/locations.service";
 import type { EmployeeLocationRequest } from "@/modules/locations/types";
 import { notify } from "@/shared/services/notification.service";
@@ -127,7 +128,7 @@ export const LocationRequestsQueueTable: React.FC<LocationRequestsQueueTableProp
           </Box>
           <Box>
             <Typography variant="subtitle2" fontWeight={700}>
-              {isRtl && row.employeeNameAr ? row.employeeNameAr : row.employeeName || row.employeeId}
+              {getLocalizedEmployeeName(row, isRtl) || row.employeeId}
             </Typography>
             <Typography variant="caption" color="text.secondary">
               {row.employeeCode || row.employeeId.slice(0, 8)}

@@ -7,9 +7,39 @@ public sealed class UpdateLocationValidator : AbstractValidator<UpdateLocationCo
         RuleFor(x => x.Id)
             .NotEmpty().WithMessage("Location ID is required.");
 
-        RuleFor(x => x.Name)
-            .NotEmpty().WithMessage("Location name is required.")
-            .MaximumLength(150).WithMessage("Location name cannot exceed 150 characters.");
+        RuleFor(x => x)
+            .Must(x => !string.IsNullOrWhiteSpace(x.Name) || !string.IsNullOrWhiteSpace(x.NameEn) || !string.IsNullOrWhiteSpace(x.NameAr))
+            .WithMessage("Location name is required in at least one language.");
+
+        When(x => !string.IsNullOrWhiteSpace(x.Name), () =>
+        {
+            RuleFor(x => x.Name).MaximumLength(150).WithMessage("Location name cannot exceed 150 characters.");
+        });
+
+        When(x => !string.IsNullOrWhiteSpace(x.NameEn), () =>
+        {
+            RuleFor(x => x.NameEn!).MaximumLength(150).WithMessage("English location name cannot exceed 150 characters.");
+        });
+
+        When(x => !string.IsNullOrWhiteSpace(x.NameAr), () =>
+        {
+            RuleFor(x => x.NameAr!).MaximumLength(150).WithMessage("Arabic location name cannot exceed 150 characters.");
+        });
+
+        When(x => !string.IsNullOrWhiteSpace(x.Address), () =>
+        {
+            RuleFor(x => x.Address!).MaximumLength(250).WithMessage("Address cannot exceed 250 characters.");
+        });
+
+        When(x => !string.IsNullOrWhiteSpace(x.AddressEn), () =>
+        {
+            RuleFor(x => x.AddressEn!).MaximumLength(250).WithMessage("English address cannot exceed 250 characters.");
+        });
+
+        When(x => !string.IsNullOrWhiteSpace(x.AddressAr), () =>
+        {
+            RuleFor(x => x.AddressAr!).MaximumLength(250).WithMessage("Arabic address cannot exceed 250 characters.");
+        });
 
         RuleFor(x => x.Latitude)
             .InclusiveBetween(-90.0, 90.0)

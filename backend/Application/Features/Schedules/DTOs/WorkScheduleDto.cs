@@ -28,7 +28,11 @@ public sealed record WorkScheduleDto(
     string? Updated_By,
     string? NameAr = null,
     string? DescriptionAr = null
-);
+)
+{
+    public string NameEn => Name;
+    public string? DescriptionEn => Description;
+}
 
 public sealed record SchedulesSummaryDto(
     int TotalSchedules,
@@ -51,7 +55,8 @@ public sealed record EmployeeScheduleAssignmentDto(
     bool IsActive,
     string? Notes,
     DateTime Created_Utc,
+    string? Created_By = null,
     string? EmployeeNameAr = null,
-    string? ScheduleNameAr = null,
-    string? Created_By = null
+    string? DepartmentAr = null,
+    string? ScheduleNameAr = null
 );

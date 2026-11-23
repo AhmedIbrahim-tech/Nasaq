@@ -5,8 +5,11 @@ export interface LeaveType {
   id: string;
   name: string;
   nameAr: string;
+  nameEn?: string | null;
   code: string;
   description?: string | null;
+  descriptionAr?: string | null;
+  descriptionEn?: string | null;
   isPaid: boolean;
   requiresAttachment: boolean;
   defaultDaysPerYear?: number | null;
@@ -63,9 +66,12 @@ export interface LeaveSummary {
 
 export interface CreateLeaveTypeRequest {
   name: string;
-  nameAr: string;
+  nameAr?: string | null;
+  nameEn?: string | null;
   code: string;
   description?: string | null;
+  descriptionAr?: string | null;
+  descriptionEn?: string | null;
   isPaid: boolean;
   requiresAttachment: boolean;
   defaultDaysPerYear?: number | null;
@@ -73,8 +79,11 @@ export interface CreateLeaveTypeRequest {
 
 export interface UpdateLeaveTypeRequest {
   name: string;
-  nameAr: string;
+  nameAr?: string | null;
+  nameEn?: string | null;
   description?: string | null;
+  descriptionAr?: string | null;
+  descriptionEn?: string | null;
   isPaid: boolean;
   requiresAttachment: boolean;
   defaultDaysPerYear?: number | null;

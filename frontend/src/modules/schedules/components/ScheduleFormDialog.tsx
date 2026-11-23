@@ -29,6 +29,9 @@ import Chip from "@mui/material/Chip";
 import { IconCalendarTime, IconCheck, IconX } from "@tabler/icons-react";
 import { useTranslations } from "next-intl";
 import DialogCloseButton from "@/shared/components/buttons/DialogCloseButton";
+import { SecondaryLanguageCheckbox } from "@/shared/components/forms/SecondaryLanguageCheckbox";
+import { getShiftDisplayName } from "../utils/scheduleLocalization";
+import { useScheduleForm } from "../hooks";
 import type {
   WorkSchedule,
   WorkShift,
@@ -47,16 +50,6 @@ interface ScheduleFormDialogProps {
   onSubmit: (data: CreateScheduleRequest | UpdateScheduleRequest) => Promise<void>;
 }
 
-const DAYS_OF_WEEK = [
-  { day: 0, key: "Sunday" },
-  { day: 1, key: "Monday" },
-  { day: 2, key: "Tuesday" },
-  { day: 3, key: "Wednesday" },
-  { day: 4, key: "Thursday" },
-  { day: 5, key: "Friday" },
-  { day: 6, key: "Saturday" },
-];
-
 export const ScheduleFormDialog: React.FC<ScheduleFormDialogProps> = ({
   open,
   mode,
@@ -68,142 +61,18 @@ export const ScheduleFormDialog: React.FC<ScheduleFormDialogProps> = ({
 }) => {
   const t = useTranslations();
 
-  const [formData, setFormData] = useState<{
-    name: string;
-    description: string;
-    isDefault: boolean;
-    isActive: boolean;
-    days: Record<number, { isWorkingDay: boolean; workShiftId: string }>;
-  }>({
-    name: "",
-    description: "",
-    isDefault: false,
-    isActive: true,
-    days: {},
-  });
-
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    const defaultShiftId = shifts.length > 0 ? shifts[0].id : "";
-
-    if (mode === "edit" && schedule) {
-      const daysMap: Record<number, { isWorkingDay: boolean; workShiftId: string }> = {};
-      schedule.days.forEach((d) => {
-        daysMap[d.dayOfWeek] = {
-          isWorkingDay: d.isWorkingDay,
-          workShiftId: d.workShiftId || defaultShiftId,
-        };
-      });
-
-      setFormData({
-        name: schedule.name || "",
-        description: schedule.description || "",
-        isDefault: schedule.isDefault ?? false,
-        isActive: schedule.isActive ?? true,
-        days: daysMap,
-      });
-    } else {
-      // Default: Sunday-Thursday working, Friday & Saturday off
-      const initialDays: Record<number, { isWorkingDay: boolean; workShiftId: string }> = {};
-      DAYS_OF_WEEK.forEach(({ day }) => {
-        const isWork = day !== 5 && day !== 6;
-        initialDays[day] = {
-          isWorkingDay: isWork,
-          workShiftId: isWork ? defaultShiftId : "",
-        };
-      });
-
-      setFormData({
-        name: "",
-        description: "",
-        isDefault: false,
-        isActive: true,
-        days: initialDays,
-      });
-    }
-    setErrors({});
-  }, [mode, schedule, open, shifts]);
-
-  const handleDayToggle = (day: number) => {
-    setFormData((prev) => {
-      const current = prev.days[day] || { isWorkingDay: false, workShiftId: "" };
-      const nextWorking = !current.isWorkingDay;
-      const defaultShiftId = shifts.length > 0 ? shifts[0].id : "";
-      return {
-        ...prev,
-        days: {
-          ...prev.days,
-          [day]: {
-            isWorkingDay: nextWorking,
-            workShiftId: nextWorking ? (current.workShiftId || defaultShiftId) : "",
-          },
-        },
-      };
-    });
-  };
-
-  const handleDayShiftChange = (day: number, shiftId: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      days: {
-        ...prev.days,
-        [day]: {
-          ...prev.days[day],
-          workShiftId: shiftId,
-        },
-      },
-    }));
-  };
-
-  const validate = (): boolean => {
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.name.trim()) {
-      newErrors.name = t("ScheduleNameRequired");
-    } else if (formData.name.length > 150) {
-      newErrors.name = t("ScheduleNameMaxLength");
-    }
-
-    // Check that every working day has a selected shift
-    let hasWorkingDayWithoutShift = false;
-    Object.entries(formData.days).forEach(([_, config]) => {
-      if (config.isWorkingDay && !config.workShiftId) {
-        hasWorkingDayWithoutShift = true;
-      }
-    });
-
-    if (hasWorkingDayWithoutShift) {
-      newErrors.days = t("AllWorkingDaysRequireShift");
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validate()) return;
-
-    const daysPayload: ScheduleDayInput[] = DAYS_OF_WEEK.map(({ day }) => {
-      const config = formData.days[day] || { isWorkingDay: false, workShiftId: "" };
-      return {
-        dayOfWeek: day,
-        isWorkingDay: config.isWorkingDay,
-        workShiftId: config.isWorkingDay ? config.workShiftId : null,
-      };
-    });
-
-    const payload: CreateScheduleRequest = {
-      name: formData.name.trim(),
-      description: formData.description.trim() || null,
-      isDefault: formData.isDefault,
-      isActive: formData.isActive,
-      days: daysPayload,
-    };
-
-    await onSubmit(payload);
-  };
+  const {
+    formData,
+    setFormData,
+    errors,
+    showSecondaryLanguage,
+    setShowSecondaryLanguage,
+    isAr,
+    handleDayToggle,
+    handleShiftChange: handleDayShiftChange,
+    handleSubmit,
+    daysOfWeek: DAYS_OF_WEEK,
+  } = useScheduleForm({ mode, schedule, shifts, open, onSubmit });
 
   return (
     <Dialog
@@ -243,19 +112,40 @@ export const ScheduleFormDialog: React.FC<ScheduleFormDialogProps> = ({
 
       <DialogContent dividers sx={{ p: 3, flex: "1 1 auto", overflowY: "auto", overflowX: "hidden", minHeight: 0 }}>
           <Grid container spacing={2.5} sx={{ width: "100%", m: 0, "& > .MuiGrid-root": { pt: 2.5, pl: { xs: 0, sm: 2.5 } } }}>
-            {/* Schedule Name */}
-            <Grid size={{ xs: 12, sm: 8 }}>
-              <TextField
-                fullWidth
-                label={t("ScheduleName")}
-                required
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                error={Boolean(errors.name)}
-                helperText={errors.name}
-                placeholder={t("ScheduleNamePlaceholder")}
-              />
-            </Grid>
+            {/* Primary Schedule Name */}
+            {isAr ? (
+              <Grid size={{ xs: 12, sm: 8 }}>
+                <TextField
+                  fullWidth
+                  label={t("ScheduleName")}
+                  required
+                  value={formData.nameAr}
+                  onChange={(e) => setFormData({ ...formData, nameAr: e.target.value })}
+                  error={Boolean(errors.nameAr)}
+                  helperText={errors.nameAr}
+                  placeholder={t("ScheduleNamePlaceholder")}
+                />
+              </Grid>
+            ) : (
+              <Grid size={{ xs: 12, sm: 8 }}>
+                <TextField
+                  fullWidth
+                  label={t("ScheduleName")}
+                  required
+                  value={formData.nameEn || formData.name}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      nameEn: e.target.value,
+                      name: e.target.value,
+                    })
+                  }
+                  error={Boolean(errors.nameEn || errors.name)}
+                  helperText={errors.nameEn || errors.name}
+                  placeholder={t("ScheduleNamePlaceholder")}
+                />
+              </Grid>
+            )}
 
             {/* IsDefault Switch */}
             <Grid size={{ xs: 12, sm: 4 }}>
@@ -281,18 +171,95 @@ export const ScheduleFormDialog: React.FC<ScheduleFormDialogProps> = ({
               </Box>
             </Grid>
 
-            {/* Description */}
+            {/* Primary Description */}
+            {isAr ? (
+              <Grid size={{ xs: 12 }}>
+                <TextField
+                  fullWidth
+                  label={t("Description")}
+                  multiline
+                  rows={2}
+                  value={formData.descriptionAr}
+                  onChange={(e) => setFormData({ ...formData, descriptionAr: e.target.value })}
+                  placeholder={t("ScheduleDescriptionPlaceholder")}
+                />
+              </Grid>
+            ) : (
+              <Grid size={{ xs: 12 }}>
+                <TextField
+                  fullWidth
+                  label={t("Description")}
+                  multiline
+                  rows={2}
+                  value={formData.descriptionEn || formData.description}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      descriptionEn: e.target.value,
+                      description: e.target.value,
+                    })
+                  }
+                  placeholder={t("ScheduleDescriptionPlaceholder")}
+                />
+              </Grid>
+            )}
+
+            {/* Secondary Language Checkbox */}
             <Grid size={{ xs: 12 }}>
-              <TextField
-                fullWidth
-                label={t("Description")}
-                multiline
-                rows={2}
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder={t("ScheduleDescriptionPlaceholder")}
+              <SecondaryLanguageCheckbox
+                checked={showSecondaryLanguage}
+                onChange={(checked: boolean) => setShowSecondaryLanguage(checked)}
+                isRtl={isAr}
+                customLabel={isAr ? "إضافة البيانات باللغة الإنجليزية" : "Add Arabic Details"}
               />
             </Grid>
+
+            {/* Secondary Schedule Name & Description */}
+            {showSecondaryLanguage && (
+              isAr ? (
+                <>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                      fullWidth
+                      label={t("NameEn")}
+                      value={formData.nameEn}
+                      onChange={(e) => setFormData({ ...formData, nameEn: e.target.value })}
+                      placeholder="e.g. Weekly Standard 5-Day Schedule"
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                      fullWidth
+                      label={t("DescriptionEn")}
+                      value={formData.descriptionEn}
+                      onChange={(e) => setFormData({ ...formData, descriptionEn: e.target.value })}
+                      placeholder="e.g. Sunday to Thursday with Friday and Saturday off"
+                    />
+                  </Grid>
+                </>
+              ) : (
+                <>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                      fullWidth
+                      label={t("NameAr")}
+                      value={formData.nameAr}
+                      onChange={(e) => setFormData({ ...formData, nameAr: e.target.value })}
+                      placeholder="مثال: جدول العمل الأسبوعي القياسي (5 أيام)"
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                      fullWidth
+                      label={t("DescriptionAr")}
+                      value={formData.descriptionAr}
+                      onChange={(e) => setFormData({ ...formData, descriptionAr: e.target.value })}
+                      placeholder="مثال: أيام العمل من الأحد إلى الخميس مع راحة يومي الجمعة والسبت"
+                    />
+                  </Grid>
+                </>
+              )
+            )}
 
             {/* Days Table */}
             <Grid size={{ xs: 12 }}>
@@ -364,7 +331,7 @@ export const ScheduleFormDialog: React.FC<ScheduleFormDialogProps> = ({
                                   >
                                     {shifts.map((s) => (
                                       <MenuItem key={s.id} value={s.id}>
-                                        {s.name} ({s.startTime.substring(0, 5)} - {s.endTime.substring(0, 5)}
+                                        {getShiftDisplayName(s, isAr)} ({s.startTime.substring(0, 5)} - {s.endTime.substring(0, 5)}
                                         {s.isOvernight ? " 🌙" : ""})
                                       </MenuItem>
                                     ))}

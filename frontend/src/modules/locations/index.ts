@@ -6,3 +6,5 @@ export * from "./components/LocationTable";
 export * from "./components/LocationFormDialog";
 export * from "./components/LocationDetailsDialog";
 export * from "./views/LocationListView";
+export * from "./hooks";
+export * from "./utils/locationLocalization";

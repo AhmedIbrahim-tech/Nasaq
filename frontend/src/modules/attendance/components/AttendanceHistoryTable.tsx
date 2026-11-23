@@ -29,6 +29,7 @@ import {
   formatCoordinates,
   formatGeofenceFailureReason,
 } from "@/shared/utils/i18nFormatters";
+import { getLocalizedEmployeeName } from "@/shared/utils/localization";
 import type { AttendanceRecord } from "../types";
 
 interface AttendanceHistoryTableProps {
@@ -93,7 +94,7 @@ export const AttendanceHistoryTable: React.FC<AttendanceHistoryTableProps> = ({
             cell: (row: AttendanceRecord) => (
               <Box>
                 <Typography variant="subtitle2" fontWeight={600}>
-                  {isRtl && row.employeeNameAr ? row.employeeNameAr : row.employeeName}
+                  {getLocalizedEmployeeName(row, isRtl)}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
                   <span style={{ direction: "ltr", unicodeBidi: "isolate", display: "inline-block" }}>
@@ -158,7 +159,7 @@ export const AttendanceHistoryTable: React.FC<AttendanceHistoryTableProps> = ({
       header: t("Location"),
       cell: (row) => (
         <Typography variant="body2" color="text.secondary">
-          {row.workLocationName || "—"}
+          {isRtl && row.workLocationNameAr ? row.workLocationNameAr : (row.workLocationName || "—")}
         </Typography>
       ),
     },

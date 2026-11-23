@@ -11,9 +11,20 @@ public sealed class CreateScheduleHandler(
         CreateScheduleCommand request,
         CancellationToken cancellationToken)
     {
-        var trimmedName = request.Name.Trim();
+        var nameAr = !string.IsNullOrWhiteSpace(request.NameAr) ? request.NameAr.Trim() : null;
+        var nameEn = !string.IsNullOrWhiteSpace(request.NameEn)
+            ? request.NameEn.Trim()
+            : (!string.IsNullOrWhiteSpace(request.Name) ? request.Name.Trim() : (nameAr ?? string.Empty));
+        var descAr = !string.IsNullOrWhiteSpace(request.DescriptionAr) ? request.DescriptionAr.Trim() : null;
+        var descEn = !string.IsNullOrWhiteSpace(request.DescriptionEn)
+            ? request.DescriptionEn.Trim()
+            : (!string.IsNullOrWhiteSpace(request.Description) ? request.Description.Trim() : null);
+
+        var trimmedName = nameEn;
         var exists = await dbContext.WorkSchedules
-            .AnyAsync(s => s.Name == trimmedName, cancellationToken);
+            .AnyAsync(s => (s.Name == trimmedName) ||
+                           (nameAr != null && s.NameAr != null && s.NameAr == nameAr),
+                      cancellationToken);
 
         if (exists)
         {
@@ -58,7 +69,9 @@ public sealed class CreateScheduleHandler(
         var schedule = new WorkSchedule
         {
             Name = trimmedName,
-            Description = request.Description?.Trim(),
+            NameAr = nameAr,
+            Description = descEn,
+            DescriptionAr = descAr,
             IsActive = request.IsActive,
             IsDefault = request.IsDefault,
             Created_Utc = DateTime.UtcNow,
@@ -128,7 +141,9 @@ public sealed class CreateScheduleHandler(
             schedule.Created_Utc,
             schedule.Created_By,
             schedule.Updated_Utc,
-            schedule.Updated_By
+            schedule.Updated_By,
+            schedule.NameAr,
+            schedule.DescriptionAr
         );
 
         return GenericBaseResponse<WorkScheduleDto>.Success(dto, "Work schedule created successfully.", HttpStatusCode.Created);

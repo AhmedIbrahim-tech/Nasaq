@@ -157,11 +157,27 @@ export const ReportDataTable: React.FC<ReportDataTableProps> = ({
 
       // Prominent Employee Name
       if (col.key === "employeeName") {
+        const arName = row["employeeNameAr"] || row["fullNameAr"];
+        const displayName = isAr && arName ? arName : String(val);
         return (
           <Typography variant="subtitle2" fontWeight={700}>
-            {String(val)}
+            {displayName}
           </Typography>
         );
+      }
+
+      // Location Name
+      if (col.key === "workLocation" || col.key === "locationName" || col.key === "workLocationName") {
+        const arLoc = row["workLocationNameAr"] || row["locationNameAr"] || row["nameAr"];
+        const displayLoc = isAr && arLoc ? arLoc : String(val);
+        return <Typography variant="body2">{displayLoc}</Typography>;
+      }
+
+      // Shift Name
+      if (col.key === "shiftName" || col.key === "workShift" || col.key === "workShiftName") {
+        const arShift = row["shiftNameAr"] || row["workShiftNameAr"];
+        const displayShift = isAr && arShift ? arShift : String(val);
+        return <Typography variant="body2">{displayShift}</Typography>;
       }
 
       // Direction-safe Timestamp Columns (checkInTime, checkOutTime, scheduledTime)

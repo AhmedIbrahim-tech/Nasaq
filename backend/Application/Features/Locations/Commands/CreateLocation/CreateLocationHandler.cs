@@ -9,11 +9,22 @@ public sealed class CreateLocationHandler(
         CreateLocationCommand request,
         CancellationToken cancellationToken)
     {
-        var normalizedName = request.Name.Trim();
+        var nameAr = !string.IsNullOrWhiteSpace(request.NameAr) ? request.NameAr.Trim() : null;
+        var nameEn = !string.IsNullOrWhiteSpace(request.NameEn)
+            ? request.NameEn.Trim()
+            : (!string.IsNullOrWhiteSpace(request.Name) ? request.Name.Trim() : (nameAr ?? string.Empty));
+        var addressAr = !string.IsNullOrWhiteSpace(request.AddressAr) ? request.AddressAr.Trim() : null;
+        var addressEn = !string.IsNullOrWhiteSpace(request.AddressEn)
+            ? request.AddressEn.Trim()
+            : (!string.IsNullOrWhiteSpace(request.Address) ? request.Address.Trim() : null);
+
+        var normalizedName = nameEn;
 
         var nameExists = await dbContext.WorkLocations
             .AsNoTracking()
-            .AnyAsync(w => w.Name.ToLower() == normalizedName.ToLower(), cancellationToken);
+            .AnyAsync(w => (w.Name.ToLower() == normalizedName.ToLower()) ||
+                           (nameAr != null && w.NameAr != null && w.NameAr.ToLower() == nameAr.ToLower()),
+                      cancellationToken);
 
         if (nameExists)
         {
@@ -24,9 +35,9 @@ public sealed class CreateLocationHandler(
         {
             Id = Guid.NewGuid(),
             Name = normalizedName,
-            NameAr = request.NameAr?.Trim(),
-            Address = request.Address?.Trim(),
-            AddressAr = request.AddressAr?.Trim(),
+            NameAr = nameAr,
+            Address = addressEn,
+            AddressAr = addressAr,
             Latitude = request.Latitude,
             Longitude = request.Longitude,
             RadiusMeters = request.RadiusMeters,

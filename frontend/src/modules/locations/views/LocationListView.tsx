@@ -46,29 +46,17 @@ import {
   ModernizeColumnDef,
   ModernizeRowAction,
 } from "@/shared/components/tables/modernize";
-import {
-  fetchLocationsThunk,
-  fetchLocationsSummaryThunk,
-  createLocationThunk,
-  updateLocationThunk,
-  toggleLocationStatusThunk,
-  deleteLocationThunk,
-  bulkDeleteLocationsThunk,
-  setFilterParams,
-  resetFilters,
-  setSelectedLocation,
-} from "../slices/locations.slice";
+import { useLocations, useLocationFilters } from "../hooks";
 import { LocationFormDialog } from "../components/LocationFormDialog";
 import { LocationDetailsDialog } from "../components/LocationDetailsDialog";
-import type { WorkLocation, CreateLocationRequest, UpdateLocationRequest } from "../types";
+import { getLocationDisplayName } from "../utils/locationLocalization";
+import type { WorkLocation } from "../types";
 
 export const LocationListView: React.FC = () => {
   const t = useTranslations();
   const theme = useTheme();
   const isRtl = theme.direction === "rtl";
-  const dispatch = useAppDispatch();
 
-  const { roles } = useAppSelector((state) => state.auth);
   const {
     items,
     selectedLocation,
@@ -76,207 +64,47 @@ export const LocationListView: React.FC = () => {
     summaryLoading,
     loading,
     actionLoading,
+    canManage,
+    formDialogOpen,
+    formDialogMode,
+    editingLocation,
+    detailsDialogOpen,
+    selectedIds,
+    setSelectedIds,
+    locationToDelete,
+    bulkDeleteOpen,
+    isDeleting,
+    loadData,
+    openCreate: handleOpenCreate,
+    openEdit: handleOpenEdit,
+    closeForm,
+    openDetails: handleViewDetails,
+    closeDetails,
+    submitForm: handleFormSubmit,
+    toggleStatus: handleToggleStatus,
+    openDelete: handleOpenSingleDelete,
+    closeDelete,
+    confirmDelete: handleConfirmSingleDelete,
+    openBulkDelete: handleOpenBulkDelete,
+    closeBulkDelete,
+    confirmBulkDelete: handleConfirmBulkDelete,
+    exportCsv: handleExportCsv,
+  } = useLocations();
+
+  const {
     filterParams,
-  } = useAppSelector((state) => state.locations);
-
-  const canManage = useMemo(
-    () => roles?.includes(RoleNames.SuperAdmin) || roles?.includes(RoleNames.Admin) || false,
-    [roles]
-  );
-
-  // Dialog and UI states
-  const [formDialogOpen, setFormDialogOpen] = useState(false);
-  const [formDialogMode, setFormDialogMode] = useState<"create" | "edit">("create");
-  const [editingLocation, setEditingLocation] = useState<WorkLocation | null>(null);
-  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
-
-  // Deletion dialog states
-  const [locationToDelete, setLocationToDelete] = useState<WorkLocation | null>(null);
-  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  // Pagination state (client/server compatible)
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-
-  // Column visibility state (Default to concise overview; details accessible in expandable row)
-  const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>({
-    name: true,
-    radiusMeters: true,
-    employeeCount: true,
-    isActive: true,
-    coordinates: false,
-    accuracyThresholdMeters: false,
-    created_Utc: false,
-  });
-
-  const loadData = useCallback(() => {
-    dispatch(fetchLocationsThunk(filterParams));
-    dispatch(fetchLocationsSummaryThunk());
-  }, [dispatch, filterParams]);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
-  // Filter handlers
-  const handleSearchChange = (search: string) => {
-    dispatch(setFilterParams({ search }));
-    setPage(1);
-  };
-
-  const handleIsActiveChange = (isActive: boolean | undefined) => {
-    dispatch(setFilterParams({ isActive }));
-    setPage(1);
-  };
-
-  const handleResetFilters = () => {
-    dispatch(resetFilters());
-    setPage(1);
-  };
-
-  const handleToggleColumn = (columnId: string) => {
-    setColumnVisibility((prev) => ({
-      ...prev,
-      [columnId]: !prev[columnId],
-    }));
-  };
-
-  // Action handlers
-  const handleOpenCreate = () => {
-    setFormDialogMode("create");
-    setEditingLocation(null);
-    setFormDialogOpen(true);
-  };
-
-  const handleOpenEdit = (location: WorkLocation) => {
-    setFormDialogMode("edit");
-    setEditingLocation(location);
-    setFormDialogOpen(true);
-  };
-
-  const handleViewDetails = (location: WorkLocation) => {
-    dispatch(setSelectedLocation(location));
-    setDetailsDialogOpen(true);
-  };
-
-  const handleFormSubmit = async (
-    data: CreateLocationRequest | UpdateLocationRequest
-  ): Promise<void> => {
-    try {
-      if (formDialogMode === "create") {
-        await dispatch(createLocationThunk(data as CreateLocationRequest)).unwrap();
-        notify.success(t("LocationCreatedSuccess"));
-      } else if (editingLocation) {
-        await dispatch(
-          updateLocationThunk({
-            id: editingLocation.id,
-            data: data as UpdateLocationRequest,
-          })
-        ).unwrap();
-        notify.success(t("LocationUpdatedSuccess"));
-      }
-      setFormDialogOpen(false);
-      loadData();
-    } catch (err: any) {
-      notify.error(err || t("ErrorOccurred"));
-    }
-  };
-
-  const handleToggleStatus = async (location: WorkLocation) => {
-    try {
-      const updated = await dispatch(
-        toggleLocationStatusThunk({
-          id: location.id,
-          request: { isActive: !location.isActive },
-        })
-      ).unwrap();
-
-      notify.success(
-        updated.isActive
-          ? t("LocationActivatedSuccess")
-          : t("LocationDeactivatedSuccess")
-      );
-      loadData();
-    } catch (err: any) {
-      notify.error(err || t("ErrorOccurred"));
-    }
-  };
-
-  // Single Delete Handler
-  const handleConfirmSingleDelete = async () => {
-    if (!locationToDelete) return;
-    try {
-      setIsDeleting(true);
-      await dispatch(deleteLocationThunk(locationToDelete.id)).unwrap();
-      notify.success(t("LocationDeletedSuccess"));
-      setSelectedIds((prev) => prev.filter((id) => id !== locationToDelete.id));
-      setLocationToDelete(null);
-      loadData();
-    } catch (err: any) {
-      notify.error(err || t("ErrorOccurred"));
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  // Bulk Delete Handler
-  const handleConfirmBulkDelete = async () => {
-    if (selectedIds.length === 0) return;
-    try {
-      setIsDeleting(true);
-      await dispatch(bulkDeleteLocationsThunk(selectedIds)).unwrap();
-      notify.success(t("LocationsBulkDeletedSuccess"));
-      setSelectedIds([]);
-      setBulkDeleteOpen(false);
-      loadData();
-    } catch (err: any) {
-      notify.error(err || t("ErrorOccurred"));
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  // Export CSV
-  const handleExportCsv = () => {
-    if (items.length === 0) {
-      notify.error(t("NoRecordsFound"));
-      return;
-    }
-    const headers = [
-      t("LocationName"),
-      t("Latitude"),
-      t("Longitude"),
-      t("GeofenceRadiusMeters"),
-      t("AccuracyThresholdMeters"),
-      t("AssignedEmployees"),
-      t("Status"),
-      t("CreatedDate"),
-    ];
-
-    const rows = items.map((loc) => [
-      `"${loc.name}"`,
-      loc.latitude,
-      loc.longitude,
-      loc.radiusMeters,
-      loc.accuracyThresholdMeters,
-      loc.employeeCount,
-      loc.isActive ? t("Active") : t("Inactive"),
-      loc.created_Utc ? new Date(loc.created_Utc).toLocaleDateString() : "",
-    ]);
-
-    const csvContent = "\uFEFF" + [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", `work_locations_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+    page,
+    pageSize,
+    showFilters,
+    setShowFilters,
+    columnVisibility,
+    toggleColumn: handleToggleColumn,
+    onSearchChange: handleSearchChange,
+    onIsActiveChange: handleIsActiveChange,
+    onResetFilters: handleResetFilters,
+    onPageChange: setPage,
+    onPageSizeChange: setPageSize,
+  } = useLocationFilters();
 
   // Meaningful 4-Card Summary Statistics (High operational utility, no empty grid gaps)
   const statsData = useMemo(() => {
@@ -340,7 +168,7 @@ export const LocationListView: React.FC = () => {
               <IconMapPin size={18} />
             </Box>
             <Typography variant="subtitle2" fontWeight={700}>
-              {loc.name}
+              {getLocationDisplayName(loc, isRtl)}
             </Typography>
           </Stack>
         ),
@@ -455,7 +283,7 @@ export const LocationListView: React.FC = () => {
         label: t("Delete"),
         icon: <IconTrash size={18} color={theme.palette.error.main} />,
         show: () => canManage,
-        onClick: (loc) => setLocationToDelete(loc),
+        onClick: (loc) => handleOpenSingleDelete(loc),
       },
     ],
     [canManage, t, theme]
@@ -485,7 +313,7 @@ export const LocationListView: React.FC = () => {
         >
           <Stack direction="row" spacing={1.5} alignItems="center">
             <Typography variant="subtitle2" fontWeight={700} color="primary.main">
-              {t("LocationQuickDetails")}: {loc.name}
+              {t("LocationQuickDetails")}: {getLocationDisplayName(loc, isRtl)}
             </Typography>
           </Stack>
           <Chip
@@ -781,7 +609,7 @@ export const LocationListView: React.FC = () => {
             onToggleColumn={handleToggleColumn}
             onExportCsv={handleExportCsv}
             selectedCount={selectedIds.length}
-            onBulkAction={() => setBulkDeleteOpen(true)}
+            onBulkAction={handleOpenBulkDelete}
             bulkActionTooltip={t("DeleteSelected")}
             onRefresh={loadData}
             isRefreshing={loading}
@@ -855,7 +683,7 @@ export const LocationListView: React.FC = () => {
         mode={formDialogMode}
         location={editingLocation}
         isSubmitting={actionLoading}
-        onClose={() => setFormDialogOpen(false)}
+        onClose={closeForm}
         onSubmit={handleFormSubmit}
       />
 
@@ -864,7 +692,7 @@ export const LocationListView: React.FC = () => {
         open={detailsDialogOpen}
         location={selectedLocation}
         canManage={canManage}
-        onClose={() => setDetailsDialogOpen(false)}
+        onClose={closeDetails}
         onEdit={() => {
           if (selectedLocation) {
             handleOpenEdit(selectedLocation);
@@ -875,10 +703,10 @@ export const LocationListView: React.FC = () => {
       {/* Single Location Delete Confirmation Dialog */}
       <ConfirmActionDialog
         open={Boolean(locationToDelete)}
-        onClose={() => setLocationToDelete(null)}
+        onClose={closeDelete}
         onConfirm={handleConfirmSingleDelete}
         title={t("DeleteLocationQuestion")}
-        message={t("DeleteLocationConfirmMsg", { name: locationToDelete?.name || "" })}
+        message={t("DeleteLocationConfirmMsg", { name: locationToDelete ? getLocationDisplayName(locationToDelete, isRtl) : "" })}
         variant="error"
         confirmLabel={t("Delete")}
         cancelLabel={t("Cancel")}
@@ -891,7 +719,7 @@ export const LocationListView: React.FC = () => {
         return (
           <ConfirmActionDialog
             open={bulkDeleteOpen}
-            onClose={() => setBulkDeleteOpen(false)}
+            onClose={closeBulkDelete}
             onConfirm={handleConfirmBulkDelete}
             title={confirmInfo.title}
             message={confirmInfo.message}

@@ -22,9 +22,21 @@ public sealed class UpdateScheduleHandler(
                 HttpStatusCode.NotFound);
         }
 
-        var trimmedName = request.Name.Trim();
+        var nameAr = !string.IsNullOrWhiteSpace(request.NameAr) ? request.NameAr.Trim() : null;
+        var nameEn = !string.IsNullOrWhiteSpace(request.NameEn)
+            ? request.NameEn.Trim()
+            : (!string.IsNullOrWhiteSpace(request.Name) ? request.Name.Trim() : (nameAr ?? string.Empty));
+        var descAr = !string.IsNullOrWhiteSpace(request.DescriptionAr) ? request.DescriptionAr.Trim() : null;
+        var descEn = !string.IsNullOrWhiteSpace(request.DescriptionEn)
+            ? request.DescriptionEn.Trim()
+            : (!string.IsNullOrWhiteSpace(request.Description) ? request.Description.Trim() : null);
+
+        var trimmedName = nameEn;
         var nameExists = await dbContext.WorkSchedules
-            .AnyAsync(s => s.Name == trimmedName && s.Id != request.Id, cancellationToken);
+            .AnyAsync(s => s.Id != request.Id &&
+                           ((s.Name == trimmedName) ||
+                            (nameAr != null && s.NameAr != null && s.NameAr == nameAr)),
+                      cancellationToken);
 
         if (nameExists)
         {
@@ -67,7 +79,9 @@ public sealed class UpdateScheduleHandler(
         }
 
         schedule.Name = trimmedName;
-        schedule.Description = request.Description?.Trim();
+        schedule.NameAr = nameAr;
+        schedule.Description = descEn;
+        schedule.DescriptionAr = descAr;
         schedule.IsActive = request.IsActive;
         schedule.IsDefault = request.IsDefault;
         schedule.Updated_Utc = DateTime.UtcNow;
@@ -123,7 +137,9 @@ public sealed class UpdateScheduleHandler(
             schedule.Created_Utc,
             schedule.Created_By,
             schedule.Updated_Utc,
-            schedule.Updated_By
+            schedule.Updated_By,
+            schedule.NameAr,
+            schedule.DescriptionAr
         );
 
         return GenericBaseResponse<WorkScheduleDto>.Success(dto, "Work schedule updated successfully.");

@@ -19,6 +19,8 @@ import IconButton from "@mui/material/IconButton";
 import { alpha } from "@mui/material/styles";
 import { IconUpload, IconFile, IconX, IconCalendarPlus } from "@tabler/icons-react";
 import { useTranslations, useLocale } from "next-intl";
+import { getLocalizedLeaveTypeName } from "@/shared/utils/localization";
+import { useLeaveRequestForm } from "../hooks";
 import type { LeaveType, SubmitLeaveRequestData } from "../types";
 
 interface LeaveRequestFormDialogProps {
@@ -40,86 +42,22 @@ export const LeaveRequestFormDialog: React.FC<LeaveRequestFormDialogProps> = ({
   const locale = useLocale();
   const isAr = locale.startsWith("ar");
 
-  const [leaveTypeId, setLeaveTypeId] = useState<string>("");
-  const [startDate, setStartDate] = useState<string>("");
-  const [endDate, setEndDate] = useState<string>("");
-  const [reason, setReason] = useState<string>("");
-  const [attachment, setAttachment] = useState<File | null>(null);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
-  // Selected leave type details
-  const selectedType = leaveTypes.find((lt) => lt.id === leaveTypeId);
-
-  useEffect(() => {
-    if (open) {
-      setLeaveTypeId(leaveTypes[0]?.id || "");
-      const today = new Date().toISOString().split("T")[0];
-      setStartDate(today);
-      setEndDate(today);
-      setReason("");
-      setAttachment(null);
-      setErrorMsg(null);
-    }
-  }, [open, leaveTypes]);
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      if (file.size > 10 * 1024 * 1024) {
-        setErrorMsg(t("FileSizeLimit10MB"));
-        return;
-      }
-      setAttachment(file);
-      setErrorMsg(null);
-    }
-  };
-
-  const handleRemoveFile = () => {
-    setAttachment(null);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMsg(null);
-
-    if (!leaveTypeId) {
-      setErrorMsg(t("LeaveTypeRequired"));
-      return;
-    }
-
-    if (!startDate) {
-      setErrorMsg(t("StartDateRequired"));
-      return;
-    }
-
-    if (!endDate) {
-      setErrorMsg(t("EndDateRequired"));
-      return;
-    }
-
-    if (new Date(endDate) < new Date(startDate)) {
-      setErrorMsg(t("InvalidDateRange"));
-      return;
-    }
-
-    if (selectedType?.requiresAttachment && !attachment) {
-      setErrorMsg(t("AttachmentRequired"));
-      return;
-    }
-
-    try {
-      await onSubmit({
-        leaveTypeId,
-        startDate,
-        endDate,
-        reason: reason.trim() || undefined,
-        attachment,
-      });
-      onClose();
-    } catch (err: any) {
-      setErrorMsg(err.response?.data?.message || err.message || t("ErrorSubmittingLeaveRequest"));
-    }
-  };
+  const {
+    leaveTypeId,
+    setLeaveTypeId,
+    startDate,
+    setStartDate,
+    endDate,
+    setEndDate,
+    reason,
+    setReason,
+    attachment,
+    errorMsg,
+    selectedType,
+    handleFileChange,
+    handleRemoveFile,
+    handleSubmit,
+  } = useLeaveRequestForm({ open, leaveTypes, onSubmit, onClose });
 
   return (
     <Dialog
@@ -199,7 +137,7 @@ export const LeaveRequestFormDialog: React.FC<LeaveRequestFormDialogProps> = ({
                   renderValue: (selectedId: any) => {
                     const selected = leaveTypes.find((lt) => lt.id === selectedId);
                     if (!selected) return "";
-                    return isAr && selected.nameAr ? selected.nameAr : selected.name;
+                    return getLocalizedLeaveTypeName(selected, isAr);
                   },
                 }}
               >
@@ -207,7 +145,7 @@ export const LeaveRequestFormDialog: React.FC<LeaveRequestFormDialogProps> = ({
                   <MenuItem key={type.id} value={type.id}>
                     <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", py: 0.5 }}>
                       <Typography variant="body2" fontWeight={500}>
-                        {isAr && type.nameAr ? type.nameAr : type.name}
+                        {getLocalizedLeaveTypeName(type, isAr)}
                       </Typography>
                       <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
                         <Chip

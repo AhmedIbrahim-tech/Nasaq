@@ -2,6 +2,7 @@ export interface WorkShift {
   id: string;
   name: string;
   nameAr?: string | null;
+  nameEn?: string | null;
   startTime: string; // "HH:mm" or "HH:mm:ss"
   endTime: string;
   isOvernight: boolean;
@@ -20,6 +21,8 @@ export interface WorkShift {
 
 export interface CreateShiftRequest {
   name: string;
+  nameAr?: string | null;
+  nameEn?: string | null;
   startTime: string;
   endTime: string;
   isOvernight?: boolean;
@@ -50,6 +53,8 @@ export interface WorkScheduleDay {
   isWorkingDay: boolean;
   workShiftId?: string | null;
   shiftName?: string | null;
+  shiftNameAr?: string | null;
+  shiftNameEn?: string | null;
   startTime?: string | null;
   endTime?: string | null;
   isOvernight?: boolean | null;
@@ -66,8 +71,10 @@ export interface WorkSchedule {
   id: string;
   name: string;
   nameAr?: string | null;
+  nameEn?: string | null;
   description?: string | null;
   descriptionAr?: string | null;
+  descriptionEn?: string | null;
   isActive: boolean;
   isDefault: boolean;
   days: WorkScheduleDay[];
@@ -80,7 +87,11 @@ export interface WorkSchedule {
 
 export interface CreateScheduleRequest {
   name: string;
+  nameAr?: string | null;
+  nameEn?: string | null;
   description?: string | null;
+  descriptionAr?: string | null;
+  descriptionEn?: string | null;
   isActive?: boolean;
   isDefault?: boolean;
   days?: ScheduleDayInput[];
@@ -88,6 +99,10 @@ export interface CreateScheduleRequest {
 
 export interface UpdateScheduleRequest extends CreateScheduleRequest {
   id: string;
+  nameAr?: string | null;
+  nameEn?: string | null;
+  descriptionAr?: string | null;
+  descriptionEn?: string | null;
 }
 
 export interface SchedulesSummary {
@@ -105,6 +120,7 @@ export interface EmployeeScheduleAssignment {
   employeeName: string;
   employeeNameAr?: string | null;
   department?: string | null;
+  departmentAr?: string | null;
   workScheduleId: string;
   scheduleName: string;
   scheduleNameAr?: string | null;

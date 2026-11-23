@@ -19,6 +19,7 @@ import {
   formatDateTime,
   formatGeofenceFailureReason,
 } from "@/shared/utils/i18nFormatters";
+import { getLocalizedEmployeeName } from "@/shared/utils/localization";
 import type { AttendanceRecord } from "../types";
 
 interface RejectGpsDialogProps {
@@ -87,7 +88,7 @@ export const RejectGpsDialog: React.FC<RejectGpsDialogProps> = ({
               <Box display="flex" alignItems="center" gap={1}>
                 <IconUser size={18} />
                 <Typography variant="subtitle2" fontWeight={600}>
-                  {record.employeeName} ({record.employeeCode})
+                  {getLocalizedEmployeeName(record, isRtl)} ({record.employeeCode})
                 </Typography>
               </Box>
 

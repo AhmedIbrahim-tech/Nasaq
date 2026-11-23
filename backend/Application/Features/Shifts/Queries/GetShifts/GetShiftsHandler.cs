@@ -16,7 +16,9 @@ public sealed class GetShiftsHandler(
         if (!string.IsNullOrWhiteSpace(request.Search))
         {
             var search = request.Search.Trim().ToLower();
-            query = query.Where(s => s.Name.ToLower().Contains(search) || (s.Notes != null && s.Notes.ToLower().Contains(search)));
+            query = query.Where(s => s.Name.ToLower().Contains(search) ||
+                                     (s.NameAr != null && s.NameAr.ToLower().Contains(search)) ||
+                                     (s.Notes != null && s.Notes.ToLower().Contains(search)));
         }
 
         if (request.IsActive.HasValue)

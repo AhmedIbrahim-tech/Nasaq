@@ -6,12 +6,29 @@ public class CreatePointRuleValidator : AbstractValidator<CreatePointRuleCommand
 {
     public CreatePointRuleValidator()
     {
+        RuleFor(x => x)
+            .Must(x => !string.IsNullOrWhiteSpace(x.Name) ||
+                       !string.IsNullOrWhiteSpace(x.NameEn) ||
+                       !string.IsNullOrWhiteSpace(x.NameAr))
+            .WithMessage("Rule name is required in at least one language.");
+
         RuleFor(x => x.Name)
-            .NotEmpty().WithMessage("Rule name is required.")
             .MaximumLength(150).WithMessage("Rule name cannot exceed 150 characters.");
+
+        RuleFor(x => x.NameAr)
+            .MaximumLength(150).WithMessage("Arabic rule name cannot exceed 150 characters.");
+
+        RuleFor(x => x.NameEn)
+            .MaximumLength(150).WithMessage("English rule name cannot exceed 150 characters.");
 
         RuleFor(x => x.Description)
             .MaximumLength(500).WithMessage("Description cannot exceed 500 characters.");
+
+        RuleFor(x => x.DescriptionAr)
+            .MaximumLength(500).WithMessage("Arabic description cannot exceed 500 characters.");
+
+        RuleFor(x => x.DescriptionEn)
+            .MaximumLength(500).WithMessage("English description cannot exceed 500 characters.");
 
         RuleFor(x => x.Category)
             .IsInEnum().WithMessage("Valid point category is required.");

@@ -15,6 +15,7 @@ import Stack from "@mui/material/Stack";
 import { IconArrowBackUp, IconAlertTriangle } from "@tabler/icons-react";
 import { useTranslations } from "next-intl";
 import DialogCloseButton from "@/shared/components/buttons/DialogCloseButton";
+import { useReverseTransactionForm } from "../hooks";
 import type { PointTransaction } from "../types";
 
 interface ReverseTransactionDialogProps {
@@ -33,21 +34,14 @@ export const ReverseTransactionDialog: React.FC<ReverseTransactionDialogProps> =
   onConfirm,
 }) => {
   const t = useTranslations();
-  const [reason, setReason] = useState<string>("");
-  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!reason.trim()) {
-      setError(t("ReversalReasonRequired"));
-      return;
-    }
-    if (!transaction) return;
-
-    await onConfirm(transaction.id, reason.trim());
-    setReason("");
-    setError(null);
-  };
+  const {
+    reason,
+    setReason,
+    error,
+    setError,
+    handleSubmit,
+  } = useReverseTransactionForm({ transaction, onConfirm });
 
   return (
     <Dialog

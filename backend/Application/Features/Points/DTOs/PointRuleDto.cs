@@ -20,6 +20,9 @@ public sealed record PointRuleDto(
     string? DescriptionAr = null
 )
 {
+    public string NameEn => Name;
+    public string? DescriptionEn => Description;
+
     public static PointRuleDto FromEntity(PointRule r) => new(
         r.Id,
         r.Name,

@@ -16,6 +16,7 @@ import { useTheme } from "@mui/material/styles";
 import { IconClockCheck, IconClock, IconUser } from "@tabler/icons-react";
 import { useTranslations } from "next-intl";
 import { formatDateTime } from "@/shared/utils/i18nFormatters";
+import { getLocalizedEmployeeName } from "@/shared/utils/localization";
 import type { AttendanceRecord } from "../types";
 
 interface CorrectIncompleteDialogProps {
@@ -114,7 +115,7 @@ export const CorrectIncompleteDialog: React.FC<CorrectIncompleteDialogProps> = (
               <Box display="flex" alignItems="center" gap={1}>
                 <IconUser size={18} />
                 <Typography variant="subtitle2" fontWeight={600}>
-                  {record.employeeName} ({record.employeeCode})
+                  {getLocalizedEmployeeName(record, isRtl)} ({record.employeeCode})
                 </Typography>
               </Box>
 

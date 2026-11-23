@@ -21,14 +21,21 @@ public class CreatePointRuleHandler : IRequestHandler<CreatePointRuleCommand, Ge
         CreatePointRuleCommand request,
         CancellationToken cancellationToken)
     {
-        var normalizedName = request.Name.Trim();
+        var nameEn = !string.IsNullOrWhiteSpace(request.NameEn) ? request.NameEn.Trim() : (!string.IsNullOrWhiteSpace(request.Name) ? request.Name.Trim() : null);
+        var nameAr = !string.IsNullOrWhiteSpace(request.NameAr) ? request.NameAr.Trim() : null;
+        var primaryName = !string.IsNullOrWhiteSpace(nameEn) ? nameEn : (nameAr ?? request.Name?.Trim() ?? string.Empty);
+
+        var descEn = !string.IsNullOrWhiteSpace(request.DescriptionEn) ? request.DescriptionEn.Trim() : request.Description?.Trim();
+        var descAr = !string.IsNullOrWhiteSpace(request.DescriptionAr) ? request.DescriptionAr.Trim() : null;
 
         var existing = await _context.PointRules
-            .AnyAsync(r => r.Name.ToLower() == normalizedName.ToLower(), cancellationToken);
+            .AnyAsync(r => r.Name.ToLower() == primaryName.ToLower() ||
+                           (!string.IsNullOrEmpty(nameAr) && r.NameAr != null && r.NameAr.ToLower() == nameAr.ToLower()),
+                      cancellationToken);
 
         if (existing)
         {
-            return GenericBaseResponse<PointRuleDto>.Conflict($"A point rule named '{normalizedName}' already exists.");
+            return GenericBaseResponse<PointRuleDto>.Conflict($"A point rule named '{primaryName}' already exists.");
         }
 
         // Enforce signed point convention: Green is positive, Red/Black is negative
@@ -44,8 +51,10 @@ public class CreatePointRuleHandler : IRequestHandler<CreatePointRuleCommand, Ge
 
         var rule = new PointRule
         {
-            Name = normalizedName,
-            Description = request.Description?.Trim(),
+            Name = primaryName,
+            NameAr = nameAr,
+            Description = descEn,
+            DescriptionAr = descAr,
             Category = request.Category,
             EventType = request.EventType,
             Points = points,

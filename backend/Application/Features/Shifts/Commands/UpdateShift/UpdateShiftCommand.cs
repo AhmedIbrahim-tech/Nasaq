@@ -6,6 +6,7 @@ public sealed record UpdateShiftCommand(
     Guid Id = default,
     string Name = "",
     string? NameAr = null,
+    string? NameEn = null,
     TimeOnly StartTime = default,
     TimeOnly EndTime = default,
     bool IsOvernight = false,

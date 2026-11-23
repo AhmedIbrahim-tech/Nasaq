@@ -32,6 +32,7 @@ public class GetLeaveTypesHandler : IRequestHandler<GetLeaveTypesQuery, GenericB
                 NameAr = t.NameAr,
                 Code = t.Code,
                 Description = t.Description,
+                DescriptionAr = t.DescriptionAr,
                 IsPaid = t.IsPaid,
                 RequiresAttachment = t.RequiresAttachment,
                 DefaultDaysPerYear = t.DefaultDaysPerYear,

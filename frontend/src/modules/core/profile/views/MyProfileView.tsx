@@ -20,10 +20,7 @@ import { useTranslations } from 'next-intl';
 
 import PageContainer from '@/shared/components/container/PageContainer';
 import Breadcrumb from '@/shared/layouts/dashboard/shared/breadcrumb/Breadcrumb';
-import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { meThunk } from '@/modules/auth/slices/thunks/me.thunk';
-import { setError } from '@/modules/auth/slices/auth.slice';
-import { useLogout } from '@/modules/auth/hooks/useLogout';
+import { useProfile } from '../hooks';
 import { ProfileHeader } from '../components/ProfileHeader';
 import { OverviewTab } from '../components/OverviewTab';
 import { PersonalInfoTab } from '../components/PersonalInfoTab';
@@ -35,33 +32,22 @@ import { AccessPermissionsTab } from '../components/AccessPermissionsTab';
 export function MyProfileView() {
   const t = useTranslations();
   const theme = useTheme();
-  const dispatch = useAppDispatch();
-  const { logout, isLoggingOut } = useLogout();
   const isPreviewActive = false;
 
-  const user = useAppSelector((state) => state.auth.user);
-  const roles = useAppSelector((state) => state.auth.roles) || [];
-  const loading = useAppSelector((state) => state.auth.loading);
-  const authError = useAppSelector((state) => state.auth.error);
-  const accessToken = useAppSelector((state) => state.auth.accessToken);
-  const accessTokenExpiresAtUtc = useAppSelector((state) => state.auth.accessTokenExpiresAtUtc);
-
-
-  const [activeTab, setActiveTab] = useState(0);
-
-  useEffect(() => {
-    if (!user) {
-      dispatch(meThunk());
-    }
-  }, [dispatch, user]);
-
-  const handleRefresh = async () => {
-    try {
-      await dispatch(meThunk()).unwrap();
-    } catch {
-      // Handled via authError Alert
-    }
-  };
+  const {
+    user,
+    roles,
+    loading,
+    authError,
+    accessToken,
+    accessTokenExpiresAtUtc,
+    activeTab,
+    setActiveTab,
+    handleRefresh,
+    clearError,
+    logout,
+    isLoggingOut,
+  } = useProfile();
 
   const BCrumb = [
     { to: '/', title: t.has('Home') ? t('Home') : 'Home' },
@@ -82,7 +68,7 @@ export function MyProfileView() {
         {authError && (
           <Alert
             severity="warning"
-            onClose={() => dispatch(setError(null))}
+            onClose={clearError}
             sx={{ borderRadius: '8px' }}
           >
             {authError}

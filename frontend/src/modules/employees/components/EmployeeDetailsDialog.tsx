@@ -30,6 +30,13 @@ import {
 } from "@tabler/icons-react";
 import { useTranslations } from "next-intl";
 import type { Employee } from "../types";
+import {
+  getEmployeeDisplayName,
+  getEmployeeDepartment,
+  getEmployeeJobTitle,
+  getEmployeeSupervisorName,
+  getEmployeeWorkLocationName,
+} from "../utils/employeeLocalization";
 
 interface EmployeeDetailsDialogProps {
   open: boolean;
@@ -53,17 +60,18 @@ export const EmployeeDetailsDialog: React.FC<EmployeeDetailsDialogProps> = ({
   if (!employee) return null;
 
   const isActive = employee.isActive;
-  const fullName = employee.fullName || `${employee.firstName} ${employee.lastName}`;
+  const fullName = getEmployeeDisplayName(employee, isRtl);
   const code = employee.employeeCode;
   const email = employee.email;
   const phone = employee.phoneNumber;
-  const dept = employee.department;
-  const title = employee.jobTitle;
+  const dept = getEmployeeDepartment(employee, isRtl);
+  const title = getEmployeeJobTitle(employee, isRtl);
   const hireDate = employee.hireDate;
   const userRole = employee.userRole;
   const userId = employee.userId;
-  const supervisorName = employee.supervisorName;
+  const supervisorName = getEmployeeSupervisorName(employee, isRtl);
   const supervisorCode = employee.supervisorCode;
+  const locationName = getEmployeeWorkLocationName(employee, isRtl);
   const createdUtc = employee.created_Utc;
   const createdBy = employee.created_By;
   const updatedUtc = employee.updated_Utc;
@@ -193,7 +201,7 @@ export const EmployeeDetailsDialog: React.FC<EmployeeDetailsDialogProps> = ({
                       {t("WorkLocation")}
                     </Typography>
                     <Typography variant="body2" fontWeight={500}>
-                      {employee.workLocationName || t("NoLocationAssigned")}
+                      {locationName || t("NoLocationAssigned")}
                     </Typography>
                   </Box>
                 </Stack>

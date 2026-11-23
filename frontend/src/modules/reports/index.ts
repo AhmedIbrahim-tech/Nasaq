@@ -1,5 +1,6 @@
 export * from "./types";
 export * from "./services/reports.service";
+export * from "./hooks";
 export * from "./views/ReportsView";
 export * from "./components/ReportKpisSummary";
 export * from "./components/ReportExportMenu";

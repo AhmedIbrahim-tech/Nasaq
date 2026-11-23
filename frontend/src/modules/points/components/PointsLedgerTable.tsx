@@ -28,6 +28,7 @@ import {
 } from "@/shared/components/tables/modernize/ModernizeDataTable";
 import { ModernizeTableToolbar } from "@/shared/components/tables/modernize/ModernizeTableToolbar";
 import { formatDateTime, formatDateOnly } from "@/shared/utils/i18nFormatters";
+import { getLocalizedName, getLocalizedEmployeeName } from "@/shared/utils/localization";
 import { CustomizerContext } from "@/theme/customizerContext";
 import type { PointTransaction } from "../types";
 
@@ -189,7 +190,13 @@ export const PointsLedgerTable: React.FC<PointsLedgerTableProps> = ({
             cell: (row: PointTransaction) => (
               <Box>
                 <Typography variant="subtitle2" fontWeight={600}>
-                  {row.employeeName}
+                  {getLocalizedEmployeeName(
+                    {
+                      employeeName: row.employeeName,
+                      employeeNameAr: row.employeeNameAr,
+                    },
+                    isRtl
+                  )}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
                   <span style={{ direction: "ltr", unicodeBidi: "isolate", display: "inline-block" }}>
@@ -267,243 +274,69 @@ export const PointsLedgerTable: React.FC<PointsLedgerTableProps> = ({
       ]
     : [];
 
-  const renderExpandedRow = (tx: PointTransaction) => (
-    <Box
-      dir={isRtl ? "rtl" : "ltr"}
-      sx={{
-        direction: isRtl ? "rtl" : "ltr",
-        textAlign: isRtl ? "right" : "left",
-        p: 2.5,
-        bgcolor: (theme) =>
-          theme.palette.mode === "dark"
-            ? alpha(theme.palette.background.default, 0.6)
-            : alpha(theme.palette.primary.light, 0.2),
-        borderRadius: "12px",
-        border: (theme) => `1px solid ${theme.palette.divider}`,
-      }}
-    >
-      <Stack
-        direction="row"
-        justifyContent="space-between"
-        alignItems="center"
-        sx={{ mb: 2.5 }}
-        flexWrap="wrap"
-        gap={1.5}
-      >
-        <Stack direction="row" spacing={1.5} alignItems="center">
-          <Box
-            sx={{
-              width: 36,
-              height: 36,
-              borderRadius: "8px",
-              bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
-              color: "primary.main",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <IconAward size={20} />
-          </Box>
-          <Box>
-            <Typography variant="subtitle2" fontWeight={700} color="primary.main">
-              {tx.ruleName || t("PointRule")}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              {t("TransactionAuditDetails")}
-            </Typography>
-          </Box>
-        </Stack>
-        <Stack direction="row" spacing={1} alignItems="center">
-          {getCategoryChip(tx.category)}
-          {getStatusChip(tx.status)}
-        </Stack>
-      </Stack>
+  const renderExpandedRow = (tx: PointTransaction) => {
+    const localizedRuleName = getLocalizedName(
+      { name: tx.ruleName, nameAr: tx.ruleNameAr },
+      isRtl,
+      t("PointRule")
+    );
 
-      <Grid container spacing={2}>
-        {/* Point Rule */}
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Box
-            sx={{
-              p: 1.5,
-              borderRadius: "10px",
-              bgcolor: "background.paper",
-              border: (theme) => `1px solid ${theme.palette.divider}`,
-              display: "flex",
-              alignItems: "center",
-              gap: 1.5,
-              height: "100%",
-            }}
-          >
+    return (
+      <Box
+        dir={isRtl ? "rtl" : "ltr"}
+        sx={{
+          direction: isRtl ? "rtl" : "ltr",
+          textAlign: isRtl ? "right" : "left",
+          p: 2.5,
+          bgcolor: (theme) =>
+            theme.palette.mode === "dark"
+              ? alpha(theme.palette.background.default, 0.6)
+              : alpha(theme.palette.primary.light, 0.2),
+          borderRadius: "12px",
+          border: (theme) => `1px solid ${theme.palette.divider}`,
+        }}
+      >
+        <Stack
+          direction="row"
+          justifyContent="space-between"
+          alignItems="center"
+          sx={{ mb: 2.5 }}
+          flexWrap="wrap"
+          gap={1.5}
+        >
+          <Stack direction="row" spacing={1.5} alignItems="center">
             <Box
               sx={{
-                width: 38,
-                height: 38,
+                width: 36,
+                height: 36,
                 borderRadius: "8px",
                 bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
                 color: "primary.main",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                flexShrink: 0,
               }}
             >
-              <IconScale size={20} stroke={1.75} />
+              <IconAward size={20} />
             </Box>
-            <Box sx={{ minWidth: 0, flex: 1 }}>
-              <Typography variant="caption" color="text.secondary" display="block">
-                {t("Rule")}
+            <Box>
+              <Typography variant="subtitle2" fontWeight={700} color="primary.main">
+                {localizedRuleName}
               </Typography>
-              <Typography variant="body2" fontWeight={600} noWrap>
-                {tx.ruleName || t("NotLinkedToRule")}
+              <Typography variant="caption" color="text.secondary">
+                {t("TransactionAuditDetails")}
               </Typography>
             </Box>
-          </Box>
-        </Grid>
+          </Stack>
+          <Stack direction="row" spacing={1} alignItems="center">
+            {getCategoryChip(tx.category)}
+            {getStatusChip(tx.status)}
+          </Stack>
+        </Stack>
 
-        {/* Source Event */}
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Box
-            sx={{
-              p: 1.5,
-              borderRadius: "10px",
-              bgcolor: "background.paper",
-              border: (theme) => `1px solid ${theme.palette.divider}`,
-              display: "flex",
-              alignItems: "center",
-              gap: 1.5,
-              height: "100%",
-            }}
-          >
-            <Box
-              sx={{
-                width: 38,
-                height: 38,
-                borderRadius: "8px",
-                bgcolor: (theme) => alpha(theme.palette.warning.main, 0.1),
-                color: "warning.main",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-              }}
-            >
-              <IconClockPlay size={20} stroke={1.75} />
-            </Box>
-            <Box sx={{ minWidth: 0, flex: 1 }}>
-              <Typography variant="caption" color="text.secondary" display="block">
-                {t("SourceEvent")}
-              </Typography>
-              <Typography
-                variant="body2"
-                fontWeight={600}
-                noWrap
-                sx={{ textAlign: isRtl ? "right" : "left" }}
-              >
-                {formatSourceEventType(tx.sourceEventType)}
-              </Typography>
-            </Box>
-          </Box>
-        </Grid>
-
-        {/* Recorded Timestamp */}
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Box
-            sx={{
-              p: 1.5,
-              borderRadius: "10px",
-              bgcolor: "background.paper",
-              border: (theme) => `1px solid ${theme.palette.divider}`,
-              display: "flex",
-              alignItems: "center",
-              gap: 1.5,
-              height: "100%",
-            }}
-          >
-            <Box
-              sx={{
-                width: 38,
-                height: 38,
-                borderRadius: "8px",
-                bgcolor: (theme) => alpha(theme.palette.info.main, 0.1),
-                color: "info.main",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-              }}
-            >
-              <IconCalendarTime size={20} stroke={1.75} />
-            </Box>
-            <Box sx={{ minWidth: 0, flex: 1 }}>
-              <Typography variant="caption" color="text.secondary" display="block">
-                {t("RecordedAt")}
-              </Typography>
-              <Typography
-                variant="body2"
-                fontWeight={600}
-                sx={{
-                  direction: "ltr",
-                  unicodeBidi: "isolate",
-                  display: "inline-block",
-                  fontFamily: "monospace",
-                  fontSize: "0.85rem",
-                }}
-              >
-                {formatDateTime(tx.timestampUtc, isRtl)}
-              </Typography>
-            </Box>
-          </Box>
-        </Grid>
-
-        {/* Operator / Created By */}
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Box
-            sx={{
-              p: 1.5,
-              borderRadius: "10px",
-              bgcolor: "background.paper",
-              border: (theme) => `1px solid ${theme.palette.divider}`,
-              display: "flex",
-              alignItems: "center",
-              gap: 1.5,
-              height: "100%",
-            }}
-          >
-            <Box
-              sx={{
-                width: 38,
-                height: 38,
-                borderRadius: "8px",
-                bgcolor: (theme) => alpha(theme.palette.success.main, 0.1),
-                color: "success.main",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-              }}
-            >
-              <IconUserCheck size={20} stroke={1.75} />
-            </Box>
-            <Box sx={{ minWidth: 0, flex: 1 }}>
-              <Typography variant="caption" color="text.secondary" display="block">
-                {t("CreatedBy")}
-              </Typography>
-              <Typography
-                variant="body2"
-                fontWeight={600}
-                noWrap
-                sx={{ textAlign: isRtl ? "right" : "left" }}
-              >
-                {formatCreatedBy(tx.created_By)}
-              </Typography>
-            </Box>
-          </Box>
-        </Grid>
-
-        {/* Reason / Details Box */}
-        {tx.reason && (
-          <Grid size={{ xs: 12 }}>
+        <Grid container spacing={2}>
+          {/* Point Rule */}
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <Box
               sx={{
                 p: 1.5,
@@ -511,8 +344,98 @@ export const PointsLedgerTable: React.FC<PointsLedgerTableProps> = ({
                 bgcolor: "background.paper",
                 border: (theme) => `1px solid ${theme.palette.divider}`,
                 display: "flex",
-                alignItems: "flex-start",
+                alignItems: "center",
                 gap: 1.5,
+                height: "100%",
+              }}
+            >
+              <Box
+                sx={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: "8px",
+                  bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
+                  color: "primary.main",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}
+              >
+                <IconScale size={20} stroke={1.75} />
+              </Box>
+              <Box sx={{ minWidth: 0, flex: 1 }}>
+                <Typography variant="caption" color="text.secondary" display="block">
+                  {t("Rule")}
+                </Typography>
+                <Typography variant="body2" fontWeight={600} noWrap>
+                  {getLocalizedName(
+                    { name: tx.ruleName, nameAr: tx.ruleNameAr },
+                    isRtl,
+                    t("NotLinkedToRule")
+                  )}
+                </Typography>
+              </Box>
+            </Box>
+          </Grid>
+
+          {/* Source Event */}
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Box
+              sx={{
+                p: 1.5,
+                borderRadius: "10px",
+                bgcolor: "background.paper",
+                border: (theme) => `1px solid ${theme.palette.divider}`,
+                display: "flex",
+                alignItems: "center",
+                gap: 1.5,
+                height: "100%",
+              }}
+            >
+              <Box
+                sx={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: "8px",
+                  bgcolor: (theme) => alpha(theme.palette.warning.main, 0.1),
+                  color: "warning.main",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}
+              >
+                <IconClockPlay size={20} stroke={1.75} />
+              </Box>
+              <Box sx={{ minWidth: 0, flex: 1 }}>
+                <Typography variant="caption" color="text.secondary" display="block">
+                  {t("SourceEvent")}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  fontWeight={600}
+                  noWrap
+                  sx={{ textAlign: isRtl ? "right" : "left" }}
+                >
+                  {formatSourceEventType(tx.sourceEventType)}
+                </Typography>
+              </Box>
+            </Box>
+          </Grid>
+
+          {/* Recorded Timestamp */}
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Box
+              sx={{
+                p: 1.5,
+                borderRadius: "10px",
+                bgcolor: "background.paper",
+                border: (theme) => `1px solid ${theme.palette.divider}`,
+                display: "flex",
+                alignItems: "center",
+                gap: 1.5,
+                height: "100%",
               }}
             >
               <Box
@@ -526,32 +449,128 @@ export const PointsLedgerTable: React.FC<PointsLedgerTableProps> = ({
                   alignItems: "center",
                   justifyContent: "center",
                   flexShrink: 0,
-                  mt: 0.25,
                 }}
               >
-                <IconFileDescription size={20} stroke={1.75} />
+                <IconCalendarTime size={20} stroke={1.75} />
               </Box>
               <Box sx={{ minWidth: 0, flex: 1 }}>
                 <Typography variant="caption" color="text.secondary" display="block">
-                  {t("Reason")}
+                  {t("RecordedAt")}
                 </Typography>
                 <Typography
                   variant="body2"
-                  fontWeight={500}
+                  fontWeight={600}
                   sx={{
-                    wordBreak: "break-word",
-                    textAlign: isRtl ? "right" : "left",
+                    direction: "ltr",
+                    unicodeBidi: "isolate",
+                    display: "inline-block",
+                    fontFamily: "monospace",
+                    fontSize: "0.85rem",
                   }}
                 >
-                  {formatReason(tx.reason)}
+                  {formatDateTime(tx.timestampUtc, isRtl)}
                 </Typography>
               </Box>
             </Box>
           </Grid>
-        )}
-      </Grid>
-    </Box>
-  );
+
+          {/* Operator / Created By */}
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Box
+              sx={{
+                p: 1.5,
+                borderRadius: "10px",
+                bgcolor: "background.paper",
+                border: (theme) => `1px solid ${theme.palette.divider}`,
+                display: "flex",
+                alignItems: "center",
+                gap: 1.5,
+                height: "100%",
+              }}
+            >
+              <Box
+                sx={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: "8px",
+                  bgcolor: (theme) => alpha(theme.palette.success.main, 0.1),
+                  color: "success.main",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}
+              >
+                <IconUserCheck size={20} stroke={1.75} />
+              </Box>
+              <Box sx={{ minWidth: 0, flex: 1 }}>
+                <Typography variant="caption" color="text.secondary" display="block">
+                  {t("CreatedBy")}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  fontWeight={600}
+                  noWrap
+                  sx={{ textAlign: isRtl ? "right" : "left" }}
+                >
+                  {formatCreatedBy(tx.created_By)}
+                </Typography>
+              </Box>
+            </Box>
+          </Grid>
+
+          {/* Reason / Details Box */}
+          {tx.reason && (
+            <Grid size={{ xs: 12 }}>
+              <Box
+                sx={{
+                  p: 1.5,
+                  borderRadius: "10px",
+                  bgcolor: "background.paper",
+                  border: (theme) => `1px solid ${theme.palette.divider}`,
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: 1.5,
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 38,
+                    height: 38,
+                    borderRadius: "8px",
+                    bgcolor: (theme) => alpha(theme.palette.info.main, 0.1),
+                    color: "info.main",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                    mt: 0.25,
+                  }}
+                >
+                  <IconFileDescription size={20} stroke={1.75} />
+                </Box>
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Typography variant="caption" color="text.secondary" display="block">
+                    {t("Reason")}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    fontWeight={500}
+                    sx={{
+                      wordBreak: "break-word",
+                      textAlign: isRtl ? "right" : "left",
+                    }}
+                  >
+                    {formatReason(tx.reason)}
+                  </Typography>
+                </Box>
+              </Box>
+            </Grid>
+          )}
+        </Grid>
+      </Box>
+    );
+  };
 
   return (
     <Stack spacing={2.5}>

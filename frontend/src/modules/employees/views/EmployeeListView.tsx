@@ -42,35 +42,29 @@ import { ProfilePhotoAvatar } from "@/shared/components/avatar";
 import { broadcastPhotoInvalidation } from "@/shared/hooks/useAuthenticatedPhotoUrl";
 import { formatBulkDeleteConfirmation, formatDateOnly } from "@/shared/utils/i18nFormatters";
 import {
+  getEmployeeDisplayName,
+  getEmployeeDepartment,
+  getEmployeeJobTitle,
+  getEmployeeSupervisorName,
+  getEmployeeWorkLocationName,
+} from "../utils/employeeLocalization";
+import {
   ModernizeStatsCards,
   ModernizeTableToolbar,
   ModernizeDataTable,
   ModernizeColumnDef,
   ModernizeRowAction,
 } from "@/shared/components/tables/modernize";
-import {
-  fetchEmployeesThunk,
-  fetchSupervisorsThunk,
-  fetchEmployeesSummaryThunk,
-  createEmployeeThunk,
-  updateEmployeeThunk,
-  toggleEmployeeStatusThunk,
-  deleteEmployeeThunk,
-  bulkDeleteEmployeesThunk,
-  setFilterParams,
-  resetFilters,
-} from "../slices/employee.slice";
 import { EmployeeFormDialog } from "../components/EmployeeFormDialog";
 import { EmployeeDetailsDialog } from "../components/EmployeeDetailsDialog";
-import type { Employee, CreateEmployeeRequest, UpdateEmployeeRequest } from "../types";
+import { useEmployees, useEmployeeFilters } from "../hooks";
+import type { Employee } from "../types";
 
 export const EmployeeListView: React.FC = () => {
   const t = useTranslations();
   const theme = useTheme();
   const isRtl = theme.direction === "rtl";
-  const dispatch = useAppDispatch();
 
-  const { roles, user: currentUser } = useAppSelector((state) => state.auth);
   const {
     items,
     supervisors,
@@ -81,295 +75,50 @@ export const EmployeeListView: React.FC = () => {
     pageSize,
     loading,
     actionLoading,
+    locations,
+    departments,
+    canManage,
+    isSuperAdmin,
+    formOpen,
+    formMode,
+    selectedEmployee,
+    detailsOpen,
+    selectedIds,
+    setSelectedIds,
+    employeeToDelete,
+    bulkDeleteOpen,
+    isDeleting,
+    loadData,
+    openCreate: handleOpenCreate,
+    openEdit: handleOpenEdit,
+    closeForm,
+    openDetails: handleOpenDetails,
+    closeDetails,
+    submitForm: handleFormSubmit,
+    toggleStatus: handleToggleStatus,
+    openDelete: handleOpenSingleDelete,
+    closeDelete,
+    confirmDelete: handleConfirmSingleDelete,
+    openBulkDelete: handleOpenBulkDelete,
+    closeBulkDelete,
+    confirmBulkDelete: handleConfirmBulkDelete,
+    exportCsv: handleExportCsv,
+  } = useEmployees();
+
+  const {
     filterParams,
-  } = useAppSelector((state) => state.employees);
-  const { items: locations } = useAppSelector((state) => state.locations);
-
-  const canManage = useMemo(
-    () => roles?.includes(RoleNames.SuperAdmin) || roles?.includes(RoleNames.Admin) || false,
-    [roles]
-  );
-
-  const isSuperAdmin = useMemo(
-    () => roles?.includes(RoleNames.SuperAdmin) || false,
-    [roles]
-  );
-
-  // Dialog and UI states
-  const [formOpen, setFormOpen] = useState(false);
-  const [formMode, setFormMode] = useState<"create" | "edit">("create");
-  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
-  const [detailsOpen, setDetailsOpen] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
-
-  // Deletion dialog states
-  const [employeeToDelete, setEmployeeToDelete] = useState<Employee | null>(null);
-  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  // Column visibility state (Default to concise overview; details accessible in expandable row)
-  const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>({
-    employeeCode: true,
-    fullName: true,
-    primaryWorkInfo: true,
-    isActive: true,
-    department: false,
-    jobTitle: false,
-    supervisorName: false,
-    workLocationName: false,
-    userRole: false,
-    hireDate: false,
-  });
-
-  // Departments list for filter dropdown
-  const departments = useMemo(() => {
-    const depts = new Set<string>();
-    items.forEach((item) => {
-      const d = item.department;
-      if (d && d.trim()) depts.add(d.trim());
-    });
-    return Array.from(depts);
-  }, [items]);
-
-  const loadData = useCallback(() => {
-    dispatch(fetchEmployeesThunk(filterParams));
-    dispatch(fetchEmployeesSummaryThunk());
-  }, [dispatch, filterParams]);
-
-  useEffect(() => {
-    loadData();
-    if (canManage) {
-      dispatch(fetchSupervisorsThunk());
-      dispatch(fetchLocationsThunk({ isActive: true }));
-    }
-  }, [loadData, canManage, dispatch]);
-
-  const handleSearchChange = (search: string) => {
-    dispatch(setFilterParams({ search, page: 1 }));
-  };
-
-  const handleDepartmentChange = (department: string) => {
-    dispatch(setFilterParams({ department, page: 1 }));
-  };
-
-  const handleIsActiveChange = (isActive: boolean | undefined) => {
-    dispatch(setFilterParams({ isActive, page: 1 }));
-  };
-
-  const handlePageChange = (page: number) => {
-    dispatch(setFilterParams({ page }));
-  };
-
-  const handlePageSizeChange = (newPageSize: number) => {
-    dispatch(setFilterParams({ pageSize: newPageSize, page: 1 }));
-  };
-
-  const handleSortChange = (column: string, order: "asc" | "desc") => {
-    dispatch(setFilterParams({ sortBy: column, sortDescending: order === "desc", page: 1 }));
-  };
-
-  const handleResetFilters = () => {
-    dispatch(resetFilters());
-  };
-
-  const handleToggleColumn = (columnId: string) => {
-    setColumnVisibility((prev) => ({
-      ...prev,
-      [columnId]: !prev[columnId],
-    }));
-  };
-
-  const handleOpenCreate = () => {
-    setSelectedEmployee(null);
-    setFormMode("create");
-    setFormOpen(true);
-  };
-
-  const handleOpenEdit = (employee: Employee) => {
-    setSelectedEmployee(employee);
-    setFormMode("edit");
-    setFormOpen(true);
-  };
-
-  const handleOpenDetails = (employee: Employee) => {
-    setSelectedEmployee(employee);
-    setDetailsOpen(true);
-  };
-
-  const handleFormSubmit = async (formData: any) => {
-    try {
-      if (formMode === "create") {
-        const payload: CreateEmployeeRequest = {
-          employeeCode: formData.employeeCode,
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          firstNameAr: formData.firstNameAr || undefined,
-          lastNameAr: formData.lastNameAr || undefined,
-          firstNameEn: formData.firstNameEn || undefined,
-          lastNameEn: formData.lastNameEn || undefined,
-          email: formData.email,
-          phoneNumber: formData.phoneNumber || undefined,
-          department: formData.department || undefined,
-          departmentAr: formData.departmentAr || undefined,
-          jobTitle: formData.jobTitle || undefined,
-          jobTitleAr: formData.jobTitleAr || undefined,
-          hireDate: formData.hireDate,
-          supervisorId: formData.supervisorId || undefined,
-          workLocationId: formData.workLocationId || undefined,
-          createUserAccount: formData.createUserAccount,
-          userRole: formData.createUserAccount ? formData.userRole : undefined,
-          password: formData.createUserAccount && formData.password ? formData.password : undefined,
-          photo: formData.photo || undefined,
-        };
-        await dispatch(createEmployeeThunk(payload)).unwrap();
-        notify.success(t("EmployeeCreatedSuccess"));
-      } else if (selectedEmployee) {
-        const payload: UpdateEmployeeRequest = {
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          firstNameAr: formData.firstNameAr !== undefined ? formData.firstNameAr : selectedEmployee.firstNameAr,
-          lastNameAr: formData.lastNameAr !== undefined ? formData.lastNameAr : selectedEmployee.lastNameAr,
-          firstNameEn: formData.firstNameEn || undefined,
-          lastNameEn: formData.lastNameEn || undefined,
-          email: formData.email,
-          phoneNumber: formData.phoneNumber || undefined,
-          department: formData.department || undefined,
-          departmentAr: formData.departmentAr !== undefined ? formData.departmentAr : selectedEmployee.departmentAr,
-          jobTitle: formData.jobTitle || undefined,
-          jobTitleAr: formData.jobTitleAr !== undefined ? formData.jobTitleAr : selectedEmployee.jobTitleAr,
-          hireDate: formData.hireDate,
-          supervisorId: formData.supervisorId !== undefined ? formData.supervisorId : null,
-          workLocationId: formData.workLocationId !== undefined ? formData.workLocationId : null,
-          userRole: formData.userRole || undefined,
-          photo: formData.photo || undefined,
-          removeProfilePhoto: formData.removeProfilePhoto,
-        };
-        const updated = await dispatch(
-          updateEmployeeThunk({ id: selectedEmployee.id, data: payload })
-        ).unwrap();
-
-        // Invalidate cached photo blob if photo was changed or removed
-        if (formData.removeProfilePhoto || formData.photo) {
-          broadcastPhotoInvalidation(selectedEmployee.profilePhoto);
-        }
-
-        // If the current logged in user edited their own employee record, synchronize auth user profile
-        if (currentUser?.employeeId === selectedEmployee.id || currentUser?.id === selectedEmployee.userId) {
-          dispatch(updateUserProfile({ profilePhoto: updated.profilePhoto }));
-        }
-
-        notify.success(t("EmployeeUpdatedSuccess"));
-      }
-      setFormOpen(false);
-      loadData();
-    } catch (err: any) {
-      notify.error(err || t("ErrorOccurred"));
-    }
-  };
-
-  const handleToggleStatus = async (employee: Employee) => {
-    try {
-      const currentStatus = employee.isActive;
-      await dispatch(
-        toggleEmployeeStatusThunk({
-          id: employee.id,
-          request: { isActive: !currentStatus },
-        })
-      ).unwrap();
-      notify.success(
-        !currentStatus ? t("EmployeeActivatedSuccess") : t("EmployeeDeactivatedSuccess")
-      );
-      loadData();
-    } catch (err: any) {
-      notify.error(err || t("ErrorOccurred"));
-    }
-  };
-
-  // Single Delete Handler
-  const handleConfirmSingleDelete = async () => {
-    if (!employeeToDelete) return;
-    try {
-      setIsDeleting(true);
-      await dispatch(deleteEmployeeThunk(employeeToDelete.id)).unwrap();
-      if (employeeToDelete.profilePhoto) {
-        broadcastPhotoInvalidation(employeeToDelete.profilePhoto);
-      }
-      notify.success(t("EmployeeDeletedSuccess"));
-      setSelectedIds((prev) => prev.filter((id) => id !== employeeToDelete.id));
-      setEmployeeToDelete(null);
-      loadData();
-    } catch (err: any) {
-      notify.error(err || t("ErrorOccurred"));
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  // Bulk Delete Handler
-  const handleConfirmBulkDelete = async () => {
-    if (selectedIds.length === 0) return;
-    try {
-      setIsDeleting(true);
-      items
-        .filter((emp) => selectedIds.includes(emp.id) && emp.profilePhoto)
-        .forEach((emp) => broadcastPhotoInvalidation(emp.profilePhoto));
-      await dispatch(bulkDeleteEmployeesThunk(selectedIds)).unwrap();
-      notify.success(t("EmployeesBulkDeletedSuccess"));
-      setSelectedIds([]);
-      setBulkDeleteOpen(false);
-      loadData();
-    } catch (err: any) {
-      notify.error(err || t("ErrorOccurred"));
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  // Export filtered dataset to CSV
-  const handleExportCsv = () => {
-    if (items.length === 0) {
-      notify.error(t("NoRecordsFound"));
-      return;
-    }
-    const headers = [
-      t("EmployeeCode"),
-      t("FullName"),
-      t("Email"),
-      t("PhoneNumber"),
-      t("Department"),
-      t("JobTitle"),
-      t("DirectSupervisor"),
-      t("WorkLocation"),
-      t("SystemRole"),
-      t("Status"),
-      t("HireDate"),
-    ];
-
-    const rows = items.map((emp) => [
-      emp.employeeCode,
-      `"${emp.fullName || `${emp.firstName} ${emp.lastName}`}"`,
-      emp.email,
-      emp.phoneNumber || "",
-      `"${emp.department || ""}"`,
-      `"${emp.jobTitle || ""}"`,
-      `"${emp.supervisorName || ""}"`,
-      `"${emp.workLocationName || ""}"`,
-      emp.userRole || "",
-      emp.isActive ? t("Active") : t("Inactive"),
-      emp.hireDate ? new Date(emp.hireDate).toLocaleDateString() : "",
-    ]);
-
-    const csvContent = "\uFEFF" + [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", `employees_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+    showFilters,
+    setShowFilters,
+    columnVisibility,
+    toggleColumn: handleToggleColumn,
+    onSearchChange: handleSearchChange,
+    onDepartmentChange: handleDepartmentChange,
+    onIsActiveChange: handleIsActiveChange,
+    onPageChange: handlePageChange,
+    onPageSizeChange: handlePageSizeChange,
+    onSortChange: handleSortChange,
+    onResetFilters: handleResetFilters,
+  } = useEmployeeFilters();
 
   // Meaningful 4-Card Summary Statistics (High operational utility, no empty grid gaps)
   const statsData = useMemo(() => {
@@ -439,17 +188,18 @@ export const EmployeeListView: React.FC = () => {
         sortKey: "LastName",
         visible: columnVisibility.fullName,
         cell: (emp) => {
+          const empDisplayName = getEmployeeDisplayName(emp, isRtl);
           return (
             <Box display="flex" alignItems="center" gap={1.5}>
               <ProfilePhotoAvatar
                 photoId={emp.profilePhoto}
-                name={emp.fullName || `${emp.firstName} ${emp.lastName}`}
+                name={empDisplayName}
                 size={38}
                 colorScheme="soft"
               />
               <Box minWidth={0}>
                 <Typography variant="subtitle2" fontWeight={700} noWrap>
-                  {emp.fullName || `${emp.firstName} ${emp.lastName}`}
+                  {empDisplayName}
                 </Typography>
                 <Typography
                   variant="caption"
@@ -471,10 +221,10 @@ export const EmployeeListView: React.FC = () => {
         cell: (emp) => (
           <Box>
             <Typography variant="body2" fontWeight={600}>
-              {emp.jobTitle || "-"}
+              {getEmployeeJobTitle(emp, isRtl) || "-"}
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              {emp.department || "-"}
+              {getEmployeeDepartment(emp, isRtl) || "-"}
             </Typography>
           </Box>
         ),
@@ -486,7 +236,7 @@ export const EmployeeListView: React.FC = () => {
         sortKey: "Department",
         visible: columnVisibility.department,
         cell: (emp) => (
-          <Typography variant="body2">{emp.department || "-"}</Typography>
+          <Typography variant="body2">{getEmployeeDepartment(emp, isRtl) || "-"}</Typography>
         ),
       },
       {
@@ -496,18 +246,19 @@ export const EmployeeListView: React.FC = () => {
         sortKey: "JobTitle",
         visible: columnVisibility.jobTitle,
         cell: (emp) => (
-          <Typography variant="body2">{emp.jobTitle || "-"}</Typography>
+          <Typography variant="body2">{getEmployeeJobTitle(emp, isRtl) || "-"}</Typography>
         ),
       },
       {
         id: "supervisorName",
         header: t("DirectSupervisor"),
         visible: columnVisibility.supervisorName,
-        cell: (emp) =>
-          emp.supervisorName ? (
+        cell: (emp) => {
+          const supName = getEmployeeSupervisorName(emp, isRtl);
+          return supName ? (
             <Box>
               <Typography variant="body2" fontWeight={500}>
-                {emp.supervisorName}
+                {supName}
               </Typography>
               {emp.supervisorCode && (
                 <Typography variant="caption" color="text.secondary" sx={{ direction: "ltr", display: "inline-block" }}>
@@ -519,25 +270,28 @@ export const EmployeeListView: React.FC = () => {
             <Typography variant="caption" color="text.secondary">
               {t("NoSupervisorAssigned")}
             </Typography>
-          ),
+          );
+        },
       },
       {
         id: "workLocationName",
         header: t("WorkLocation"),
         visible: columnVisibility.workLocationName,
-        cell: (emp) =>
-          emp.workLocationName ? (
+        cell: (emp) => {
+          const locName = getEmployeeWorkLocationName(emp, isRtl);
+          return locName ? (
             <Chip
               size="small"
               icon={<IconMapPin size={14} />}
-              label={emp.workLocationName}
+              label={locName}
               variant="outlined"
             />
           ) : (
             <Typography variant="caption" color="text.secondary">
               {t("NoLocationAssigned")}
             </Typography>
-          ),
+          );
+        },
       },
       {
         id: "userRole",
@@ -621,7 +375,7 @@ export const EmployeeListView: React.FC = () => {
         label: t("Delete"),
         icon: <IconTrash size={18} color={theme.palette.error.main} />,
         show: () => canManage,
-        onClick: (emp) => setEmployeeToDelete(emp),
+        onClick: (emp) => handleOpenSingleDelete(emp),
       },
     ],
     [canManage, t, theme]
@@ -652,14 +406,14 @@ export const EmployeeListView: React.FC = () => {
           <Stack direction="row" spacing={1.5} alignItems="center">
             <ProfilePhotoAvatar
               photoId={emp.profilePhoto}
-              name={emp.fullName || `${emp.firstName} ${emp.lastName}`}
+              name={getEmployeeDisplayName(emp, isRtl)}
               size={44}
               colorScheme="soft"
               sx={{ border: (theme) => `1px solid ${theme.palette.divider}` }}
             />
             <Box>
               <Typography variant="subtitle2" fontWeight={700} color="primary.main">
-                {t("EmployeeQuickDetails")}: {emp.fullName || `${emp.firstName} ${emp.lastName}`}
+                {t("EmployeeQuickDetails")}: {getEmployeeDisplayName(emp, isRtl)}
               </Typography>
               <Typography
                 variant="caption"
@@ -721,7 +475,7 @@ export const EmployeeListView: React.FC = () => {
                   {t("WorkLocation")}
                 </Typography>
                 <Typography variant="body2" fontWeight={600} noWrap>
-                  {emp.workLocationName || t("NoLocationAssigned")}
+                  {getEmployeeWorkLocationName(emp, isRtl) || t("NoLocationAssigned")}
                 </Typography>
               </Box>
             </Box>
@@ -970,7 +724,7 @@ export const EmployeeListView: React.FC = () => {
             onToggleColumn={handleToggleColumn}
             onExportCsv={handleExportCsv}
             selectedCount={selectedIds.length}
-            onBulkAction={() => setBulkDeleteOpen(true)}
+            onBulkAction={handleOpenBulkDelete}
             bulkActionTooltip={t("DeleteSelected")}
             onRefresh={loadData}
             isRefreshing={loading}
@@ -1076,7 +830,7 @@ export const EmployeeListView: React.FC = () => {
         departments={departments}
         supervisors={supervisors}
         locations={locations}
-        onClose={() => setFormOpen(false)}
+        onClose={closeForm}
         onSubmit={handleFormSubmit}
       />
 
@@ -1085,9 +839,9 @@ export const EmployeeListView: React.FC = () => {
         open={detailsOpen}
         employee={selectedEmployee}
         canManage={canManage}
-        onClose={() => setDetailsOpen(false)}
+        onClose={closeDetails}
         onEdit={() => {
-          setDetailsOpen(false);
+          closeDetails();
           if (selectedEmployee) handleOpenEdit(selectedEmployee);
         }}
       />
@@ -1095,7 +849,7 @@ export const EmployeeListView: React.FC = () => {
       {/* Single Employee Delete Confirmation Dialog */}
       <ConfirmActionDialog
         open={Boolean(employeeToDelete)}
-        onClose={() => setEmployeeToDelete(null)}
+        onClose={closeDelete}
         onConfirm={handleConfirmSingleDelete}
         title={t("DeleteEmployeeQuestion")}
         message={t("DeleteEmployeeConfirmMsg", { name: employeeToDelete?.fullName || "" })}
@@ -1111,7 +865,7 @@ export const EmployeeListView: React.FC = () => {
         return (
           <ConfirmActionDialog
             open={bulkDeleteOpen}
-            onClose={() => setBulkDeleteOpen(false)}
+            onClose={closeBulkDelete}
             onConfirm={handleConfirmBulkDelete}
             title={confirmInfo.title}
             message={confirmInfo.message}

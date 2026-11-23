@@ -40,6 +40,7 @@ import { employeeService } from '@/modules/employees/services/employee.service';
 import { broadcastPhotoInvalidation, setCachedPhotoBlob } from '@/shared/hooks/useAuthenticatedPhotoUrl';
 import { ProfilePhotoAvatar } from '@/shared/components/avatar';
 import { ConfirmActionDialog } from '@/shared/components/dialogs/ConfirmActionDialog';
+import { getLocalizedEmployeeName } from '@/shared/utils/localization';
 import type { CurrentUserResponse, AuthUserResponse } from '@/modules/auth/types';
 
 interface ProfileHeaderProps {
@@ -80,7 +81,7 @@ export function ProfileHeader({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
-  const displayName = user?.fullName || user?.email?.split('@')[0] || t('User');
+  const displayName = getLocalizedEmployeeName(user as any, isRtl, user?.fullName || user?.email?.split('@')[0] || t('User'));
   const displayEmail = user?.email || '—';
   const displayPhone = user?.phoneNumber || null;
 

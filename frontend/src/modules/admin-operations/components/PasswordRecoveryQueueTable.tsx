@@ -28,6 +28,7 @@ import {
 import { useTranslations } from "next-intl";
 import { ModernizeDataTable, ModernizeColumnDef } from "@/shared/components/tables/modernize/ModernizeDataTable";
 import { approvePasswordRequest, rejectPasswordRequest } from "@/modules/auth/services/auth.service";
+import { getLocalizedEmployeeName } from "@/shared/utils/localization";
 import type { ForgotPasswordRequestDto } from "@/modules/auth/types";
 import { notify } from "@/shared/services/notification.service";
 
@@ -121,7 +122,7 @@ export const PasswordRecoveryQueueTable: React.FC<PasswordRecoveryQueueTableProp
           </Box>
           <Box>
             <Typography variant="subtitle2" fontWeight={700}>
-              {isRtl && row.employeeNameAr ? row.employeeNameAr : row.employeeName || row.email}
+              {getLocalizedEmployeeName(row, isRtl) || row.email}
             </Typography>
             <Typography variant="caption" color="text.secondary">
               {row.employeeCode || row.userId.slice(0, 8)}

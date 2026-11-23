@@ -22,176 +22,61 @@ import {
 import { useTranslations } from "next-intl";
 import { useAppSelector } from "@/store/hooks";
 import { RoleNames } from "@/shared/constants/roles";
-import { pointsService } from "../services/points.service";
+import { usePoints } from "../hooks";
 import { PointsSummaryCards } from "../components/PointsSummaryCards";
 import { PointsLedgerTable } from "../components/PointsLedgerTable";
 import { PointRulesTable } from "../components/PointRulesTable";
 import { PointRuleFormDialog } from "../components/PointRuleFormDialog";
 import { ReverseTransactionDialog } from "../components/ReverseTransactionDialog";
-import type {
-  EmployeePointsSummary,
-  PointTransaction,
-  PointRule,
-  CreatePointRuleRequest,
-  UpdatePointRuleRequest,
-} from "../types";
+import type { PointRule, PointTransaction } from "../types";
 
 export const PointsView: React.FC = () => {
   const t = useTranslations();
-  const roles = useAppSelector((state) => state.auth.roles) || [];
-  const isPrivileged = roles.some((r) =>
-    [RoleNames.SuperAdmin, RoleNames.Admin, RoleNames.Supervisor].includes(r as any)
-  );
-  const isAdmin = roles.some((r) =>
-    [RoleNames.SuperAdmin, RoleNames.Admin].includes(r as any)
-  );
 
-  const [activeTab, setActiveTab] = useState<number>(0);
-  const [summary, setSummary] = useState<EmployeePointsSummary | null>(null);
-  const [summaryLoading, setSummaryLoading] = useState<boolean>(true);
-
-  // My Transactions
-  const [myTransactions, setMyTransactions] = useState<PointTransaction[]>([]);
-  const [myTotalCount, setMyTotalCount] = useState<number>(0);
-  const [myPage, setMyPage] = useState<number>(1);
-  const [myLoading, setMyLoading] = useState<boolean>(false);
-
-  // Org Transactions
-  const [orgTransactions, setOrgTransactions] = useState<PointTransaction[]>([]);
-  const [orgTotalCount, setOrgTotalCount] = useState<number>(0);
-  const [orgPage, setOrgPage] = useState<number>(1);
-  const [orgLoading, setOrgLoading] = useState<boolean>(false);
-
-  // Rules
-  const [rules, setRules] = useState<PointRule[]>([]);
-  const [rulesTotalCount, setRulesTotalCount] = useState<number>(0);
-  const [rulesPage, setRulesPage] = useState<number>(1);
-  const [rulesLoading, setRulesLoading] = useState<boolean>(false);
-
-  // Dialogs
-  const [ruleDialogOpen, setRuleDialogOpen] = useState<boolean>(false);
-  const [ruleDialogMode, setRuleDialogMode] = useState<"create" | "edit">("create");
-  const [selectedRule, setSelectedRule] = useState<PointRule | null>(null);
-  const [isSubmittingRule, setIsSubmittingRule] = useState<boolean>(false);
-
-  const [reverseDialogOpen, setReverseDialogOpen] = useState<boolean>(false);
-  const [selectedTx, setSelectedTx] = useState<PointTransaction | null>(null);
-  const [isReversing, setIsReversing] = useState<boolean>(false);
-
-  const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
-
-  const loadSummary = useCallback(async () => {
-    setSummaryLoading(true);
-    try {
-      const res = await pointsService.getMySummary();
-      setSummary(res);
-    } catch {
-      // Ignore initial error
-    } finally {
-      setSummaryLoading(false);
-    }
-  }, []);
-
-  const loadMyTransactions = useCallback(async (p: number) => {
-    setMyLoading(true);
-    try {
-      const res = await pointsService.getMyTransactions({ page: p, pageSize: 10 });
-      setMyTransactions(res.data ?? []);
-      setMyTotalCount(res.totalCount ?? 0);
-    } catch (err: any) {
-      setFeedback({ type: "error", message: err.message || t("ErrorLoadingPointTransactions") });
-    } finally {
-      setMyLoading(false);
-    }
-  }, [t]);
-
-  const loadOrgTransactions = useCallback(async (p: number) => {
-    setOrgLoading(true);
-    try {
-      const res = await pointsService.getTransactions({ page: p, pageSize: 10 });
-      setOrgTransactions(res.data ?? []);
-      setOrgTotalCount(res.totalCount ?? 0);
-    } catch (err: any) {
-      setFeedback({ type: "error", message: err.message || t("ErrorLoadingPointTransactions") });
-    } finally {
-      setOrgLoading(false);
-    }
-  }, [t]);
-
-  const loadRules = useCallback(async (p: number) => {
-    setRulesLoading(true);
-    try {
-      const res = await pointsService.getRules({ page: p, pageSize: 10 });
-      setRules(res.data ?? []);
-      setRulesTotalCount(res.totalCount ?? 0);
-    } catch (err: any) {
-      setFeedback({ type: "error", message: err.message || t("ErrorLoadingPointRules") });
-    } finally {
-      setRulesLoading(false);
-    }
-  }, [t]);
-
-  useEffect(() => {
-    loadSummary();
-    loadMyTransactions(1);
-    if (isPrivileged) loadOrgTransactions(1);
-    if (isAdmin) loadRules(1);
-  }, [loadSummary, loadMyTransactions, loadOrgTransactions, loadRules, isPrivileged, isAdmin]);
-
-  const handleCreateRule = async (data: CreatePointRuleRequest | UpdatePointRuleRequest) => {
-    setIsSubmittingRule(true);
-    try {
-      await pointsService.createRule(data as CreatePointRuleRequest);
-      setFeedback({ type: "success", message: t("PointRuleCreatedSuccess") });
-      setRuleDialogOpen(false);
-      await loadRules(rulesPage);
-    } catch (err: any) {
-      setFeedback({ type: "error", message: err.message || t("ErrorCreatingPointRule") });
-    } finally {
-      setIsSubmittingRule(false);
-    }
-  };
-
-  const handleUpdateRule = async (data: CreatePointRuleRequest | UpdatePointRuleRequest) => {
-    setIsSubmittingRule(true);
-    try {
-      const req = data as UpdatePointRuleRequest;
-      await pointsService.updateRule(req.id, req);
-      setFeedback({ type: "success", message: t("PointRuleUpdatedSuccess") });
-      setRuleDialogOpen(false);
-      await loadRules(rulesPage);
-    } catch (err: any) {
-      setFeedback({ type: "error", message: err.message || t("ErrorUpdatingPointRule") });
-    } finally {
-      setIsSubmittingRule(false);
-    }
-  };
-
-  const handleToggleRuleStatus = async (rule: PointRule) => {
-    try {
-      await pointsService.toggleRuleStatus(rule.id);
-      setFeedback({ type: "success", message: t("PointRuleStatusUpdatedSuccess") });
-      await loadRules(rulesPage);
-    } catch (err: any) {
-      setFeedback({ type: "error", message: err.message || t("ErrorUpdatingPointRuleStatus") });
-    }
-  };
-
-  const handleConfirmReversal = async (transactionId: string, reason: string) => {
-    setIsReversing(true);
-    try {
-      await pointsService.reverseTransaction(transactionId, reason);
-      setFeedback({ type: "success", message: t("PointTransactionReversedSuccess") });
-      setReverseDialogOpen(false);
-      await loadSummary();
-      await loadMyTransactions(myPage);
-      if (isPrivileged) await loadOrgTransactions(orgPage);
-    } catch (err: any) {
-      setFeedback({ type: "error", message: err.message || t("ErrorReversingPointTransaction") });
-    } finally {
-      setIsReversing(false);
-    }
-  };
+  const {
+    isPrivileged,
+    isAdmin,
+    activeTab,
+    setActiveTab,
+    summary,
+    summaryLoading,
+    myTransactions,
+    myTotalCount,
+    myPage,
+    myLoading,
+    orgTransactions,
+    orgTotalCount,
+    orgPage,
+    orgLoading,
+    rules,
+    rulesTotalCount,
+    rulesPage,
+    rulesLoading,
+    ruleDialogOpen,
+    ruleDialogMode,
+    selectedRule,
+    isSubmittingRule,
+    reverseDialogOpen,
+    selectedTx,
+    isReversing,
+    feedback,
+    setFeedback,
+    loadMyTransactions,
+    refreshMyTransactions,
+    loadOrgTransactions,
+    refreshOrgTransactions,
+    loadRules,
+    refreshRules,
+    openCreateRule,
+    openEditRule,
+    closeRuleDialog,
+    createRule,
+    updateRule,
+    toggleRuleStatus,
+    openReverseDialog,
+    closeReverseDialog,
+    confirmReversal,
+  } = usePoints();
 
   const BCrumb = [
     { to: "/", title: t("Home") },
@@ -308,11 +193,8 @@ export const PointsView: React.FC = () => {
               loading={myLoading}
               page={myPage}
               pageSize={10}
-              onPageChange={(p) => {
-                setMyPage(p);
-                loadMyTransactions(p);
-              }}
-              onRefresh={() => loadMyTransactions(myPage)}
+              onPageChange={loadMyTransactions}
+              onRefresh={refreshMyTransactions}
               showEmployeeColumn={false}
               canReverse={false}
             />
@@ -326,17 +208,11 @@ export const PointsView: React.FC = () => {
               loading={orgLoading}
               page={orgPage}
               pageSize={10}
-              onPageChange={(p) => {
-                setOrgPage(p);
-                loadOrgTransactions(p);
-              }}
-              onRefresh={() => loadOrgTransactions(orgPage)}
+              onPageChange={loadOrgTransactions}
+              onRefresh={refreshOrgTransactions}
               showEmployeeColumn={true}
               canReverse={isAdmin}
-              onReverse={(tx) => {
-                setSelectedTx(tx);
-                setReverseDialogOpen(true);
-              }}
+              onReverse={openReverseDialog}
             />
           )}
 
@@ -348,22 +224,11 @@ export const PointsView: React.FC = () => {
               loading={rulesLoading}
               page={rulesPage}
               pageSize={10}
-              onPageChange={(p) => {
-                setRulesPage(p);
-                loadRules(p);
-              }}
-              onAddNew={() => {
-                setSelectedRule(null);
-                setRuleDialogMode("create");
-                setRuleDialogOpen(true);
-              }}
-              onRefresh={() => loadRules(rulesPage)}
-              onEdit={(r) => {
-                setSelectedRule(r);
-                setRuleDialogMode("edit");
-                setRuleDialogOpen(true);
-              }}
-              onToggleStatus={handleToggleRuleStatus}
+              onPageChange={loadRules}
+              onAddNew={openCreateRule}
+              onRefresh={refreshRules}
+              onEdit={openEditRule}
+              onToggleStatus={toggleRuleStatus}
             />
           )}
         </Stack>
@@ -375,8 +240,8 @@ export const PointsView: React.FC = () => {
         rule={selectedRule}
         mode={ruleDialogMode}
         isSubmitting={isSubmittingRule}
-        onClose={() => setRuleDialogOpen(false)}
-        onSubmit={ruleDialogMode === "create" ? handleCreateRule : handleUpdateRule}
+        onClose={closeRuleDialog}
+        onSubmit={ruleDialogMode === "create" ? createRule : updateRule}
       />
 
       {/* Reverse Transaction Dialog */}
@@ -384,8 +249,8 @@ export const PointsView: React.FC = () => {
         open={reverseDialogOpen}
         transaction={selectedTx}
         isSubmitting={isReversing}
-        onClose={() => setReverseDialogOpen(false)}
-        onConfirm={handleConfirmReversal}
+        onClose={closeReverseDialog}
+        onConfirm={confirmReversal}
       />
     </PageContainer>
   );

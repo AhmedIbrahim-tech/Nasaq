@@ -28,6 +28,7 @@ import { toDateInputValue } from "@/shared/utils/i18nFormatters";
 import { ProfilePhotoAvatar } from "@/shared/components/avatar";
 import { CustomizerContext } from "@/theme/customizerContext";
 import { SecondaryLanguageCheckbox } from "@/shared/components/forms/SecondaryLanguageCheckbox";
+import { useEmployeeForm } from "../hooks";
 import type { WorkLocation } from "@/modules/locations";
 import type { Employee, SupervisorLookup } from "../types";
 
@@ -57,187 +58,24 @@ export const EmployeeFormDialog: React.FC<EmployeeFormDialogProps> = ({
   onSubmit,
 }) => {
   const t = useTranslations();
+  const locale = useLocale();
+  const isAr = locale.startsWith("ar");
 
-  const [formData, setFormData] = useState<{
-    employeeCode: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-    phoneNumber: string;
-    department: string;
-    jobTitle: string;
-    hireDate: string;
-    createUserAccount: boolean;
-    userRole: string;
-    password: string;
-    supervisorId: string | null;
-    workLocationId: string | null;
-  }>({
-    employeeCode: "",
-    firstName: "",
-    lastName: "",
-    email: "",
-    phoneNumber: "",
-    department: "",
-    jobTitle: "",
-    hireDate: toDateInputValue(new Date().toISOString()),
-    createUserAccount: false,
-    userRole: RoleNames.Employee,
-    password: "",
-    supervisorId: null,
-    workLocationId: null,
-  });
-
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [photo, setPhoto] = useState<File | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const [photoError, setPhotoError] = useState<string | null>(null);
-  const [removePhotoRequested, setRemovePhotoRequested] = useState(false);
-  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (photoPreview && photoPreview.startsWith("blob:")) {
-        URL.revokeObjectURL(photoPreview);
-      }
-    };
-  }, [photoPreview]);
-
-  useEffect(() => {
-    if (mode === "edit" && employee) {
-      setFormData({
-        employeeCode: employee.employeeCode || "",
-        firstName: employee.firstName || "",
-        lastName: employee.lastName || "",
-        email: employee.email || "",
-        phoneNumber: employee.phoneNumber || "",
-        department: employee.department || "",
-        jobTitle: employee.jobTitle || "",
-        hireDate: toDateInputValue(employee.hireDate) || toDateInputValue(new Date().toISOString()),
-        createUserAccount: false,
-        userRole: (employee.userRole || RoleNames.Employee) as any,
-        password: "",
-        supervisorId: employee.supervisorId || null,
-        workLocationId: employee.workLocationId || null,
-      });
-      if (photoPreview && photoPreview.startsWith("blob:")) {
-        URL.revokeObjectURL(photoPreview);
-      }
-      setPhoto(null);
-      setPhotoPreview(null);
-      setPhotoError(null);
-      setRemovePhotoRequested(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-    } else {
-      setFormData({
-        employeeCode: "",
-        firstName: "",
-        lastName: "",
-        email: "",
-        phoneNumber: "",
-        department: "",
-        jobTitle: "",
-        hireDate: toDateInputValue(new Date().toISOString()),
-        createUserAccount: false,
-        userRole: RoleNames.Employee,
-        password: "",
-        supervisorId: null,
-        workLocationId: null,
-      });
-      if (photoPreview && photoPreview.startsWith("blob:")) {
-        URL.revokeObjectURL(photoPreview);
-      }
-      setPhoto(null);
-      setPhotoPreview(null);
-      setPhotoError(null);
-      setRemovePhotoRequested(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-    }
-    setErrors({});
-  }, [mode, employee, open]);
-
-  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPhotoError(null);
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/jpg"];
-    if (!allowedTypes.includes(file.type.toLowerCase())) {
-      setPhotoError(t("InvalidImageFile"));
-      return;
-    }
-
-    const maxSize = 10 * 1024 * 1024; // 10MB
-    if (file.size > maxSize) {
-      setPhotoError(t("ProfilePhotoHint"));
-      return;
-    }
-
-    if (photoPreview && photoPreview.startsWith("blob:")) {
-      URL.revokeObjectURL(photoPreview);
-    }
-
-    setPhoto(file);
-    setPhotoPreview(URL.createObjectURL(file));
-    setRemovePhotoRequested(false);
-  };
-
-  const handleRemovePhoto = () => {
-    if (photoPreview && photoPreview.startsWith("blob:")) {
-      URL.revokeObjectURL(photoPreview);
-    }
-    setPhoto(null);
-    setPhotoPreview(null);
-    setPhotoError(null);
-    setRemovePhotoRequested(true);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  };
-
-  const validate = (): boolean => {
-    const newErrors: Record<string, string> = {};
-
-    if (mode === "create" && !formData.employeeCode.trim()) {
-      newErrors.employeeCode = t("EmployeeCodeRequired");
-    }
-    if (!formData.firstName.trim()) {
-      newErrors.firstName = t("FirstNameRequired");
-    }
-    if (!formData.lastName.trim()) {
-      newErrors.lastName = t("LastNameRequired");
-    }
-    if (!formData.email.trim()) {
-      newErrors.email = t("EmailRequired");
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
-      newErrors.email = t("InvalidEmail");
-    }
-    if (!formData.hireDate) {
-      newErrors.hireDate = t("HireDateRequired");
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validate()) return;
-
-    if (mode === "create") {
-      await onSubmit({ ...formData, photo });
-    } else {
-      await onSubmit({
-        ...formData,
-        photo,
-        removeProfilePhoto: removePhotoRequested,
-      });
-    }
-  };
+  const {
+    formData,
+    setFormData,
+    errors,
+    photo,
+    photoPreview,
+    photoError,
+    removePhotoRequested,
+    showSecondaryLanguage,
+    setShowSecondaryLanguage,
+    fileInputRef,
+    onPhotoSelect,
+    onRemovePhoto,
+    onSubmit: handleSubmit,
+  } = useEmployeeForm({ mode, employee, open, onSubmit });
 
   const allowedRoles = isSuperAdmin
     ? [RoleNames.Employee, RoleNames.Supervisor, RoleNames.Admin, RoleNames.SuperAdmin]
@@ -320,7 +158,7 @@ export const EmployeeFormDialog: React.FC<EmployeeFormDialogProps> = ({
                             ref={fileInputRef}
                             type="file"
                             accept="image/jpeg,image/png,image/webp,image/jpg"
-                            onChange={handlePhotoSelect}
+                            onChange={onPhotoSelect}
                             style={{ display: "none" }}
                           />
                           <Button
@@ -337,7 +175,7 @@ export const EmployeeFormDialog: React.FC<EmployeeFormDialogProps> = ({
                               color="error"
                               variant="text"
                               startIcon={<IconTrash size={16} />}
-                              onClick={handleRemovePhoto}
+                              onClick={onRemovePhoto}
                             >
                               {t("RemovePhoto")}
                             </Button>
@@ -384,31 +222,155 @@ export const EmployeeFormDialog: React.FC<EmployeeFormDialogProps> = ({
               />
             </Grid>
 
-            {/* First Name */}
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                fullWidth
-                label={t("FirstName")}
-                required
-                value={formData.firstName}
-                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                error={Boolean(errors.firstName)}
-                helperText={errors.firstName}
+            {/* Primary Name Fields */}
+            {isAr ? (
+              <>
+                {/* Arabic First Name */}
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label={t("FirstName")}
+                    required={mode === "create"}
+                    value={formData.firstNameAr || ""}
+                    onChange={(e) => setFormData({ ...formData, firstNameAr: e.target.value })}
+                    error={Boolean(errors.firstNameAr)}
+                    helperText={errors.firstNameAr}
+                  />
+                </Grid>
+
+                {/* Arabic Last Name */}
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label={t("LastName")}
+                    required={mode === "create"}
+                    value={formData.lastNameAr || ""}
+                    onChange={(e) => setFormData({ ...formData, lastNameAr: e.target.value })}
+                    error={Boolean(errors.lastNameAr)}
+                    helperText={errors.lastNameAr}
+                  />
+                </Grid>
+              </>
+            ) : (
+              <>
+                {/* English First Name */}
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label={t("FirstName")}
+                    required={mode === "create"}
+                    value={formData.firstNameEn || formData.firstName || ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        firstNameEn: e.target.value,
+                        firstName: e.target.value,
+                      })
+                    }
+                    error={Boolean(errors.firstNameEn || errors.firstName)}
+                    helperText={errors.firstNameEn || errors.firstName}
+                  />
+                </Grid>
+
+                {/* English Last Name */}
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label={t("LastName")}
+                    required={mode === "create"}
+                    value={formData.lastNameEn || formData.lastName || ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        lastNameEn: e.target.value,
+                        lastName: e.target.value,
+                      })
+                    }
+                    error={Boolean(errors.lastNameEn || errors.lastName)}
+                    helperText={errors.lastNameEn || errors.lastName}
+                  />
+                </Grid>
+              </>
+            )}
+
+            {/* Secondary Language Checkbox directly after primary name fields */}
+            <Grid size={{ xs: 12 }}>
+              <SecondaryLanguageCheckbox
+                checked={showSecondaryLanguage}
+                onChange={(checked) => setShowSecondaryLanguage(checked)}
+                isRtl={isAr}
+                customLabel={isAr ? "إضافة الاسم باللغة الإنجليزية" : "Add Arabic Name"}
               />
             </Grid>
 
-            {/* Last Name */}
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                fullWidth
-                label={t("LastName")}
-                required
-                value={formData.lastName}
-                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                error={Boolean(errors.lastName)}
-                helperText={errors.lastName}
-              />
-            </Grid>
+            {/* Secondary Name Fields (only visible when checked) */}
+            {showSecondaryLanguage && (
+              isAr ? (
+                <>
+                  {/* English First Name */}
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                      fullWidth
+                      label={t("FirstNameEn")}
+                      value={formData.firstNameEn || formData.firstName || ""}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          firstNameEn: e.target.value,
+                          firstName: e.target.value,
+                        })
+                      }
+                      error={Boolean(errors.firstNameEn)}
+                      helperText={errors.firstNameEn}
+                    />
+                  </Grid>
+
+                  {/* English Last Name */}
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                      fullWidth
+                      label={t("LastNameEn")}
+                      value={formData.lastNameEn || formData.lastName || ""}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          lastNameEn: e.target.value,
+                          lastName: e.target.value,
+                        })
+                      }
+                      error={Boolean(errors.lastNameEn)}
+                      helperText={errors.lastNameEn}
+                    />
+                  </Grid>
+                </>
+              ) : (
+                <>
+                  {/* Arabic First Name */}
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                      fullWidth
+                      label={t("FirstNameAr")}
+                      value={formData.firstNameAr || ""}
+                      onChange={(e) => setFormData({ ...formData, firstNameAr: e.target.value })}
+                      error={Boolean(errors.firstNameAr)}
+                      helperText={errors.firstNameAr}
+                    />
+                  </Grid>
+
+                  {/* Arabic Last Name */}
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                      fullWidth
+                      label={t("LastNameAr")}
+                      value={formData.lastNameAr || ""}
+                      onChange={(e) => setFormData({ ...formData, lastNameAr: e.target.value })}
+                      error={Boolean(errors.lastNameAr)}
+                      helperText={errors.lastNameAr}
+                    />
+                  </Grid>
+                </>
+              )
+            )}
 
             {/* Phone Number */}
             <Grid size={{ xs: 12, sm: 6 }}>

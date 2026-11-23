@@ -20,6 +20,7 @@ import {
   formatDistance,
   formatGeofenceFailureReason,
 } from "@/shared/utils/i18nFormatters";
+import { getLocalizedEmployeeName } from "@/shared/utils/localization";
 import type { AttendanceRecord } from "../types";
 
 interface ApproveGpsDialogProps {
@@ -81,7 +82,7 @@ export const ApproveGpsDialog: React.FC<ApproveGpsDialogProps> = ({
               <Box display="flex" alignItems="center" gap={1}>
                 <IconUser size={18} />
                 <Typography variant="subtitle2" fontWeight={600}>
-                  {record.employeeName} ({record.employeeCode})
+                  {getLocalizedEmployeeName(record, isRtl)} ({record.employeeCode})
                 </Typography>
               </Box>
 
@@ -97,7 +98,7 @@ export const ApproveGpsDialog: React.FC<ApproveGpsDialogProps> = ({
                 <Box display="flex" alignItems="center" gap={1}>
                   <IconMapPin size={18} />
                   <Typography variant="body2" color="text.secondary">
-                    {record.workLocationName}
+                    {isRtl && record.workLocationNameAr ? record.workLocationNameAr : record.workLocationName}
                     {record.checkInDistanceMeters != null &&
                       ` (${formatDistance(record.checkInDistanceMeters, isRtl)})`}
                   </Typography>

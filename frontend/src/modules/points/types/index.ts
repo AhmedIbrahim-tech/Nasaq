@@ -15,7 +15,11 @@ export type PointTransactionStatus = "Finalized" | "PendingReview" | "Reversed";
 export interface PointRule {
   id: string;
   name: string;
+  nameAr?: string | null;
+  nameEn?: string | null;
   description?: string | null;
+  descriptionAr?: string | null;
+  descriptionEn?: string | null;
   category: PointCategory;
   eventType: PointEventType;
   points: number;
@@ -31,9 +35,11 @@ export interface PointTransaction {
   id: string;
   employeeId: string;
   employeeName?: string | null;
+  employeeNameAr?: string | null;
   employeeCode?: string | null;
   ruleId?: string | null;
   ruleName?: string | null;
+  ruleNameAr?: string | null;
   category: PointCategory;
   eventType: PointEventType;
   points: number;
@@ -61,7 +67,11 @@ export interface EmployeePointsSummary {
 
 export interface CreatePointRuleRequest {
   name: string;
+  nameAr?: string | null;
+  nameEn?: string | null;
   description?: string | null;
+  descriptionAr?: string | null;
+  descriptionEn?: string | null;
   category: PointCategory;
   eventType: PointEventType;
   points: number;
@@ -72,7 +82,11 @@ export interface CreatePointRuleRequest {
 export interface UpdatePointRuleRequest {
   id: string;
   name: string;
+  nameAr?: string | null;
+  nameEn?: string | null;
   description?: string | null;
+  descriptionAr?: string | null;
+  descriptionEn?: string | null;
   category: PointCategory;
   eventType: PointEventType;
   points: number;

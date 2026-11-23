@@ -11,9 +11,16 @@ public sealed class CreateShiftHandler(
         CreateShiftCommand request,
         CancellationToken cancellationToken)
     {
-        var trimmedName = request.Name.Trim();
+        var nameAr = !string.IsNullOrWhiteSpace(request.NameAr) ? request.NameAr.Trim() : null;
+        var nameEn = !string.IsNullOrWhiteSpace(request.NameEn)
+            ? request.NameEn.Trim()
+            : (!string.IsNullOrWhiteSpace(request.Name) ? request.Name.Trim() : (nameAr ?? string.Empty));
+        var trimmedName = nameEn;
+
         var exists = await dbContext.WorkShifts
-            .AnyAsync(s => s.Name == trimmedName, cancellationToken);
+            .AnyAsync(s => (s.Name == trimmedName) ||
+                           (nameAr != null && s.NameAr != null && s.NameAr == nameAr),
+                      cancellationToken);
 
         if (exists)
         {
@@ -27,7 +34,7 @@ public sealed class CreateShiftHandler(
         var shift = new WorkShift
         {
             Name = trimmedName,
-            NameAr = request.NameAr?.Trim(),
+            NameAr = nameAr,
             StartTime = request.StartTime,
             EndTime = request.EndTime,
             IsOvernight = isOvernight,

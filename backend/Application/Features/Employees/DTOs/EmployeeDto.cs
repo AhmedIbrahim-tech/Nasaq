@@ -8,6 +8,8 @@ public class EmployeeDto
     public string LastName { get; set; } = string.Empty;
     public string? FirstNameAr { get; set; }
     public string? LastNameAr { get; set; }
+    public string? FirstNameEn { get; set; }
+    public string? LastNameEn { get; set; }
     public string FullName { get; set; } = string.Empty;
     public string? FullNameAr { get; set; }
     public string? FullNameEn { get; set; }

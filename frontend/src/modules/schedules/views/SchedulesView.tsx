@@ -45,301 +45,93 @@ import {
   ModernizeColumnDef,
   ModernizeRowAction,
 } from "@/shared/components/tables/modernize";
-import { scheduleService } from "../services/schedule.service";
-import { employeeService } from "@/modules/employees/services/employee.service";
+import { useSchedules, useScheduleFilters } from "../hooks";
 import { ShiftFormDialog } from "../components/ShiftFormDialog";
 import { ScheduleFormDialog } from "../components/ScheduleFormDialog";
 import { AssignScheduleDialog } from "../components/AssignScheduleDialog";
 import { ScheduleDetailsDialog } from "../components/ScheduleDetailsDialog";
+import {
+  getShiftDisplayName,
+  getScheduleDisplayName,
+  getScheduleDisplayDescription,
+} from "../utils/scheduleLocalization";
 import type {
   WorkSchedule,
   WorkShift,
   EmployeeScheduleAssignment,
-  SchedulesSummary,
-  ShiftsSummary,
-  CreateShiftRequest,
-  UpdateShiftRequest,
-  CreateScheduleRequest,
-  UpdateScheduleRequest,
-  AssignEmployeeScheduleRequest,
 } from "../types";
-import type { Employee } from "@/modules/employees/types";
 
 export const SchedulesView: React.FC = () => {
   const t = useTranslations();
   const theme = useTheme();
-  const userRoles = useAppSelector((state) => state.auth.roles) || [];
+  const isRtl = theme.direction === "rtl";
 
-  const canManage = useMemo(() => {
-    return userRoles.includes(RoleNames.SuperAdmin) || userRoles.includes(RoleNames.Admin);
-  }, [userRoles]);
+  const {
+    canManage,
+    activeTab,
+    setActiveTab,
+    schedules,
+    schedulesSummary,
+    schedulesLoading,
+    shifts,
+    shiftsSummary,
+    shiftsLoading,
+    assignments,
+    assignmentsLoading,
+    employees,
+    shiftFormOpen,
+    shiftFormMode,
+    selectedShift,
+    scheduleFormOpen,
+    scheduleFormMode,
+    selectedSchedule,
+    scheduleDetailsOpen,
+    detailSchedule,
+    assignDialogOpen,
+    isSubmitting,
+    deleteDialogOpen,
+    itemToDelete,
+    loadSchedules,
+    loadShifts,
+    loadAssignments,
+    openCreateShift: handleCreateShift,
+    openEditShift: handleEditShift,
+    closeShiftForm,
+    submitShift: handleSubmitShift,
+    toggleShiftStatus: handleToggleShiftStatus,
+    openCreateSchedule: handleCreateSchedule,
+    openEditSchedule: handleEditSchedule,
+    closeScheduleForm,
+    openScheduleDetails: handleViewSchedule,
+    closeScheduleDetails,
+    submitSchedule: handleSubmitSchedule,
+    toggleScheduleStatus: handleToggleScheduleStatus,
+    openAssignDialog: handleOpenAssignDialog,
+    closeAssignDialog,
+    submitAssignment: handleSubmitAssignment,
+    openDeletePrompt: handleDeletePrompt,
+    closeDeletePrompt,
+    confirmDelete: handleConfirmDelete,
+  } = useSchedules();
 
-  // Active Tab: 0 = Schedules, 1 = Shifts, 2 = Assignments
-  const [activeTab, setActiveTab] = useState<number>(0);
-
-  // --- DATA STATES ---
-  const [schedules, setSchedules] = useState<WorkSchedule[]>([]);
-  const [schedulesSummary, setSchedulesSummary] = useState<SchedulesSummary | null>(null);
-  const [schedulesLoading, setSchedulesLoading] = useState<boolean>(true);
-
-  const [shifts, setShifts] = useState<WorkShift[]>([]);
-  const [shiftsSummary, setShiftsSummary] = useState<ShiftsSummary | null>(null);
-  const [shiftsLoading, setShiftsLoading] = useState<boolean>(true);
-
-  const [assignments, setAssignments] = useState<EmployeeScheduleAssignment[]>([]);
-  const [assignmentsLoading, setAssignmentsLoading] = useState<boolean>(true);
-
-  const [employees, setEmployees] = useState<Employee[]>([]);
-
-  // Filter & Search states
-  const [search, setSearch] = useState<string>("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [showFilters, setShowFilters] = useState<boolean>(false);
-  const [page, setPage] = useState<number>(1);
-  const [pageSize, setPageSize] = useState<number>(10);
-
-  // Dialog States
-  const [shiftFormOpen, setShiftFormOpen] = useState<boolean>(false);
-  const [shiftFormMode, setShiftFormMode] = useState<"create" | "edit">("create");
-  const [selectedShift, setSelectedShift] = useState<WorkShift | null>(null);
-
-  const [scheduleFormOpen, setScheduleFormOpen] = useState<boolean>(false);
-  const [scheduleFormMode, setScheduleFormMode] = useState<"create" | "edit">("create");
-  const [selectedSchedule, setSelectedSchedule] = useState<WorkSchedule | null>(null);
-
-  const [scheduleDetailsOpen, setScheduleDetailsOpen] = useState<boolean>(false);
-  const [detailSchedule, setDetailSchedule] = useState<WorkSchedule | null>(null);
-
-  const [assignDialogOpen, setAssignDialogOpen] = useState<boolean>(false);
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-
-  // Deletion confirm dialog
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
-  const [itemToDelete, setItemToDelete] = useState<{
-    id: string;
-    name: string;
-    type: "schedule" | "shift" | "assignment";
-  } | null>(null);
-
-  // --- DATA FETCHING ---
-  const loadSchedules = useCallback(async () => {
-    try {
-      setSchedulesLoading(true);
-      const [resList, resSummary] = await Promise.all([
-        scheduleService.getSchedules({ page: 1, pageSize: 100 }),
-        scheduleService.getSchedulesSummary(),
-      ]);
-      setSchedules(resList.data);
-      setSchedulesSummary(resSummary);
-    } catch (err: any) {
-      notify.error(err.message || t("ErrorOccurred"));
-    } finally {
-      setSchedulesLoading(false);
-    }
-  }, [t]);
-
-  const loadShifts = useCallback(async () => {
-    try {
-      setShiftsLoading(true);
-      const [resList, resSummary] = await Promise.all([
-        scheduleService.getShifts({ page: 1, pageSize: 100 }),
-        scheduleService.getShiftsSummary(),
-      ]);
-      setShifts(resList.data);
-      setShiftsSummary(resSummary);
-    } catch (err: any) {
-      notify.error(err.message || t("ErrorOccurred"));
-    } finally {
-      setShiftsLoading(false);
-    }
-  }, [t]);
-
-  const loadAssignments = useCallback(async () => {
-    try {
-      setAssignmentsLoading(true);
-      const res = await scheduleService.getAssignments({ page: 1, pageSize: 100 });
-      setAssignments(res.data);
-    } catch (err: any) {
-      notify.error(err.message || t("ErrorOccurred"));
-    } finally {
-      setAssignmentsLoading(false);
-    }
-  }, [t]);
-
-  const loadEmployees = useCallback(async () => {
-    try {
-      const res = await employeeService.getEmployees({ page: 1, pageSize: 200, isActive: true });
-      setEmployees(res.data);
-    } catch {
-      // Non-blocking
-    }
-  }, []);
-
-  useEffect(() => {
-    loadSchedules();
-    loadShifts();
-    loadAssignments();
-    loadEmployees();
-  }, [loadSchedules, loadShifts, loadAssignments, loadEmployees]);
+  const {
+    search,
+    setSearch,
+    statusFilter,
+    setStatusFilter,
+    showFilters,
+    setShowFilters,
+    page,
+    setPage,
+    pageSize,
+    setPageSize,
+    resetFilters,
+  } = useScheduleFilters();
 
   // Reset pagination on tab change or search
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
-    setSearch("");
-    setStatusFilter("all");
-    setPage(1);
-  };
-
-  // --- ACTIONS: SHIFTS ---
-  const handleCreateShift = () => {
-    setSelectedShift(null);
-    setShiftFormMode("create");
-    setShiftFormOpen(true);
-  };
-
-  const handleEditShift = (shift: WorkShift) => {
-    setSelectedShift(shift);
-    setShiftFormMode("edit");
-    setShiftFormOpen(true);
-  };
-
-  const handleSubmitShift = async (data: CreateShiftRequest | UpdateShiftRequest) => {
-    try {
-      setIsSubmitting(true);
-      if (shiftFormMode === "create") {
-        await scheduleService.createShift(data as CreateShiftRequest);
-        notify.success(t("ShiftCreatedSuccess"));
-      } else if (selectedShift) {
-        await scheduleService.updateShift(selectedShift.id, {
-          ...(data as UpdateShiftRequest),
-          id: selectedShift.id,
-        });
-        notify.success(t("ShiftUpdatedSuccess"));
-      }
-      setShiftFormOpen(false);
-      loadShifts();
-    } catch (err: any) {
-      notify.error(err.message || t("ErrorOccurred"));
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleToggleShiftStatus = async (shift: WorkShift) => {
-    try {
-      await scheduleService.toggleShiftStatus(shift.id);
-      notify.success(
-        shift.isActive ? t("ShiftDeactivatedSuccess") : t("ShiftActivatedSuccess")
-      );
-      loadShifts();
-    } catch (err: any) {
-      notify.error(err.message || t("ErrorOccurred"));
-    }
-  };
-
-  // --- ACTIONS: SCHEDULES ---
-  const handleCreateSchedule = () => {
-    setSelectedSchedule(null);
-    setScheduleFormMode("create");
-    setScheduleFormOpen(true);
-  };
-
-  const handleEditSchedule = (schedule: WorkSchedule) => {
-    setSelectedSchedule(schedule);
-    setScheduleFormMode("edit");
-    setScheduleFormOpen(true);
-  };
-
-  const handleViewSchedule = (schedule: WorkSchedule) => {
-    setDetailSchedule(schedule);
-    setScheduleDetailsOpen(true);
-  };
-
-  const handleSubmitSchedule = async (data: CreateScheduleRequest | UpdateScheduleRequest) => {
-    try {
-      setIsSubmitting(true);
-      if (scheduleFormMode === "create") {
-        await scheduleService.createSchedule(data as CreateScheduleRequest);
-        notify.success(t("ScheduleCreatedSuccess"));
-      } else if (selectedSchedule) {
-        await scheduleService.updateSchedule(selectedSchedule.id, {
-          ...(data as UpdateScheduleRequest),
-          id: selectedSchedule.id,
-        });
-        notify.success(t("ScheduleUpdatedSuccess"));
-      }
-      setScheduleFormOpen(false);
-      loadSchedules();
-    } catch (err: any) {
-      notify.error(err.message || t("ErrorOccurred"));
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleToggleScheduleStatus = async (schedule: WorkSchedule) => {
-    try {
-      await scheduleService.toggleScheduleStatus(schedule.id);
-      notify.success(
-        schedule.isActive ? t("ScheduleDeactivatedSuccess") : t("ScheduleActivatedSuccess")
-      );
-      loadSchedules();
-    } catch (err: any) {
-      notify.error(err.message || t("ErrorOccurred"));
-    }
-  };
-
-  // --- ACTIONS: ASSIGNMENTS ---
-  const handleOpenAssignDialog = () => {
-    setAssignDialogOpen(true);
-  };
-
-  const handleSubmitAssignment = async (data: AssignEmployeeScheduleRequest) => {
-    try {
-      setIsSubmitting(true);
-      await scheduleService.assignSchedule(data);
-      notify.success(t("ScheduleAssignedSuccess"));
-      setAssignDialogOpen(false);
-      loadAssignments();
-      loadSchedules();
-    } catch (err: any) {
-      notify.error(err.message || t("ErrorOccurred"));
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // --- GENERIC DELETION ---
-  const handleDeletePrompt = (id: string, name: string, type: "schedule" | "shift" | "assignment") => {
-    setItemToDelete({ id, name, type });
-    setDeleteDialogOpen(true);
-  };
-
-  const handleConfirmDelete = async () => {
-    if (!itemToDelete) return;
-    try {
-      setIsSubmitting(true);
-      if (itemToDelete.type === "schedule") {
-        await scheduleService.deleteSchedule(itemToDelete.id);
-        notify.success(t("ScheduleDeletedSuccess"));
-        loadSchedules();
-      } else if (itemToDelete.type === "shift") {
-        await scheduleService.deleteShift(itemToDelete.id);
-        notify.success(t("ShiftDeletedSuccess"));
-        loadShifts();
-      } else if (itemToDelete.type === "assignment") {
-        await scheduleService.deleteAssignment(itemToDelete.id);
-        notify.success(t("AssignmentDeletedSuccess"));
-        loadAssignments();
-        loadSchedules();
-      }
-      setDeleteDialogOpen(false);
-      setItemToDelete(null);
-    } catch (err: any) {
-      notify.error(err.message || t("ErrorOccurred"));
-    } finally {
-      setIsSubmitting(false);
-    }
+    resetFilters();
   };
 
   // ==========================================
@@ -415,17 +207,20 @@ export const SchedulesView: React.FC = () => {
             <Box>
               <Stack direction="row" spacing={1} alignItems="center">
                 <Typography variant="subtitle2" fontWeight={600}>
-                  {theme.direction === "rtl" && s.nameAr ? s.nameAr : s.name}
+                  {getScheduleDisplayName(s, isRtl)}
                 </Typography>
                 {s.isDefault && (
                   <Chip size="small" label={t("Default")} color="info" variant="filled" />
                 )}
               </Stack>
-              {s.description && (
-                <Typography variant="caption" color="text.secondary" noWrap sx={{ maxWidth: 220 }}>
-                  {s.description}
-                </Typography>
-              )}
+              {(() => {
+                const desc = getScheduleDisplayDescription(s, isRtl);
+                return desc ? (
+                  <Typography variant="caption" color="text.secondary" noWrap sx={{ maxWidth: 220 }}>
+                    {desc}
+                  </Typography>
+                ) : null;
+              })()}
             </Box>
           </Stack>
         ),
@@ -500,7 +295,7 @@ export const SchedulesView: React.FC = () => {
               icon: <IconTrash size={18} />,
               color: "error" as const,
               isDanger: true,
-              onClick: (s: WorkSchedule) => handleDeletePrompt(s.id, s.name, "schedule"),
+              onClick: (s: WorkSchedule) => handleDeletePrompt(s.id, getScheduleDisplayName(s, isRtl), "schedule"),
             },
           ]
         : []),
@@ -580,7 +375,7 @@ export const SchedulesView: React.FC = () => {
             </Box>
             <Box>
               <Typography variant="subtitle2" fontWeight={600}>
-                {theme.direction === "rtl" && s.nameAr ? s.nameAr : s.name}
+                {getShiftDisplayName(s, isRtl)}
               </Typography>
               {s.notes && (
                 <Typography variant="caption" color="text.secondary" noWrap sx={{ maxWidth: 220 }}>
@@ -654,7 +449,7 @@ export const SchedulesView: React.FC = () => {
               icon: <IconTrash size={18} />,
               color: "error" as const,
               isDanger: true,
-              onClick: (s: WorkShift) => handleDeletePrompt(s.id, s.name, "shift"),
+              onClick: (s: WorkShift) => handleDeletePrompt(s.id, getShiftDisplayName(s, isRtl), "shift"),
             },
           ]
         : [],
@@ -701,10 +496,10 @@ export const SchedulesView: React.FC = () => {
             </Box>
             <Box>
               <Typography variant="subtitle2" fontWeight={600}>
-                {a.employeeName}
+                {isRtl && a.employeeNameAr ? a.employeeNameAr : a.employeeName}
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                {a.employeeCode} {a.department ? `• ${a.department}` : ""}
+                {a.employeeCode} {(isRtl && a.departmentAr ? a.departmentAr : a.department) ? `• ${isRtl && a.departmentAr ? a.departmentAr : a.department}` : ""}
               </Typography>
             </Box>
           </Stack>
@@ -715,7 +510,7 @@ export const SchedulesView: React.FC = () => {
         header: t("AssignedSchedule"),
         cell: (a) => (
           <Typography variant="body2" fontWeight={600} color="primary">
-            {a.scheduleName}
+            {isRtl && a.scheduleNameAr ? a.scheduleNameAr : a.scheduleName}
           </Typography>
         ),
       },
@@ -1165,7 +960,7 @@ export const SchedulesView: React.FC = () => {
         mode={shiftFormMode}
         shift={selectedShift}
         isSubmitting={isSubmitting}
-        onClose={() => setShiftFormOpen(false)}
+        onClose={closeShiftForm}
         onSubmit={handleSubmitShift}
       />
 
@@ -1175,7 +970,7 @@ export const SchedulesView: React.FC = () => {
         schedule={selectedSchedule}
         shifts={shifts.filter((s) => s.isActive)}
         isSubmitting={isSubmitting}
-        onClose={() => setScheduleFormOpen(false)}
+        onClose={closeScheduleForm}
         onSubmit={handleSubmitSchedule}
       />
 
@@ -1183,9 +978,9 @@ export const SchedulesView: React.FC = () => {
         open={scheduleDetailsOpen}
         schedule={detailSchedule}
         canManage={canManage}
-        onClose={() => setScheduleDetailsOpen(false)}
+        onClose={closeScheduleDetails}
         onEdit={() => {
-          setScheduleDetailsOpen(false);
+          closeScheduleDetails();
           if (detailSchedule) handleEditSchedule(detailSchedule);
         }}
       />
@@ -1195,7 +990,7 @@ export const SchedulesView: React.FC = () => {
         employees={employees}
         schedules={schedules.filter((s) => s.isActive)}
         isSubmitting={isSubmitting}
-        onClose={() => setAssignDialogOpen(false)}
+        onClose={closeAssignDialog}
         onSubmit={handleSubmitAssignment}
       />
 
@@ -1221,10 +1016,7 @@ export const SchedulesView: React.FC = () => {
         cancelLabel={t("Cancel")}
         isLoading={isSubmitting}
         onConfirm={handleConfirmDelete}
-        onClose={() => {
-          setDeleteDialogOpen(false);
-          setItemToDelete(null);
-        }}
+        onClose={closeDeletePrompt}
       />
     </PageContainer>
   );

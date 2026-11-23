@@ -20,7 +20,10 @@ public sealed class GetSchedulesHandler(
         if (!string.IsNullOrWhiteSpace(request.Search))
         {
             var search = request.Search.Trim().ToLower();
-            query = query.Where(s => s.Name.ToLower().Contains(search) || (s.Description != null && s.Description.ToLower().Contains(search)));
+            query = query.Where(s => s.Name.ToLower().Contains(search) ||
+                                     (s.NameAr != null && s.NameAr.ToLower().Contains(search)) ||
+                                     (s.Description != null && s.Description.ToLower().Contains(search)) ||
+                                     (s.DescriptionAr != null && s.DescriptionAr.ToLower().Contains(search)));
         }
 
         if (request.IsActive.HasValue)
@@ -64,7 +67,8 @@ public sealed class GetSchedulesHandler(
                 d.Shift?.StartTime,
                 d.Shift?.EndTime,
                 d.Shift?.IsOvernight,
-                d.Shift?.DurationHours
+                d.Shift?.DurationHours,
+                d.Shift?.NameAr
             )).ToList();
 
             var assigned = assignmentCounts.TryGetValue(s.Id, out var count) ? count : 0;
@@ -80,7 +84,9 @@ public sealed class GetSchedulesHandler(
                 s.Created_Utc,
                 s.Created_By,
                 s.Updated_Utc,
-                s.Updated_By
+                s.Updated_By,
+                s.NameAr,
+                s.DescriptionAr
             );
         }).ToList();
 

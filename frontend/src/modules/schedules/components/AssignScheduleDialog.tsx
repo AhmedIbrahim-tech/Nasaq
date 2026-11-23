@@ -19,7 +19,11 @@ import FormHelperText from "@mui/material/FormHelperText";
 import Alert from "@mui/material/Alert";
 import { IconUserCheck, IconCalendarTime, IconInfoCircle } from "@tabler/icons-react";
 import { useTranslations } from "next-intl";
+import { useTheme } from "@mui/material/styles";
+import { getEmployeeDisplayName, getEmployeeDepartment } from "@/modules/employees/utils/employeeLocalization";
+import { getScheduleDisplayName } from "../utils/scheduleLocalization";
 import DialogCloseButton from "@/shared/components/buttons/DialogCloseButton";
+import { useAssignScheduleForm } from "../hooks";
 import type { WorkSchedule, AssignEmployeeScheduleRequest } from "../types";
 import type { Employee } from "@/modules/employees/types";
 
@@ -41,73 +45,15 @@ export const AssignScheduleDialog: React.FC<AssignScheduleDialogProps> = ({
   onSubmit,
 }) => {
   const t = useTranslations();
+  const theme = useTheme();
+  const isRtl = theme.direction === "rtl";
 
-  const [formData, setFormData] = useState<{
-    employeeId: string;
-    workScheduleId: string;
-    effectiveFrom: string;
-    effectiveTo: string;
-    notes: string;
-  }>({
-    employeeId: "",
-    workScheduleId: "",
-    effectiveFrom: new Date().toISOString().substring(0, 10),
-    effectiveTo: "",
-    notes: "",
-  });
-
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    if (open) {
-      setFormData({
-        employeeId: "",
-        workScheduleId: schedules.find((s) => s.isDefault)?.id || (schedules.length > 0 ? schedules[0].id : ""),
-        effectiveFrom: new Date().toISOString().substring(0, 10),
-        effectiveTo: "",
-        notes: "",
-      });
-      setErrors({});
-    }
-  }, [open, schedules]);
-
-  const validate = (): boolean => {
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.employeeId) {
-      newErrors.employeeId = t("EmployeeSelectionRequired");
-    }
-
-    if (!formData.workScheduleId) {
-      newErrors.workScheduleId = t("ScheduleSelectionRequired");
-    }
-
-    if (!formData.effectiveFrom) {
-      newErrors.effectiveFrom = t("EffectiveFromRequired");
-    }
-
-    if (formData.effectiveFrom && formData.effectiveTo && formData.effectiveTo < formData.effectiveFrom) {
-      newErrors.effectiveTo = t("EffectiveToMustBeAfterFrom");
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validate()) return;
-
-    const payload: AssignEmployeeScheduleRequest = {
-      employeeId: formData.employeeId,
-      workScheduleId: formData.workScheduleId,
-      effectiveFrom: formData.effectiveFrom,
-      effectiveTo: formData.effectiveTo || null,
-      notes: formData.notes.trim() || null,
-    };
-
-    await onSubmit(payload);
-  };
+  const {
+    formData,
+    setFormData,
+    errors,
+    handleSubmit,
+  } = useAssignScheduleForm({ open, schedules, onSubmit });
 
   return (
     <Dialog
@@ -166,7 +112,7 @@ export const AssignScheduleDialog: React.FC<AssignScheduleDialogProps> = ({
                     .filter((e) => e.isActive)
                     .map((emp) => (
                       <MenuItem key={emp.id} value={emp.id}>
-                        {emp.fullName} ({emp.employeeCode}) — {emp.department || t("General")}
+                        {getEmployeeDisplayName(emp, isRtl)} ({emp.employeeCode}) — {getEmployeeDepartment(emp, isRtl) || t("General")}
                       </MenuItem>
                     ))}
                 </Select>
@@ -187,7 +133,7 @@ export const AssignScheduleDialog: React.FC<AssignScheduleDialogProps> = ({
                     .filter((s) => s.isActive)
                     .map((sch) => (
                       <MenuItem key={sch.id} value={sch.id}>
-                        {sch.name} {sch.isDefault ? `(${t("Default")})` : ""}
+                        {getScheduleDisplayName(sch, isRtl)} {sch.isDefault ? `(${t("Default")})` : ""}
                       </MenuItem>
                     ))}
                 </Select>

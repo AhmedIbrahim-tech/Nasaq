@@ -36,7 +36,8 @@ public sealed class GetScheduleByIdHandler(
             d.Shift?.StartTime,
             d.Shift?.EndTime,
             d.Shift?.IsOvernight,
-            d.Shift?.DurationHours
+            d.Shift?.DurationHours,
+            d.Shift?.NameAr
         )).ToList();
 
         var dto = new WorkScheduleDto(
@@ -50,7 +51,9 @@ public sealed class GetScheduleByIdHandler(
             schedule.Created_Utc,
             schedule.Created_By,
             schedule.Updated_Utc,
-            schedule.Updated_By
+            schedule.Updated_By,
+            schedule.NameAr,
+            schedule.DescriptionAr
         );
 
         return GenericBaseResponse<WorkScheduleDto>.Success(dto);

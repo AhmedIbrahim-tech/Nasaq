@@ -28,14 +28,22 @@ public class UpdatePointRuleHandler : IRequestHandler<UpdatePointRuleCommand, Ge
             return GenericBaseResponse<PointRuleDto>.NotFound($"Point rule with ID '{request.Id}' was not found.");
         }
 
-        var normalizedName = request.Name.Trim();
+        var nameEn = !string.IsNullOrWhiteSpace(request.NameEn) ? request.NameEn.Trim() : (!string.IsNullOrWhiteSpace(request.Name) ? request.Name.Trim() : null);
+        var nameAr = !string.IsNullOrWhiteSpace(request.NameAr) ? request.NameAr.Trim() : null;
+        var primaryName = !string.IsNullOrWhiteSpace(nameEn) ? nameEn : (nameAr ?? request.Name?.Trim() ?? string.Empty);
+
+        var descEn = !string.IsNullOrWhiteSpace(request.DescriptionEn) ? request.DescriptionEn.Trim() : request.Description?.Trim();
+        var descAr = !string.IsNullOrWhiteSpace(request.DescriptionAr) ? request.DescriptionAr.Trim() : null;
 
         var nameExists = await _context.PointRules
-            .AnyAsync(r => r.Id != request.Id && r.Name.ToLower() == normalizedName.ToLower(), cancellationToken);
+            .AnyAsync(r => r.Id != request.Id &&
+                           (r.Name.ToLower() == primaryName.ToLower() ||
+                            (!string.IsNullOrEmpty(nameAr) && r.NameAr != null && r.NameAr.ToLower() == nameAr.ToLower())),
+                      cancellationToken);
 
         if (nameExists)
         {
-            return GenericBaseResponse<PointRuleDto>.Conflict($"Another point rule named '{normalizedName}' already exists.");
+            return GenericBaseResponse<PointRuleDto>.Conflict($"Another point rule named '{primaryName}' already exists.");
         }
 
         var points = request.Points;
@@ -48,8 +56,10 @@ public class UpdatePointRuleHandler : IRequestHandler<UpdatePointRuleCommand, Ge
             points = -points;
         }
 
-        rule.Name = normalizedName;
-        rule.Description = request.Description?.Trim();
+        rule.Name = primaryName;
+        rule.NameAr = nameAr;
+        rule.Description = descEn;
+        rule.DescriptionAr = descAr;
         rule.Category = request.Category;
         rule.EventType = request.EventType;
         rule.Points = points;

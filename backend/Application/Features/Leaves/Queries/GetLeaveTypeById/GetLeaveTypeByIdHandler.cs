@@ -37,6 +37,7 @@ public class GetLeaveTypeByIdHandler : IRequestHandler<GetLeaveTypeByIdQuery, Ge
             NameAr = leaveType.NameAr,
             Code = leaveType.Code,
             Description = leaveType.Description,
+            DescriptionAr = leaveType.DescriptionAr,
             IsPaid = leaveType.IsPaid,
             RequiresAttachment = leaveType.RequiresAttachment,
             DefaultDaysPerYear = leaveType.DefaultDaysPerYear,

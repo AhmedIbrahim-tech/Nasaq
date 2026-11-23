@@ -22,6 +22,7 @@ import {
   getLocalizedEmployeeName,
   getLocalizedLeaveTypeName,
 } from "@/shared/utils/localization";
+import { useLeaveReview } from "../hooks";
 import type { LeaveRequest } from "../types";
 
 interface LeaveReviewDialogProps {
@@ -56,132 +57,24 @@ export const LeaveReviewDialog: React.FC<LeaveReviewDialogProps> = ({
       (document.documentElement.dir === "rtl" ||
         document.documentElement.lang === "ar" ||
         document.body.dir === "rtl"));
-  const authUser = useAppSelector((state) => state.auth.user);
-  const roles = useAppSelector((state) => state.auth.roles) || [];
-  const [notes, setNotes] = useState<string>("");
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (open) {
-      setNotes("");
-      setErrorMsg(null);
-    }
-  }, [open]);
+  const {
+    notes,
+    setNotes,
+    errorMsg,
+    isOwnRequest,
+    handleSubmit,
+  } = useLeaveReview({
+    open,
+    leaveRequest,
+    mode,
+    onApprove,
+    onReject,
+    onClose,
+    isRtl,
+  });
 
   if (!leaveRequest) return null;
-
-  const isOwnRequest = Boolean(
-    leaveRequest &&
-      (leaveRequest.canReview === false ||
-        (authUser &&
-          ((authUser.employeeId &&
-            leaveRequest.employeeId &&
-            authUser.employeeId.toLowerCase() === leaveRequest.employeeId.toLowerCase()) ||
-            (authUser.employeeCode &&
-              leaveRequest.employeeCode &&
-              authUser.employeeCode.toLowerCase() === leaveRequest.employeeCode.toLowerCase()) ||
-            (authUser.fullName &&
-              leaveRequest.employeeName &&
-              authUser.fullName.toLowerCase() === leaveRequest.employeeName.toLowerCase()) ||
-            (authUser.fullNameAr &&
-              leaveRequest.employeeNameAr &&
-              authUser.fullNameAr.toLowerCase() === leaveRequest.employeeNameAr.toLowerCase()) ||
-            (authUser.fullName &&
-              leaveRequest.employeeNameAr &&
-              authUser.fullName.toLowerCase() === leaveRequest.employeeNameAr.toLowerCase()) ||
-            (authUser.fullNameAr &&
-              leaveRequest.employeeName &&
-              authUser.fullNameAr.toLowerCase() === leaveRequest.employeeName.toLowerCase()) ||
-            (authUser.email &&
-              leaveRequest.employeeName &&
-              authUser.email.toLowerCase().includes(leaveRequest.employeeName.toLowerCase())) ||
-            (authUser.email &&
-              authUser.email.split("@")[0].toLowerCase() === leaveRequest.employeeName.toLowerCase()) ||
-            (leaveRequest.employeeCode === "EMP-SUPER01" &&
-              (roles.some((r) => r.toLowerCase().includes("superadmin")) ||
-                authUser.email?.includes("superadmin"))))))
-  );
-
-  const localizeErrorMessage = (msg: string | null | undefined): string => {
-    if (!msg) return t("ErrorReviewingLeaveRequest");
-    const lower = msg.toLowerCase();
-    if (
-      lower.includes("cannot reject your own leave request") ||
-      lower.includes("reject your own") ||
-      lower.includes("cannot reject own") ||
-      lower.includes("لا يمكنك رفض طلب الإجازة") ||
-      msg.includes("لا يمكنك رفض طلب الإجازة")
-    ) {
-      return isRtl
-        ? "لا يمكنك رفض طلب الإجازة الخاص بك. يرجى استخدام خيار الإلغاء بدلاً من ذلك."
-        : "You cannot reject your own leave request. Use cancel instead.";
-    }
-    if (
-      lower.includes("cannot approve your own leave request") ||
-      lower.includes("approve your own") ||
-      lower.includes("cannot approve own") ||
-      lower.includes("لا يمكنك اعتماد طلب الإجازة") ||
-      msg.includes("لا يمكنك اعتماد طلب الإجازة")
-    ) {
-      return isRtl
-        ? "لا يمكنك اعتماد طلب الإجازة الخاص بك."
-        : "You cannot approve your own leave request.";
-    }
-    if (lower.includes("not found") || msg.includes("غير موجود")) {
-      return isRtl ? "طلب الإجازة غير موجود." : "Leave request not found.";
-    }
-    if (
-      lower.includes("only pending requests can be rejected") ||
-      lower.includes("only pending requests") ||
-      lower.includes("cannot reject a request with status") ||
-      lower.includes("cannot approve a request with status")
-    ) {
-      return isRtl
-        ? "لا يمكن مراجعة هذا الطلب لأنه ليس في حالة قيد الانتظار."
-        : "Only pending requests can be reviewed.";
-    }
-    if (
-      lower.includes("authorized to review leave requests") ||
-      lower.includes("authorized to review") ||
-      lower.includes("authorized to approve")
-    ) {
-      return isRtl
-        ? "أنت مصرح فقط بمراجعة طلبات الإجازة للموظفين التابعين لفريقك."
-        : "You are only authorized to review leave requests for your assigned team members.";
-    }
-    return msg;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMsg(null);
-
-    if (isOwnRequest) {
-      setErrorMsg(
-        isRtl
-          ? "لا يمكنك مراجعة أو رفض طلب الإجازة الخاص بك. يرجى استخدام خيار الإلغاء بدلاً من ذلك."
-          : "You cannot review or reject your own leave request. Please use the cancel option instead."
-      );
-      return;
-    }
-
-    if (mode === "reject" && !notes.trim()) {
-      setErrorMsg(t("RejectionReasonRequired"));
-      return;
-    }
-
-    try {
-      if (mode === "approve") {
-        await onApprove(leaveRequest.id, notes.trim() || undefined);
-      } else {
-        await onReject(leaveRequest.id, notes.trim());
-      }
-      onClose();
-    } catch (err: any) {
-      const raw = err.response?.data?.message || err.message;
-      setErrorMsg(localizeErrorMessage(raw));
-    }
-  };
 
   const isApprove = mode === "approve";
 

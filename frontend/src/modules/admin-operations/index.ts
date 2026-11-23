@@ -1,5 +1,6 @@
 export * from "./types";
 export * from "./services/admin-operations.service";
+export * from "./hooks";
 export * from "./views/AdminOperationsView";
 export * from "./components/AdminOperationsStatsCards";
 export * from "./components/DailyAttendanceTable";

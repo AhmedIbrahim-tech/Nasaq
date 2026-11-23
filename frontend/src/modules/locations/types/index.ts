@@ -1,6 +1,11 @@
 export interface WorkLocation {
   id: string;
   name: string;
+  nameAr?: string | null;
+  nameEn?: string | null;
+  address?: string | null;
+  addressAr?: string | null;
+  addressEn?: string | null;
   latitude: number;
   longitude: number;
   radiusMeters: number;
@@ -21,6 +26,11 @@ export interface LocationFilterParams {
 
 export interface CreateLocationRequest {
   name: string;
+  nameAr?: string | null;
+  nameEn?: string | null;
+  address?: string | null;
+  addressAr?: string | null;
+  addressEn?: string | null;
   latitude: number;
   longitude: number;
   radiusMeters?: number;
@@ -29,7 +39,13 @@ export interface CreateLocationRequest {
 }
 
 export interface UpdateLocationRequest {
+  id?: string;
   name: string;
+  nameAr?: string | null;
+  nameEn?: string | null;
+  address?: string | null;
+  addressAr?: string | null;
+  addressEn?: string | null;
   latitude: number;
   longitude: number;
   radiusMeters: number;

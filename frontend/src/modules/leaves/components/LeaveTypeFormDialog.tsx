@@ -19,6 +19,8 @@ import IconButton from "@mui/material/IconButton";
 import { alpha } from "@mui/material/styles";
 import { IconSettings, IconEdit, IconX } from "@tabler/icons-react";
 import { useTranslations } from "next-intl";
+import { SecondaryLanguageCheckbox } from "@/shared/components/forms/SecondaryLanguageCheckbox";
+import { useLeaveTypeForm } from "../hooks";
 import type {
   LeaveType,
   CreateLeaveTypeRequest,
@@ -47,89 +49,40 @@ export const LeaveTypeFormDialog: React.FC<LeaveTypeFormDialogProps> = ({
   const t = useTranslations();
   const isEdit = mode === "edit";
 
-  const [name, setName] = useState<string>("");
-  const [nameAr, setNameAr] = useState<string>("");
-  const [code, setCode] = useState<string>("");
-  const [description, setDescription] = useState<string>("");
-  const [isPaid, setIsPaid] = useState<boolean>(true);
-  const [requiresAttachment, setRequiresAttachment] = useState<boolean>(false);
-  const [defaultDaysPerYear, setDefaultDaysPerYear] = useState<string>("");
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (open) {
-      if (isEdit && leaveType) {
-        setName(leaveType.name);
-        setNameAr(leaveType.nameAr);
-        setCode(leaveType.code);
-        setDescription(leaveType.description || "");
-        setIsPaid(leaveType.isPaid);
-        setRequiresAttachment(leaveType.requiresAttachment);
-        setDefaultDaysPerYear(
-          leaveType.defaultDaysPerYear !== null && leaveType.defaultDaysPerYear !== undefined
-            ? String(leaveType.defaultDaysPerYear)
-            : ""
-        );
-      } else {
-        setName("");
-        setNameAr("");
-        setCode("");
-        setDescription("");
-        setIsPaid(true);
-        setRequiresAttachment(false);
-        setDefaultDaysPerYear("");
-      }
-      setErrorMsg(null);
-    }
-  }, [open, isEdit, leaveType]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMsg(null);
-
-    if (!name.trim()) {
-      setErrorMsg(t("NameRequired"));
-      return;
-    }
-
-    if (!nameAr.trim()) {
-      setErrorMsg(t("ArabicNameRequired"));
-      return;
-    }
-
-    if (!isEdit && !code.trim()) {
-      setErrorMsg(t("CodeRequired"));
-      return;
-    }
-
-    const days = defaultDaysPerYear.trim() ? parseInt(defaultDaysPerYear, 10) : null;
-
-    try {
-      if (isEdit && leaveType) {
-        await onSubmitUpdate(leaveType.id, {
-          name: name.trim(),
-          nameAr: nameAr.trim(),
-          description: description.trim() || null,
-          isPaid,
-          requiresAttachment,
-          defaultDaysPerYear: days,
-        });
-      } else {
-        await onSubmitCreate({
-          name: name.trim(),
-          nameAr: nameAr.trim(),
-          code: code.trim().toUpperCase(),
-          description: description.trim() || null,
-          isPaid,
-          requiresAttachment,
-          defaultDaysPerYear: days,
-        });
-      }
-      onClose();
-    } catch (err: any) {
-      setErrorMsg(err.response?.data?.message || err.message || t("ErrorSavingLeaveType"));
-    }
-  };
+  const {
+    name,
+    setName,
+    nameAr,
+    setNameAr,
+    nameEn,
+    setNameEn,
+    code,
+    setCode,
+    description,
+    setDescription,
+    descriptionAr,
+    setDescriptionAr,
+    descriptionEn,
+    setDescriptionEn,
+    isPaid,
+    setIsPaid,
+    requiresAttachment,
+    setRequiresAttachment,
+    defaultDaysPerYear,
+    setDefaultDaysPerYear,
+    showSecondaryLanguage,
+    setShowSecondaryLanguage,
+    isAr,
+    errorMsg,
+    handleSubmit,
+  } = useLeaveTypeForm({
+    open,
+    leaveType,
+    mode,
+    onSubmitCreate,
+    onSubmitUpdate,
+    onClose,
+  });
 
   return (
     <Dialog
@@ -201,37 +154,41 @@ export const LeaveTypeFormDialog: React.FC<LeaveTypeFormDialogProps> = ({
           )}
 
           <Grid container spacing={2.5}>
-            {/* Arabic Name */}
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                fullWidth
-                label={
-                  <span>
-                    {t("LeaveTypeNameAr")}{" "}
-                    <span style={{ color: "var(--mui-palette-error-main, #d32f2f)" }}>*</span>
-                  </span>
-                }
-                value={nameAr}
-                onChange={(e) => setNameAr(e.target.value)}
-                disabled={isLoading}
-              />
-            </Grid>
-
-            {/* English Name */}
-            <Grid size={{ xs: 12, sm: 6 }}>
-              <TextField
-                fullWidth
-                label={
-                  <span>
-                    {t("LeaveTypeName")}{" "}
-                    <span style={{ color: "var(--mui-palette-error-main, #d32f2f)" }}>*</span>
-                  </span>
-                }
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                disabled={isLoading}
-              />
-            </Grid>
+            {/* Primary Name */}
+            {isAr ? (
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  fullWidth
+                  label={
+                    <span>
+                      {t("LeaveTypeName")}{" "}
+                      <span style={{ color: "var(--mui-palette-error-main, #d32f2f)" }}>*</span>
+                    </span>
+                  }
+                  value={nameAr}
+                  onChange={(e) => setNameAr(e.target.value)}
+                  disabled={isLoading}
+                />
+              </Grid>
+            ) : (
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField
+                  fullWidth
+                  label={
+                    <span>
+                      {t("LeaveTypeName")}{" "}
+                      <span style={{ color: "var(--mui-palette-error-main, #d32f2f)" }}>*</span>
+                    </span>
+                  }
+                  value={nameEn || name}
+                  onChange={(e) => {
+                    setNameEn(e.target.value);
+                    setName(e.target.value);
+                  }}
+                  disabled={isLoading}
+                />
+              </Grid>
+            )}
 
             {/* Code */}
             <Grid size={{ xs: 12, sm: 6 }}>
@@ -250,6 +207,97 @@ export const LeaveTypeFormDialog: React.FC<LeaveTypeFormDialogProps> = ({
               />
             </Grid>
 
+            {/* Primary Description */}
+            {isAr ? (
+              <Grid size={{ xs: 12 }}>
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={2}
+                  label={t("Description")}
+                  value={descriptionAr}
+                  onChange={(e) => setDescriptionAr(e.target.value)}
+                  disabled={isLoading}
+                />
+              </Grid>
+            ) : (
+              <Grid size={{ xs: 12 }}>
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={2}
+                  label={t("Description")}
+                  value={descriptionEn || description}
+                  onChange={(e) => {
+                    setDescriptionEn(e.target.value);
+                    setDescription(e.target.value);
+                  }}
+                  disabled={isLoading}
+                />
+              </Grid>
+            )}
+
+            {/* Secondary Language Checkbox */}
+            <Grid size={{ xs: 12 }}>
+              <SecondaryLanguageCheckbox
+                checked={showSecondaryLanguage}
+                onChange={(checked: boolean) => setShowSecondaryLanguage(checked)}
+                isRtl={isAr}
+                customLabel={isAr ? "إضافة البيانات باللغة الإنجليزية" : "Add Arabic Details"}
+              />
+            </Grid>
+
+            {/* Secondary Name & Description Fields */}
+            {showSecondaryLanguage && (
+              isAr ? (
+                <>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                      fullWidth
+                      label={t("NameEn")}
+                      value={nameEn}
+                      onChange={(e) => setNameEn(e.target.value)}
+                      disabled={isLoading}
+                      placeholder="e.g. Annual Leave"
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                      fullWidth
+                      label={t("DescriptionEn")}
+                      value={descriptionEn}
+                      onChange={(e) => setDescriptionEn(e.target.value)}
+                      disabled={isLoading}
+                      placeholder="e.g. Paid annual leave per labor law"
+                    />
+                  </Grid>
+                </>
+              ) : (
+                <>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                      fullWidth
+                      label={t("NameAr")}
+                      value={nameAr}
+                      onChange={(e) => setNameAr(e.target.value)}
+                      disabled={isLoading}
+                      placeholder="مثال: إجازة سنوية"
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                      fullWidth
+                      label={t("DescriptionAr")}
+                      value={descriptionAr}
+                      onChange={(e) => setDescriptionAr(e.target.value)}
+                      disabled={isLoading}
+                      placeholder="مثال: إجازة سنوية مدفوعة الراتب"
+                    />
+                  </Grid>
+                </>
+              )
+            )}
+
             {/* Default Days Per Year */}
             <Grid size={{ xs: 12, sm: 6 }}>
               <TextField
@@ -260,19 +308,6 @@ export const LeaveTypeFormDialog: React.FC<LeaveTypeFormDialogProps> = ({
                 onChange={(e) => setDefaultDaysPerYear(e.target.value)}
                 disabled={isLoading}
                 inputProps={{ min: 0, max: 365 }}
-              />
-            </Grid>
-
-            {/* Description */}
-            <Grid size={{ xs: 12 }}>
-              <TextField
-                fullWidth
-                multiline
-                rows={2}
-                label={t("Description")}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                disabled={isLoading}
               />
             </Grid>
 

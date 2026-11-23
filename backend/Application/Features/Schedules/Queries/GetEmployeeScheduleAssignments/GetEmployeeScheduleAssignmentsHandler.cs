@@ -66,7 +66,10 @@ public sealed class GetEmployeeScheduleAssignmentsHandler(
                 a.IsActive,
                 a.Notes,
                 a.Created_Utc,
-                a.Created_By
+                a.Created_By,
+                a.Employee != null ? a.Employee.FullNameAr : null,
+                a.Employee != null ? a.Employee.DepartmentAr : null,
+                a.Schedule != null ? a.Schedule.NameAr : null
             ))
             .ToListAsync(cancellationToken);
 

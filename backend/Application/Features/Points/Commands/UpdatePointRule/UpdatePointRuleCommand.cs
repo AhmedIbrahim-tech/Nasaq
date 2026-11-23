@@ -13,5 +13,9 @@ public sealed record UpdatePointRuleCommand(
     PointEventType EventType,
     int Points,
     DateOnly EffectiveFrom,
-    DateOnly? EffectiveTo = null
+    DateOnly? EffectiveTo = null,
+    string? NameAr = null,
+    string? NameEn = null,
+    string? DescriptionAr = null,
+    string? DescriptionEn = null
 ) : IRequest<GenericBaseResponse<PointRuleDto>>;

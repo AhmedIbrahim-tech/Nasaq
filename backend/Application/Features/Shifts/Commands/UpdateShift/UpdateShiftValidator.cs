@@ -7,9 +7,24 @@ public sealed class UpdateShiftValidator : AbstractValidator<UpdateShiftCommand>
         RuleFor(x => x.Id)
             .NotEmpty().WithMessage("Shift ID is required.");
 
-        RuleFor(x => x.Name)
-            .NotEmpty().WithMessage("Shift name is required.")
-            .MaximumLength(150).WithMessage("Shift name must not exceed 150 characters.");
+        RuleFor(x => x)
+            .Must(x => !string.IsNullOrWhiteSpace(x.Name) || !string.IsNullOrWhiteSpace(x.NameEn) || !string.IsNullOrWhiteSpace(x.NameAr))
+            .WithMessage("Shift name is required in at least one language.");
+
+        When(x => !string.IsNullOrWhiteSpace(x.Name), () =>
+        {
+            RuleFor(x => x.Name).MaximumLength(150).WithMessage("Shift name must not exceed 150 characters.");
+        });
+
+        When(x => !string.IsNullOrWhiteSpace(x.NameEn), () =>
+        {
+            RuleFor(x => x.NameEn!).MaximumLength(150).WithMessage("English shift name must not exceed 150 characters.");
+        });
+
+        When(x => !string.IsNullOrWhiteSpace(x.NameAr), () =>
+        {
+            RuleFor(x => x.NameAr!).MaximumLength(150).WithMessage("Arabic shift name must not exceed 150 characters.");
+        });
 
         RuleFor(x => x)
             .Must(x => x.StartTime != x.EndTime)

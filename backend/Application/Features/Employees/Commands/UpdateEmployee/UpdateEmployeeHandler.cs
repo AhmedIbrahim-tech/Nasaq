@@ -436,6 +436,8 @@ public sealed class UpdateEmployeeHandler(
                 LastName = employee.LastName,
                 FirstNameAr = employee.FirstNameAr,
                 LastNameAr = employee.LastNameAr,
+                FirstNameEn = employee.FirstNameEn,
+                LastNameEn = employee.LastNameEn,
                 FullName = employee.FullName,
                 FullNameAr = employee.FullNameAr,
                 FullNameEn = employee.FullNameEn,

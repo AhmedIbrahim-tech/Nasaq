@@ -25,6 +25,7 @@ import {
   IconEdit,
 } from "@tabler/icons-react";
 import { useTranslations } from "next-intl";
+import { getLocationDisplayName, getLocationDisplayAddress } from "../utils/locationLocalization";
 import type { WorkLocation } from "../types";
 
 interface LocationDetailsDialogProps {
@@ -66,11 +67,20 @@ export const LocationDetailsDialog: React.FC<LocationDetailsDialogProps> = ({
             </Box>
             <Box>
               <Typography component="div" variant="h6" fontWeight={700}>
-                {location.name}
+                {getLocationDisplayName(location, isRtl)}
               </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {t("WorkLocationDetails")}
-              </Typography>
+              {(() => {
+                const addr = getLocationDisplayAddress(location, isRtl);
+                return addr ? (
+                  <Typography variant="caption" color="text.secondary" display="block">
+                    {addr}
+                  </Typography>
+                ) : (
+                  <Typography variant="caption" color="text.secondary">
+                    {t("WorkLocationDetails")}
+                  </Typography>
+                );
+              })()}
             </Box>
           </Stack>
           <Stack direction="row" spacing={1} alignItems="center">

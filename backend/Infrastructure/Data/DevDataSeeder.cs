@@ -88,7 +88,7 @@ public static class DevDataSeeder
             {
                 Name = "Weekly Standard 5-Day Schedule",
                 NameAr = "جدول العمل الأسبوعي القياسي (5 أيام)",
-                Description = FixtureMarker,
+                Description = "Sunday to Thursday working days with Friday and Saturday off",
                 DescriptionAr = "أيام العمل من الأحد إلى الخميس مع راحة يومي الجمعة والسبت",
                 IsDefault = true,
                 IsActive = true
@@ -156,7 +156,7 @@ public static class DevDataSeeder
                 EventType = PointEventType.OnTimeArrival,
                 Points = 1,
                 EffectiveFrom = today.AddDays(-90),
-                Description = FixtureMarker,
+                Description = "Award 1 green performance point for on-time check-in within the approved arrival window",
                 DescriptionAr = "منح نقطة أداء خضراء للحضور في نافذة الدخول المعتمدة",
                 IsActive = true
             },
@@ -168,7 +168,7 @@ public static class DevDataSeeder
                 EventType = PointEventType.EarlyArrival,
                 Points = 2,
                 EffectiveFrom = today.AddDays(-90),
-                Description = FixtureMarker,
+                Description = "Award 2 points for arriving early before shift start",
                 DescriptionAr = "مكافأة الحضور المبكر قبل بدء الوردية",
                 IsActive = true
             },
@@ -180,7 +180,7 @@ public static class DevDataSeeder
                 EventType = PointEventType.CompletedShift,
                 Points = 1,
                 EffectiveFrom = today.AddDays(-90),
-                Description = FixtureMarker,
+                Description = "Award 1 point for completing scheduled shift hours",
                 DescriptionAr = "مكافأة إتمام كامل ساعات العمل المقررة",
                 IsActive = true
             },
@@ -192,7 +192,7 @@ public static class DevDataSeeder
                 EventType = PointEventType.LateArrival,
                 Points = -2,
                 EffectiveFrom = today.AddDays(-90),
-                Description = FixtureMarker,
+                Description = "Deduct 2 points for arriving 15 to 30 minutes late",
                 DescriptionAr = "خصم نقطتين انضباطيتين للتأخير عن الموعد",
                 IsActive = true
             },
@@ -204,7 +204,7 @@ public static class DevDataSeeder
                 EventType = PointEventType.AfterCutoffArrival,
                 Points = -5,
                 EffectiveFrom = today.AddDays(-90),
-                Description = FixtureMarker,
+                Description = "Deduct 5 points for arriving after the cutoff time",
                 DescriptionAr = "خصم خمس نقاط للتأخير الشديد بعد حد الانقطاع",
                 IsActive = true
             },
@@ -216,7 +216,7 @@ public static class DevDataSeeder
                 EventType = PointEventType.GeofenceBreach,
                 Points = -5,
                 EffectiveFrom = today.AddDays(-90),
-                Description = FixtureMarker,
+                Description = "Deduct 5 points for attendance recorded outside approved work location geofence",
                 DescriptionAr = "خصم 5 نقاط للتسجيل خارج موقع العمل المعتمد",
                 IsActive = true
             },
@@ -228,7 +228,7 @@ public static class DevDataSeeder
                 EventType = PointEventType.MissingCheckOut,
                 Points = -3,
                 EffectiveFrom = today.AddDays(-90),
-                Description = FixtureMarker,
+                Description = "Deduct 3 points for failing to record check-out",
                 DescriptionAr = "خصم 3 نقاط في حال مغادرة العمل بدون تسجيل انصراف",
                 IsActive = true
             }

@@ -17,6 +17,7 @@ import {
 } from "@/shared/components/tables/modernize/ModernizeDataTable";
 import { ModernizeTableToolbar } from "@/shared/components/tables/modernize/ModernizeTableToolbar";
 import { formatDateOnly } from "@/shared/utils/i18nFormatters";
+import { getLocalizedName, getLocalizedDescription } from "@/shared/utils/localization";
 import type { PointRule } from "../types";
 
 interface PointRulesTableProps {
@@ -65,18 +66,21 @@ export const PointRulesTable: React.FC<PointRulesTableProps> = ({
     {
       id: "name",
       header: t("RuleName"),
-      cell: (row) => (
-        <Box>
-          <Typography variant="subtitle2" fontWeight={600}>
-            {row.name}
-          </Typography>
-          {row.description && (
-            <Typography variant="caption" color="text.secondary">
-              {row.description}
+      cell: (row) => {
+        const desc = getLocalizedDescription(row, isRtl);
+        return (
+          <Box>
+            <Typography variant="subtitle2" fontWeight={600}>
+              {getLocalizedName(row, isRtl)}
             </Typography>
-          )}
-        </Box>
-      ),
+            {desc && desc !== "—" && (
+              <Typography variant="caption" color="text.secondary">
+                {desc}
+              </Typography>
+            )}
+          </Box>
+        );
+      },
     },
     {
       id: "category",

@@ -22,6 +22,8 @@ public sealed record WorkShiftDto(
     string? NameAr = null
 )
 {
+    public string NameEn => Name;
+
     public static WorkShiftDto FromEntity(WorkShift s) => new(
         s.Id,
         s.Name,

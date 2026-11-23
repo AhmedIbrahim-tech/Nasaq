@@ -33,6 +33,13 @@ import { useTheme } from "@mui/material/styles";
 import { formatDateOnly } from "@/shared/utils/i18nFormatters";
 import { ProfilePhotoAvatar } from "@/shared/components/avatar";
 import type { Employee } from "../types";
+import {
+  getEmployeeDisplayName,
+  getEmployeeDepartment,
+  getEmployeeJobTitle,
+  getEmployeeSupervisorName,
+  getEmployeeWorkLocationName,
+} from "../utils/employeeLocalization";
 
 interface EmployeeTableProps {
   employees: Employee[];
@@ -161,13 +168,13 @@ export const EmployeeTable: React.FC<EmployeeTableProps> = ({
                   <Box display="flex" alignItems="center" gap={1.5}>
                     <ProfilePhotoAvatar
                       photoId={employee.profilePhoto}
-                      name={employee.fullName || `${employee.firstName} ${employee.lastName}`}
+                      name={getEmployeeDisplayName(employee, isRtl)}
                       size={36}
                       colorScheme="soft"
                     />
                     <Box minWidth={0}>
                       <Typography variant="subtitle2" fontWeight={600} noWrap>
-                        {employee.fullName || `${employee.firstName} ${employee.lastName}`}
+                        {getEmployeeDisplayName(employee, isRtl)}
                       </Typography>
                       <Typography variant="caption" color="text.secondary" noWrap display="block">
                         {employee.email}
@@ -177,19 +184,19 @@ export const EmployeeTable: React.FC<EmployeeTableProps> = ({
                 </TableCell>
                 <TableCell>
                   <Typography variant="body2">
-                    {employee.department || "-"}
+                    {getEmployeeDepartment(employee, isRtl) || "-"}
                   </Typography>
                 </TableCell>
                 <TableCell>
                   <Typography variant="body2">
-                    {employee.jobTitle || "-"}
+                    {getEmployeeJobTitle(employee, isRtl) || "-"}
                   </Typography>
                 </TableCell>
                 <TableCell>
-                  {employee.supervisorName ? (
+                  {getEmployeeSupervisorName(employee, isRtl) ? (
                     <Box>
                       <Typography variant="body2" fontWeight={500}>
-                        {employee.supervisorName}
+                        {getEmployeeSupervisorName(employee, isRtl)}
                       </Typography>
                       {employee.supervisorCode && (
                         <Typography variant="caption" color="text.secondary">
@@ -204,11 +211,11 @@ export const EmployeeTable: React.FC<EmployeeTableProps> = ({
                   )}
                 </TableCell>
                 <TableCell>
-                  {employee.workLocationName ? (
+                  {getEmployeeWorkLocationName(employee, isRtl) ? (
                     <Chip
                       size="small"
                       icon={<IconMapPin size={14} />}
-                      label={employee.workLocationName}
+                      label={getEmployeeWorkLocationName(employee, isRtl)}
                       variant="outlined"
                     />
                   ) : (

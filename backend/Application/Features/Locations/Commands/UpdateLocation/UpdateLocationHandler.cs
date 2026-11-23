@@ -18,24 +18,33 @@ public sealed class UpdateLocationHandler(
             return GenericBaseResponse<WorkLocationDto>.NotFound($"Work location with ID '{request.Id}' was not found.");
         }
 
-        var normalizedName = request.Name.Trim();
+        var nameAr = !string.IsNullOrWhiteSpace(request.NameAr) ? request.NameAr.Trim() : null;
+        var nameEn = !string.IsNullOrWhiteSpace(request.NameEn)
+            ? request.NameEn.Trim()
+            : (!string.IsNullOrWhiteSpace(request.Name) ? request.Name.Trim() : (nameAr ?? string.Empty));
+        var addressAr = !string.IsNullOrWhiteSpace(request.AddressAr) ? request.AddressAr.Trim() : null;
+        var addressEn = !string.IsNullOrWhiteSpace(request.AddressEn)
+            ? request.AddressEn.Trim()
+            : (!string.IsNullOrWhiteSpace(request.Address) ? request.Address.Trim() : null);
 
-        if (!string.Equals(location.Name, normalizedName, StringComparison.OrdinalIgnoreCase))
+        var normalizedName = nameEn;
+
+        var nameExists = await dbContext.WorkLocations
+            .AsNoTracking()
+            .AnyAsync(w => w.Id != request.Id &&
+                           ((w.Name.ToLower() == normalizedName.ToLower()) ||
+                            (nameAr != null && w.NameAr != null && w.NameAr.ToLower() == nameAr.ToLower())),
+                      cancellationToken);
+
+        if (nameExists)
         {
-            var nameExists = await dbContext.WorkLocations
-                .AsNoTracking()
-                .AnyAsync(w => w.Name.ToLower() == normalizedName.ToLower() && w.Id != request.Id, cancellationToken);
-
-            if (nameExists)
-            {
-                return GenericBaseResponse<WorkLocationDto>.Conflict($"A work location with the name '{normalizedName}' already exists.");
-            }
+            return GenericBaseResponse<WorkLocationDto>.Conflict($"A work location with the name '{normalizedName}' already exists.");
         }
 
         location.Name = normalizedName;
-        if (request.NameAr != null) location.NameAr = request.NameAr.Trim();
-        if (request.Address != null) location.Address = request.Address.Trim();
-        if (request.AddressAr != null) location.AddressAr = request.AddressAr.Trim();
+        location.NameAr = nameAr;
+        location.Address = addressEn;
+        location.AddressAr = addressAr;
         location.Latitude = request.Latitude;
         location.Longitude = request.Longitude;
         location.RadiusMeters = request.RadiusMeters;

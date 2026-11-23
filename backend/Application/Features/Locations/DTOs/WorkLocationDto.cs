@@ -5,8 +5,10 @@ public class WorkLocationDto
     public Guid Id { get; set; }
     public string Name { get; set; } = string.Empty;
     public string? NameAr { get; set; }
+    public string NameEn { get => Name; set => Name = value; }
     public string? Address { get; set; }
     public string? AddressAr { get; set; }
+    public string? AddressEn { get => Address; set => Address = value; }
     public double Latitude { get; set; }
     public double Longitude { get; set; }
     public double RadiusMeters { get; set; }

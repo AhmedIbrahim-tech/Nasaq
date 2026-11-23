@@ -19,6 +19,8 @@ import Chip from "@mui/material/Chip";
 import { IconClock, IconMoon, IconSun, IconAlertCircle } from "@tabler/icons-react";
 import { useTranslations } from "next-intl";
 import DialogCloseButton from "@/shared/components/buttons/DialogCloseButton";
+import { SecondaryLanguageCheckbox } from "@/shared/components/forms/SecondaryLanguageCheckbox";
+import { useShiftForm } from "../hooks";
 import type { WorkShift, CreateShiftRequest, UpdateShiftRequest } from "../types";
 
 interface ShiftFormDialogProps {
@@ -40,126 +42,17 @@ export const ShiftFormDialog: React.FC<ShiftFormDialogProps> = ({
 }) => {
   const t = useTranslations();
 
-  const [formData, setFormData] = useState<{
-    name: string;
-    startTime: string;
-    endTime: string;
-    isOvernight: boolean;
-    earlyStartTime: string;
-    onTimeStartTime: string;
-    lateStartTime: string;
-    cutoffTime: string;
-    notes: string;
-    isActive: boolean;
-  }>({
-    name: "",
-    startTime: "09:00",
-    endTime: "17:00",
-    isOvernight: false,
-    earlyStartTime: "07:30",
-    onTimeStartTime: "09:00",
-    lateStartTime: "09:30",
-    cutoffTime: "12:00",
-    notes: "",
-    isActive: true,
-  });
-
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    if (mode === "edit" && shift) {
-      setFormData({
-        name: shift.name || "",
-        startTime: shift.startTime?.substring(0, 5) || "09:00",
-        endTime: shift.endTime?.substring(0, 5) || "17:00",
-        isOvernight: shift.isOvernight ?? false,
-        earlyStartTime: shift.earlyStartTime?.substring(0, 5) || "",
-        onTimeStartTime: shift.onTimeStartTime?.substring(0, 5) || "",
-        lateStartTime: shift.lateStartTime?.substring(0, 5) || "",
-        cutoffTime: shift.cutoffTime?.substring(0, 5) || "",
-        notes: shift.notes || "",
-        isActive: shift.isActive ?? true,
-      });
-    } else {
-      setFormData({
-        name: "",
-        startTime: "09:00",
-        endTime: "17:00",
-        isOvernight: false,
-        earlyStartTime: "07:30",
-        onTimeStartTime: "09:00",
-        lateStartTime: "09:30",
-        cutoffTime: "12:00",
-        notes: "",
-        isActive: true,
-      });
-    }
-    setErrors({});
-  }, [mode, shift, open]);
-
-  // Compute overnight state & estimated duration
-  const isAutoOvernight = formData.endTime <= formData.startTime && formData.startTime !== "" && formData.endTime !== "";
-  const effectiveOvernight = formData.isOvernight || isAutoOvernight;
-
-  const calculateHours = (): number => {
-    if (!formData.startTime || !formData.endTime || formData.startTime === formData.endTime) return 0;
-    const [sH, sM] = formData.startTime.split(":").map(Number);
-    const [eH, eM] = formData.endTime.split(":").map(Number);
-    const startMins = sH * 60 + sM;
-    const endMins = eH * 60 + eM;
-
-    if (effectiveOvernight) {
-      return (24 * 60 - startMins + endMins) / 60;
-    }
-    return (endMins - startMins) / 60;
-  };
-
-  const durationHours = calculateHours();
-
-  const validate = (): boolean => {
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.name.trim()) {
-      newErrors.name = t("ShiftNameRequired");
-    } else if (formData.name.length > 150) {
-      newErrors.name = t("ShiftNameMaxLength");
-    }
-
-    if (!formData.startTime) {
-      newErrors.startTime = t("StartTimeRequired");
-    }
-
-    if (!formData.endTime) {
-      newErrors.endTime = t("EndTimeRequired");
-    }
-
-    if (formData.startTime && formData.endTime && formData.startTime === formData.endTime) {
-      newErrors.endTime = t("StartAndEndSameError");
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validate()) return;
-
-    const payload: CreateShiftRequest = {
-      name: formData.name.trim(),
-      startTime: formData.startTime,
-      endTime: formData.endTime,
-      isOvernight: effectiveOvernight,
-      earlyStartTime: formData.earlyStartTime || null,
-      onTimeStartTime: formData.onTimeStartTime || null,
-      lateStartTime: formData.lateStartTime || null,
-      cutoffTime: formData.cutoffTime || null,
-      notes: formData.notes.trim() || null,
-      isActive: formData.isActive,
-    };
-
-    await onSubmit(payload);
-  };
+  const {
+    formData,
+    setFormData,
+    errors,
+    showSecondaryLanguage,
+    setShowSecondaryLanguage,
+    isAr,
+    effectiveOvernight,
+    durationHours,
+    handleSubmit,
+  } = useShiftForm({ mode, shift, open, onSubmit });
 
   return (
     <Dialog
@@ -203,19 +96,75 @@ export const ShiftFormDialog: React.FC<ShiftFormDialogProps> = ({
 
       <DialogContent dividers sx={{ p: 3, flex: "1 1 auto", overflowY: "auto", minHeight: 0 }}>
           <Grid container spacing={2.5}>
-            {/* Shift Name */}
+            {/* Primary Shift Name */}
+            {isAr ? (
+              <Grid size={{ xs: 12 }}>
+                <TextField
+                  fullWidth
+                  label={t("ShiftName")}
+                  required
+                  value={formData.nameAr}
+                  onChange={(e) => setFormData({ ...formData, nameAr: e.target.value })}
+                  error={Boolean(errors.nameAr)}
+                  helperText={errors.nameAr}
+                  placeholder={t("ShiftNamePlaceholder")}
+                />
+              </Grid>
+            ) : (
+              <Grid size={{ xs: 12 }}>
+                <TextField
+                  fullWidth
+                  label={t("ShiftName")}
+                  required
+                  value={formData.nameEn || formData.name}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      nameEn: e.target.value,
+                      name: e.target.value,
+                    })
+                  }
+                  error={Boolean(errors.nameEn || errors.name)}
+                  helperText={errors.nameEn || errors.name}
+                  placeholder={t("ShiftNamePlaceholder")}
+                />
+              </Grid>
+            )}
+
+            {/* Secondary Language Checkbox */}
             <Grid size={{ xs: 12 }}>
-              <TextField
-                fullWidth
-                label={t("ShiftName")}
-                required
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                error={Boolean(errors.name)}
-                helperText={errors.name}
-                placeholder={t("ShiftNamePlaceholder")}
+              <SecondaryLanguageCheckbox
+                checked={showSecondaryLanguage}
+                onChange={(checked: boolean) => setShowSecondaryLanguage(checked)}
+                isRtl={isAr}
+                customLabel={isAr ? "إضافة الاسم باللغة الإنجليزية" : "Add Arabic Name"}
               />
             </Grid>
+
+            {/* Secondary Shift Name */}
+            {showSecondaryLanguage && (
+              isAr ? (
+                <Grid size={{ xs: 12 }}>
+                  <TextField
+                    fullWidth
+                    label={t("NameEn")}
+                    value={formData.nameEn}
+                    onChange={(e) => setFormData({ ...formData, nameEn: e.target.value })}
+                    placeholder="e.g. Morning Shift (08:00 - 16:30)"
+                  />
+                </Grid>
+              ) : (
+                <Grid size={{ xs: 12 }}>
+                  <TextField
+                    fullWidth
+                    label={t("NameAr")}
+                    value={formData.nameAr}
+                    onChange={(e) => setFormData({ ...formData, nameAr: e.target.value })}
+                    placeholder="مثال: الوردية الصباحية (08:00 - 16:30)"
+                  />
+                </Grid>
+              )
+            )}
 
             {/* Start Time */}
             <Grid size={{ xs: 12, sm: 6 }}>

@@ -30,6 +30,7 @@ import {
   IconUsers,
 } from "@tabler/icons-react";
 import { useTranslations } from "next-intl";
+import { getLocationDisplayName } from "../utils/locationLocalization";
 import type { WorkLocation } from "../types";
 
 interface LocationTableProps {
@@ -142,7 +143,7 @@ export const LocationTable: React.FC<LocationTableProps> = ({
                       <IconMapPin size={20} />
                     </Box>
                     <Typography variant="subtitle2" fontWeight={600}>
-                      {loc.name}
+                      {getLocationDisplayName(loc, isRtl)}
                     </Typography>
                   </Stack>
                 </TableCell>

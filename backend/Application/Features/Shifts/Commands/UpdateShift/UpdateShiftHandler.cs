@@ -21,9 +21,17 @@ public sealed class UpdateShiftHandler(
                 HttpStatusCode.NotFound);
         }
 
-        var trimmedName = request.Name.Trim();
+        var nameAr = !string.IsNullOrWhiteSpace(request.NameAr) ? request.NameAr.Trim() : null;
+        var nameEn = !string.IsNullOrWhiteSpace(request.NameEn)
+            ? request.NameEn.Trim()
+            : (!string.IsNullOrWhiteSpace(request.Name) ? request.Name.Trim() : (nameAr ?? string.Empty));
+        var trimmedName = nameEn;
+
         var nameExists = await dbContext.WorkShifts
-            .AnyAsync(s => s.Name == trimmedName && s.Id != request.Id, cancellationToken);
+            .AnyAsync(s => s.Id != request.Id &&
+                           ((s.Name == trimmedName) ||
+                            (nameAr != null && s.NameAr != null && s.NameAr == nameAr)),
+                      cancellationToken);
 
         if (nameExists)
         {
@@ -35,7 +43,7 @@ public sealed class UpdateShiftHandler(
         var isOvernight = request.IsOvernight || (request.EndTime <= request.StartTime);
 
         shift.Name = trimmedName;
-        if (request.NameAr != null) shift.NameAr = request.NameAr.Trim();
+        shift.NameAr = nameAr;
         shift.StartTime = request.StartTime;
         shift.EndTime = request.EndTime;
         shift.IsOvernight = isOvernight;

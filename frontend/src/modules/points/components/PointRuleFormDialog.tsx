@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
@@ -15,7 +15,9 @@ import MenuItem from "@mui/material/MenuItem";
 import { IconAward, IconCheck } from "@tabler/icons-react";
 import { useTranslations } from "next-intl";
 import DialogCloseButton from "@/shared/components/buttons/DialogCloseButton";
-import type { PointRule, CreatePointRuleRequest, UpdatePointRuleRequest, PointCategory, PointEventType } from "../types";
+import { SecondaryLanguageCheckbox } from "@/shared/components/forms/SecondaryLanguageCheckbox";
+import { usePointRuleForm } from "../hooks";
+import type { PointRule, CreatePointRuleRequest, UpdatePointRuleRequest, PointEventType, PointCategory } from "../types";
 
 interface PointRuleFormDialogProps {
   open: boolean;
@@ -36,101 +38,15 @@ export const PointRuleFormDialog: React.FC<PointRuleFormDialogProps> = ({
 }) => {
   const t = useTranslations();
 
-  const [formData, setFormData] = useState<{
-    name: string;
-    description: string;
-    category: PointCategory;
-    eventType: PointEventType;
-    points: number;
-    effectiveFrom: string;
-    effectiveTo: string;
-  }>({
-    name: "",
-    description: "",
-    category: "Green",
-    eventType: "OnTimeArrival",
-    points: 10,
-    effectiveFrom: new Date().toISOString().substring(0, 10),
-    effectiveTo: "",
-  });
-
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    if (open) {
-      if (mode === "edit" && rule) {
-        setFormData({
-          name: rule.name,
-          description: rule.description || "",
-          category: rule.category,
-          eventType: rule.eventType,
-          points: rule.points,
-          effectiveFrom: rule.effectiveFrom,
-          effectiveTo: rule.effectiveTo || "",
-        });
-      } else {
-        setFormData({
-          name: "",
-          description: "",
-          category: "Green",
-          eventType: "OnTimeArrival",
-          points: 10,
-          effectiveFrom: new Date().toISOString().substring(0, 10),
-          effectiveTo: "",
-        });
-      }
-      setErrors({});
-    }
-  }, [open, mode, rule]);
-
-  const validate = (): boolean => {
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.name.trim()) {
-      newErrors.name = t("RuleNameRequired");
-    }
-
-    if (!formData.effectiveFrom) {
-      newErrors.effectiveFrom = t("EffectiveFromRequired");
-    }
-
-    if (formData.effectiveFrom && formData.effectiveTo && formData.effectiveTo < formData.effectiveFrom) {
-      newErrors.effectiveTo = t("EffectiveToMustBeAfterFrom");
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validate()) return;
-
-    if (mode === "create") {
-      const payload: CreatePointRuleRequest = {
-        name: formData.name.trim(),
-        description: formData.description.trim() || null,
-        category: formData.category,
-        eventType: formData.eventType,
-        points: Number(formData.points),
-        effectiveFrom: formData.effectiveFrom,
-        effectiveTo: formData.effectiveTo || null,
-      };
-      await onSubmit(payload);
-    } else if (rule) {
-      const payload: UpdatePointRuleRequest = {
-        id: rule.id,
-        name: formData.name.trim(),
-        description: formData.description.trim() || null,
-        category: formData.category,
-        eventType: formData.eventType,
-        points: Number(formData.points),
-        effectiveFrom: formData.effectiveFrom,
-        effectiveTo: formData.effectiveTo || null,
-      };
-      await onSubmit(payload);
-    }
-  };
+  const {
+    formData,
+    setFormData,
+    showSecondaryLanguage,
+    setShowSecondaryLanguage,
+    isAr,
+    errors,
+    handleSubmit,
+  } = usePointRuleForm({ open, rule, mode, onSubmit });
 
   const eventTypes: PointEventType[] = [
     "OnTimeArrival",
@@ -181,17 +97,43 @@ export const PointRuleFormDialog: React.FC<PointRuleFormDialogProps> = ({
 
       <DialogContent dividers sx={{ p: 3, flex: "1 1 auto", overflowY: "auto", minHeight: 0 }}>
         <Grid container spacing={2.5}>
-          {/* Rule Name */}
+          {/* Primary Rule Name */}
           <Grid size={{ xs: 12 }}>
-            <TextField
-              fullWidth
-              required
-              label={t("RuleName")}
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              error={Boolean(errors.name)}
-              helperText={errors.name}
-            />
+            {isAr ? (
+              <TextField
+                fullWidth
+                label={
+                  <span>
+                    {t("RuleName")}{" "}
+                    <span style={{ color: "var(--mui-palette-error-main, #d32f2f)" }}>*</span>
+                  </span>
+                }
+                value={formData.nameAr}
+                onChange={(e) => setFormData({ ...formData, nameAr: e.target.value })}
+                error={Boolean(errors.nameAr)}
+                helperText={errors.nameAr}
+              />
+            ) : (
+              <TextField
+                fullWidth
+                label={
+                  <span>
+                    {t("RuleName")}{" "}
+                    <span style={{ color: "var(--mui-palette-error-main, #d32f2f)" }}>*</span>
+                  </span>
+                }
+                value={formData.nameEn || formData.name}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    nameEn: e.target.value,
+                    name: e.target.value,
+                  })
+                }
+                error={Boolean(errors.nameEn || errors.name)}
+                helperText={errors.nameEn || errors.name}
+              />
+            )}
           </Grid>
 
           {/* Category */}
@@ -245,17 +187,89 @@ export const PointRuleFormDialog: React.FC<PointRuleFormDialogProps> = ({
             />
           </Grid>
 
-          {/* Description */}
+          {/* Primary Description */}
           <Grid size={{ xs: 12 }}>
-            <TextField
-              fullWidth
-              multiline
-              rows={2}
-              label={t("Description")}
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            {isAr ? (
+              <TextField
+                fullWidth
+                multiline
+                rows={2}
+                label={t("Description")}
+                value={formData.descriptionAr}
+                onChange={(e) => setFormData({ ...formData, descriptionAr: e.target.value })}
+              />
+            ) : (
+              <TextField
+                fullWidth
+                multiline
+                rows={2}
+                label={t("Description")}
+                value={formData.descriptionEn || formData.description}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    descriptionEn: e.target.value,
+                    description: e.target.value,
+                  })
+                }
+              />
+            )}
+          </Grid>
+
+          {/* Secondary Language Checkbox */}
+          <Grid size={{ xs: 12 }}>
+            <SecondaryLanguageCheckbox
+              checked={showSecondaryLanguage}
+              onChange={(checked: boolean) => setShowSecondaryLanguage(checked)}
+              isRtl={isAr}
+              customLabel={isAr ? "إضافة البيانات باللغة الإنجليزية" : "Add Arabic Details"}
             />
           </Grid>
+
+          {/* Secondary Fields */}
+          {showSecondaryLanguage && (
+            isAr ? (
+              <>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label={t("NameEn")}
+                    value={formData.nameEn}
+                    onChange={(e) => setFormData({ ...formData, nameEn: e.target.value })}
+                    placeholder="e.g. On-Time Arrival"
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label={t("DescriptionEn")}
+                    value={formData.descriptionEn}
+                    onChange={(e) => setFormData({ ...formData, descriptionEn: e.target.value })}
+                  />
+                </Grid>
+              </>
+            ) : (
+              <>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label={t("NameAr")}
+                    value={formData.nameAr}
+                    onChange={(e) => setFormData({ ...formData, nameAr: e.target.value })}
+                    placeholder="مثال: حضور في الموعد المحدد"
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label={t("DescriptionAr")}
+                    value={formData.descriptionAr}
+                    onChange={(e) => setFormData({ ...formData, descriptionAr: e.target.value })}
+                  />
+                </Grid>
+              </>
+            )
+          )}
 
           {/* Effective From */}
           <Grid size={{ xs: 12, sm: 6 }}>

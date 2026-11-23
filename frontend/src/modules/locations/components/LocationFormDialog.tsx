@@ -19,6 +19,8 @@ import Chip from "@mui/material/Chip";
 import { IconMapPin, IconInfoCircle, IconCurrentLocation } from "@tabler/icons-react";
 import { useTranslations } from "next-intl";
 import DialogCloseButton from "@/shared/components/buttons/DialogCloseButton";
+import { SecondaryLanguageCheckbox } from "@/shared/components/forms/SecondaryLanguageCheckbox";
+import { useLocationForm } from "../hooks";
 import type { WorkLocation, CreateLocationRequest, UpdateLocationRequest } from "../types";
 
 interface LocationFormDialogProps {
@@ -40,141 +42,18 @@ export const LocationFormDialog: React.FC<LocationFormDialogProps> = ({
 }) => {
   const t = useTranslations();
 
-  const [formData, setFormData] = useState<{
-    name: string;
-    latitude: string;
-    longitude: string;
-    radiusMeters: string;
-    accuracyThresholdMeters: string;
-    isActive: boolean;
-  }>({
-    name: "",
-    latitude: "",
-    longitude: "",
-    radiusMeters: "150",
-    accuracyThresholdMeters: "50",
-    isActive: true,
-  });
-
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isCapturingGps, setIsCapturingGps] = useState(false);
-  const [capturedAccuracy, setCapturedAccuracy] = useState<number | null>(null);
-
-  const handleCaptureCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      setErrors((prev) => ({ ...prev, latitude: "Geolocation is not supported by your browser." }));
-      return;
-    }
-
-    setIsCapturingGps(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setIsCapturingGps(false);
-        setFormData((prev) => ({
-          ...prev,
-          latitude: pos.coords.latitude.toFixed(6),
-          longitude: pos.coords.longitude.toFixed(6),
-        }));
-        setCapturedAccuracy(pos.coords.accuracy);
-        setErrors((prev) => {
-          const updated = { ...prev };
-          delete updated.latitude;
-          delete updated.longitude;
-          return updated;
-        });
-      },
-      (err) => {
-        setIsCapturingGps(false);
-        setErrors((prev) => ({
-          ...prev,
-          latitude: err.code === err.PERMISSION_DENIED
-            ? "Permission denied. Please allow location access."
-            : "Failed to acquire current location.",
-        }));
-      },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
-    );
-  };
-
-  useEffect(() => {
-    if (mode === "edit" && location) {
-      setFormData({
-        name: location.name || "",
-        latitude: location.latitude !== undefined ? location.latitude.toString() : "",
-        longitude: location.longitude !== undefined ? location.longitude.toString() : "",
-        radiusMeters: (location.radiusMeters || 150).toString(),
-        accuracyThresholdMeters: (location.accuracyThresholdMeters || 50).toString(),
-        isActive: location.isActive ?? true,
-      });
-    } else {
-      setFormData({
-        name: "",
-        latitude: "",
-        longitude: "",
-        radiusMeters: "150",
-        accuracyThresholdMeters: "50",
-        isActive: true,
-      });
-    }
-    setErrors({});
-  }, [mode, location, open]);
-
-  const validate = (): boolean => {
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.name.trim()) {
-      newErrors.name = t("LocationNameRequired");
-    } else if (formData.name.length > 200) {
-      newErrors.name = t("LocationNameMaxLength");
-    }
-
-    const lat = parseFloat(formData.latitude);
-    if (!formData.latitude.trim() || isNaN(lat)) {
-      newErrors.latitude = t("LatitudeRequired");
-    } else if (lat < -90 || lat > 90) {
-      newErrors.latitude = t("LatitudeRangeError");
-    }
-
-    const lng = parseFloat(formData.longitude);
-    if (!formData.longitude.trim() || isNaN(lng)) {
-      newErrors.longitude = t("LongitudeRequired");
-    } else if (lng < -180 || lng > 180) {
-      newErrors.longitude = t("LongitudeRangeError");
-    }
-
-    const radius = parseFloat(formData.radiusMeters);
-    if (!formData.radiusMeters.trim() || isNaN(radius)) {
-      newErrors.radiusMeters = t("RadiusRequired");
-    } else if (radius <= 0 || radius > 10000) {
-      newErrors.radiusMeters = t("RadiusRangeError");
-    }
-
-    const accuracy = parseFloat(formData.accuracyThresholdMeters);
-    if (!formData.accuracyThresholdMeters.trim() || isNaN(accuracy)) {
-      newErrors.accuracyThresholdMeters = t("AccuracyThresholdRequired");
-    } else if (accuracy <= 0 || accuracy > 1000) {
-      newErrors.accuracyThresholdMeters = t("AccuracyThresholdRangeError");
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validate()) return;
-
-    const payload = {
-      name: formData.name.trim(),
-      latitude: parseFloat(formData.latitude),
-      longitude: parseFloat(formData.longitude),
-      radiusMeters: parseFloat(formData.radiusMeters),
-      accuracyThresholdMeters: parseFloat(formData.accuracyThresholdMeters),
-      isActive: formData.isActive,
-    };
-
-    await onSubmit(payload);
-  };
+  const {
+    formData,
+    setFormData,
+    errors,
+    showSecondaryLanguage,
+    setShowSecondaryLanguage,
+    isAr,
+    isCapturingGps,
+    capturedAccuracy,
+    onCaptureCurrentLocation: handleCaptureCurrentLocation,
+    onSubmit: handleSubmit,
+  } = useLocationForm({ mode, location, open, onSubmit });
 
   return (
     <Dialog
@@ -231,19 +110,125 @@ export const LocationFormDialog: React.FC<LocationFormDialogProps> = ({
               </Alert>
             </Grid>
 
-            {/* Location Name */}
+            {/* Primary Name & Address Fields */}
+            {isAr ? (
+              <>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label={t("LocationName")}
+                    required
+                    value={formData.nameAr}
+                    onChange={(e) => setFormData({ ...formData, nameAr: e.target.value })}
+                    error={Boolean(errors.nameAr)}
+                    helperText={errors.nameAr}
+                    placeholder={t("LocationNamePlaceholder")}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label={t("Address")}
+                    value={formData.addressAr}
+                    onChange={(e) => setFormData({ ...formData, addressAr: e.target.value })}
+                    placeholder="مثال: حي العليا، الرياض"
+                  />
+                </Grid>
+              </>
+            ) : (
+              <>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label={t("LocationName")}
+                    required
+                    value={formData.nameEn || formData.name}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        nameEn: e.target.value,
+                        name: e.target.value,
+                      })
+                    }
+                    error={Boolean(errors.nameEn || errors.name)}
+                    helperText={errors.nameEn || errors.name}
+                    placeholder={t("LocationNamePlaceholder")}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <TextField
+                    fullWidth
+                    label={t("Address")}
+                    value={formData.addressEn || formData.address}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        addressEn: e.target.value,
+                        address: e.target.value,
+                      })
+                    }
+                    placeholder="e.g. Olaya District, Riyadh"
+                  />
+                </Grid>
+              </>
+            )}
+
+            {/* Secondary Language Checkbox */}
             <Grid size={{ xs: 12 }}>
-              <TextField
-                fullWidth
-                label={t("LocationName")}
-                required
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                error={Boolean(errors.name)}
-                helperText={errors.name}
-                placeholder={t("LocationNamePlaceholder")}
+              <SecondaryLanguageCheckbox
+                checked={showSecondaryLanguage}
+                onChange={(checked: boolean) => setShowSecondaryLanguage(checked)}
+                isRtl={isAr}
+                customLabel={isAr ? "إضافة البيانات باللغة الإنجليزية" : "Add Arabic Details"}
               />
             </Grid>
+
+            {/* Secondary Name & Address Fields */}
+            {showSecondaryLanguage && (
+              isAr ? (
+                <>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                      fullWidth
+                      label={t("NameEn")}
+                      value={formData.nameEn}
+                      onChange={(e) => setFormData({ ...formData, nameEn: e.target.value })}
+                      placeholder="e.g. Riyadh Headquarters"
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                      fullWidth
+                      label={t("AddressEn")}
+                      value={formData.addressEn}
+                      onChange={(e) => setFormData({ ...formData, addressEn: e.target.value })}
+                      placeholder="e.g. Olaya District, Riyadh"
+                    />
+                  </Grid>
+                </>
+              ) : (
+                <>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                      fullWidth
+                      label={t("NameAr")}
+                      value={formData.nameAr}
+                      onChange={(e) => setFormData({ ...formData, nameAr: e.target.value })}
+                      placeholder="مثال: المقر الرئيسي - الرياض"
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                      fullWidth
+                      label={t("AddressAr")}
+                      value={formData.addressAr}
+                      onChange={(e) => setFormData({ ...formData, addressAr: e.target.value })}
+                      placeholder="مثال: حي العليا، الرياض"
+                    />
+                  </Grid>
+                </>
+              )
+            )}
 
             {/* GPS Method A: Capture Current Location */}
             <Grid size={{ xs: 12 }}>

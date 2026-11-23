@@ -32,9 +32,19 @@ public class UpdateLeaveTypeHandler : IRequestHandler<UpdateLeaveTypeCommand, Ge
             return GenericBaseResponse<LeaveTypeDto>.Fail("Leave type not found.", HttpStatusCode.NotFound);
         }
 
-        leaveType.Name = request.Name.Trim();
-        leaveType.NameAr = request.NameAr.Trim();
-        leaveType.Description = request.Description?.Trim();
+        var nameAr = !string.IsNullOrWhiteSpace(request.NameAr) ? request.NameAr.Trim() : null;
+        var nameEn = !string.IsNullOrWhiteSpace(request.NameEn)
+            ? request.NameEn.Trim()
+            : (!string.IsNullOrWhiteSpace(request.Name) ? request.Name.Trim() : (nameAr ?? string.Empty));
+        var descAr = !string.IsNullOrWhiteSpace(request.DescriptionAr) ? request.DescriptionAr.Trim() : null;
+        var descEn = !string.IsNullOrWhiteSpace(request.DescriptionEn)
+            ? request.DescriptionEn.Trim()
+            : (!string.IsNullOrWhiteSpace(request.Description) ? request.Description.Trim() : null);
+
+        leaveType.Name = nameEn;
+        leaveType.NameAr = nameAr ?? nameEn;
+        leaveType.Description = descEn;
+        leaveType.DescriptionAr = descAr;
         leaveType.IsPaid = request.IsPaid;
         leaveType.RequiresAttachment = request.RequiresAttachment;
         leaveType.DefaultDaysPerYear = request.DefaultDaysPerYear;
@@ -48,6 +58,7 @@ public class UpdateLeaveTypeHandler : IRequestHandler<UpdateLeaveTypeCommand, Ge
             NameAr = leaveType.NameAr,
             Code = leaveType.Code,
             Description = leaveType.Description,
+            DescriptionAr = leaveType.DescriptionAr,
             IsPaid = leaveType.IsPaid,
             RequiresAttachment = leaveType.RequiresAttachment,
             DefaultDaysPerYear = leaveType.DefaultDaysPerYear,

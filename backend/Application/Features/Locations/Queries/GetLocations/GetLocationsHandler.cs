@@ -13,7 +13,10 @@ public sealed class GetLocationsHandler(IApplicationDbContext dbContext)
         if (!string.IsNullOrWhiteSpace(request.Search))
         {
             var search = request.Search.Trim().ToLower();
-            query = query.Where(w => w.Name.ToLower().Contains(search));
+            query = query.Where(w => w.Name.ToLower().Contains(search) ||
+                                     (w.NameAr != null && w.NameAr.ToLower().Contains(search)) ||
+                                     (w.Address != null && w.Address.ToLower().Contains(search)) ||
+                                     (w.AddressAr != null && w.AddressAr.ToLower().Contains(search)));
         }
 
         if (request.IsActive.HasValue)

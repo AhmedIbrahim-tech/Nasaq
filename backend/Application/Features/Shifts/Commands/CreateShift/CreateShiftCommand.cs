@@ -5,6 +5,7 @@ namespace Application.Features.Shifts.Commands.CreateShift;
 public sealed record CreateShiftCommand(
     string Name = "",
     string? NameAr = null,
+    string? NameEn = null,
     TimeOnly StartTime = default,
     TimeOnly EndTime = default,
     bool IsOvernight = false,

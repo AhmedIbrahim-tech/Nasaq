@@ -30,6 +30,11 @@ import {
   IconEdit,
 } from "@tabler/icons-react";
 import { useTranslations } from "next-intl";
+import {
+  getScheduleDisplayName,
+  getScheduleDisplayDescription,
+  getScheduleDayShiftName,
+} from "../utils/scheduleLocalization";
 import type { WorkSchedule } from "../types";
 
 interface ScheduleDetailsDialogProps {
@@ -84,7 +89,7 @@ export const ScheduleDetailsDialog: React.FC<ScheduleDetailsDialogProps> = ({
             <Box>
               <Stack direction="row" spacing={1} alignItems="center">
                 <Typography component="div" variant="h6" fontWeight={700}>
-                  {schedule.name}
+                  {getScheduleDisplayName(schedule, isRtl)}
                 </Typography>
                 {schedule.isDefault && (
                   <Chip size="small" label={t("Default")} color="info" variant="filled" />
@@ -138,14 +143,17 @@ export const ScheduleDetailsDialog: React.FC<ScheduleDetailsDialogProps> = ({
               </Stack>
             </Grid>
 
-            {schedule.description && (
-              <Grid size={{ xs: 12 }}>
-                <Typography variant="caption" color="text.secondary" display="block">
-                  {t("Description")}
-                </Typography>
-                <Typography variant="body2">{schedule.description}</Typography>
-              </Grid>
-            )}
+            {(() => {
+              const desc = getScheduleDisplayDescription(schedule, isRtl);
+              return desc ? (
+                <Grid size={{ xs: 12 }}>
+                  <Typography variant="caption" color="text.secondary" display="block">
+                    {t("Description")}
+                  </Typography>
+                  <Typography variant="body2">{desc}</Typography>
+                </Grid>
+              ) : null;
+            })()}
           </Grid>
 
           <Divider />
@@ -180,9 +188,9 @@ export const ScheduleDetailsDialog: React.FC<ScheduleDetailsDialogProps> = ({
                         />
                       </TableCell>
                       <TableCell>
-                        {day.isWorkingDay && day.shiftName ? (
+                        {day.isWorkingDay && (day.shiftName || day.shiftNameAr || day.shiftNameEn) ? (
                           <Typography variant="body2" fontWeight={500}>
-                            {day.shiftName} {day.isOvernight ? "🌙" : ""}
+                            {getScheduleDayShiftName(day, isRtl)} {day.isOvernight ? "🌙" : ""}
                           </Typography>
                         ) : (
                           <Typography variant="caption" color="text.secondary">
